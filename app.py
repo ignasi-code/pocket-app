@@ -343,6 +343,16 @@ GPT_PAGE = """
       color: var(--danger);
     }
 
+    .typing::after {
+      content: "|";
+      color: var(--accent);
+      animation: blink 0.85s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
     @media (max-width: 680px) {
       main {
         width: min(100vw - 20px, 980px);
@@ -407,16 +417,65 @@ GPT_PAGE = """
     const output = document.getElementById("output");
     const status = document.getElementById("status");
     const duration = document.getElementById("duration");
+    let typingTimer = 0;
+    let typingRun = 0;
+
+    function stopTyping() {
+      typingRun += 1;
+      if (typingTimer) {
+        window.clearTimeout(typingTimer);
+        typingTimer = 0;
+      }
+      output.classList.remove("typing");
+    }
+
+    async function typeOutput(text) {
+      const fullText = text || "(Gemini returned no output.)";
+      const runId = typingRun + 1;
+      typingRun = runId;
+      output.textContent = "";
+      output.classList.add("typing");
+
+      const charsPerTick = Math.max(2, Math.ceil(fullText.length / 180));
+      const tickMs = 12;
+      let index = 0;
+
+      return new Promise((resolve) => {
+        function tick() {
+          if (runId !== typingRun) {
+            resolve();
+            return;
+          }
+
+          index = Math.min(index + charsPerTick, fullText.length);
+          output.textContent = fullText.slice(0, index);
+          output.scrollTop = output.scrollHeight;
+
+          if (index >= fullText.length) {
+            output.classList.remove("typing");
+            typingTimer = 0;
+            resolve();
+            return;
+          }
+
+          typingTimer = window.setTimeout(tick, tickMs);
+        }
+
+        tick();
+      });
+    }
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const prompt = promptInput.value.trim();
       if (!prompt) {
+        stopTyping();
         output.textContent = "Write a prompt first.";
         output.classList.add("error");
         return;
       }
 
+      stopTyping();
       output.textContent = "";
       output.classList.remove("error");
       duration.textContent = "";
@@ -443,9 +502,11 @@ GPT_PAGE = """
           return;
         }
 
-        output.textContent = data.output || "(Gemini returned no output.)";
+        status.textContent = "Typing";
+        await typeOutput(data.output || "(Gemini returned no output.)");
         status.textContent = "Ready";
       } catch (error) {
+        stopTyping();
         output.textContent = error.message || "Request failed.";
         output.classList.add("error");
         status.textContent = "Error";
