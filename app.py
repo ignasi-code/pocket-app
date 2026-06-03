@@ -73,6 +73,7 @@ STORE_DATA_DIR = BASE_DIR / "pages" / "store" / "data"
 STORE_PLACEHOLDER_IMAGE = "https://placehold.co/900x1100/f8dd5f/1f1a15?text=Roxanne"
 STORE_BASE_URL = os.environ.get("POCKET_STORE_BASE_URL", "https://roxanneassoulin.com").rstrip("/")
 STORE_CURRENCY = os.environ.get("POCKET_STORE_CURRENCY", "usd").lower()
+RESTART_LOG_PATH = BASE_DIR / "pocket-restart.log"
 
 app = Flask(__name__)
 
@@ -144,17 +145,54 @@ def access_denied():
     return bool(POCKET_ACCESS_TOKEN and request_token() != POCKET_ACCESS_TOKEN)
 
 
-def restart_current_process():
-    def delayed_restart():
-        time.sleep(0.8)
-        restart_argv = list(sys.argv)
-        if restart_argv:
-            command = Path(restart_argv[0])
-            if not command.exists():
-                restart_argv[0] = shutil.which(restart_argv[0]) or restart_argv[0]
-        os.execv(sys.executable, [sys.executable, *restart_argv])
+def restart_command():
+    configured = clean_config_value(os.environ.get("POCKET_RESTART_COMMAND"))
+    if configured:
+        return configured
+    host = clean_config_value(os.environ.get("POCKET_HOST")) or "0.0.0.0"
+    port = clean_config_value(os.environ.get("POCKET_PORT")) or "5052"
+    return " ".join([
+        shlex.quote(sys.executable),
+        "-m",
+        "flask",
+        "--app",
+        "app",
+        "run",
+        "--host",
+        shlex.quote(host),
+        "--port",
+        shlex.quote(port),
+    ])
 
-    threading.Thread(target=delayed_restart, daemon=True).start()
+
+def restart_current_process():
+    command = restart_command()
+    shell = shutil.which("bash") or shutil.which("sh") or "/bin/sh"
+    wrapper = " ".join([
+        "cd",
+        shlex.quote(str(BASE_DIR)),
+        "&&",
+        "sleep",
+        "1",
+        "&&",
+        command,
+        ">>",
+        shlex.quote(str(RESTART_LOG_PATH)),
+        "2>&1",
+    ])
+
+    subprocess.Popen(
+        [shell, "-lc", wrapper],
+        cwd=str(BASE_DIR),
+        start_new_session=True,
+    )
+
+    def delayed_exit():
+        time.sleep(0.6)
+        os._exit(0)
+
+    threading.Thread(target=delayed_exit, daemon=True).start()
+    return command
 
 
 def get_ram_info():
@@ -1028,6 +1066,9 @@ ACTION_PAGE = """
           <input id="token" name="token" type="password" autocomplete="current-password" required>
         {% endif %}
         <button type="submit">{{ button }}</button>
+        {% if output %}
+          <pre>{{ output }}</pre>
+        {% endif %}
       </form>
     {% endif %}
   </main>
@@ -1889,12 +1930,12 @@ def restart_page():
             ACTION_PAGE,
             title="Pocket Restart",
             heading="Restart",
-            description="Restart the current Pocket Server process with the same command.",
+            description="Start a fresh Pocket Server process in the background, then stop the old one.",
             action="/restart",
             button="Restart Server",
             auth_required=bool(POCKET_ACCESS_TOKEN),
             result="",
-            output="",
+            output=f"Command: {restart_command()}\nLog: {RESTART_LOG_PATH}",
             ok=False,
         )
 
@@ -1903,7 +1944,7 @@ def restart_page():
             ACTION_PAGE,
             title="Pocket Restart",
             heading="Restart",
-            description="Restart the current Pocket Server process with the same command.",
+            description="Start a fresh Pocket Server process in the background, then stop the old one.",
             action="/restart",
             button="Restart Server",
             auth_required=bool(POCKET_ACCESS_TOKEN),
@@ -1912,17 +1953,17 @@ def restart_page():
             ok=False,
         ), 401
 
-    restart_current_process()
+    command = restart_current_process()
     return render_template_string(
         ACTION_PAGE,
         title="Pocket Restart",
         heading="Restart",
-        description="Restart the current Pocket Server process with the same command.",
+        description="Start a fresh Pocket Server process in the background, then stop the old one.",
         action="/restart",
         button="Restart Server",
         auth_required=bool(POCKET_ACCESS_TOKEN),
         result="Restart requested. Wait a moment, then reload the page.",
-        output="",
+        output=f"Command: {command}\nLog: {RESTART_LOG_PATH}",
         ok=True,
     )
 

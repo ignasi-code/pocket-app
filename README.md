@@ -37,7 +37,7 @@ Control pages:
 - `/terminal`: Token-protected browser terminal for pasted shell commands.
 - `/setup`: Save local `.env` config from the browser.
 - `/pull`: Run `git pull origin master`.
-- `/restart`: Restart the current Pocket Server process.
+- `/restart`: Start a fresh Pocket Server process in the background, then stop the old one.
 
 The `/gpt` page sends prompts to the local Gemini CLI with:
 
@@ -64,6 +64,7 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_FAST_MAX_UPLOAD_BYTES`: Maximum browser-to-server test size. Default: `67108864`.
 - `POCKET_STORE_BASE_URL`: Shopify store base URL used to generate mock cart permalinks. Default: `https://roxanneassoulin.com`.
 - `POCKET_STORE_CURRENCY`: Currency label for the mock checkout response. Default: `usd`.
+- `POCKET_RESTART_COMMAND`: Optional command used by `/restart`. Default starts Flask on `0.0.0.0:5052`.
 
 ## Store prototype
 
