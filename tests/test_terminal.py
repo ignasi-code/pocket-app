@@ -53,6 +53,34 @@ class TerminalPageTest(unittest.TestCase):
         self.assertEqual(data["returncode"], 0)
         self.assertIn("here:/tmp", data["output"])
 
+    def test_terminal_api_returns_output_for_failed_command(self):
+        pocket.POCKET_ACCESS_TOKEN = "secret"
+
+        response = self.client.post(
+            "/api/terminal",
+            json={
+                "command": "printf 'actual error' >&2\nexit 7",
+                "token": "secret",
+            },
+        )
+
+        data = response.get_json()
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(data["returncode"], 7)
+        self.assertIn("actual error", data["output"])
+
+    def test_terminal_ui_shows_failed_command_output(self):
+        response = self.client.get("/terminal")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        failure_start = html.index("if (!response.ok) {")
+        success_start = html.index('output.textContent = data.output || "(Command returned no output.)";')
+        failure_script = html[failure_start:success_start]
+
+        self.assertIn("formatTerminalResult(data)", html)
+        self.assertIn("output.textContent = formatTerminalResult(data);", failure_script)
+
 
 if __name__ == "__main__":
     unittest.main()

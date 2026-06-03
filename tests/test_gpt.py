@@ -22,6 +22,20 @@ class GptPageTest(unittest.TestCase):
         self.assertIn("await typeOutput(data.output ||", success_script)
         self.assertNotIn("output.textContent = data.output", success_script)
 
+    def test_gpt_page_exposes_raw_http_response(self):
+        response = self.client.get("/gpt")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+
+        self.assertIn('id="raw-toggle"', html)
+        self.assertIn('id="raw-output"', html)
+        self.assertIn("function setRawResponse(details)", html)
+        self.assertIn("function parseJsonResponse(text)", html)
+        self.assertIn("const responseText = await response.text();", html)
+        self.assertIn("setRawResponse({", html)
+        self.assertNotIn("await response.json()", html)
+
 
 if __name__ == "__main__":
     unittest.main()

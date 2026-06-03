@@ -430,6 +430,28 @@ GPT_PAGE = """
       font-size: 13px;
     }
 
+    .output-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .raw-toggle {
+      min-width: 0;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .raw-toggle[data-active="true"] {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
     pre {
       margin: 0;
       padding: 16px;
@@ -443,6 +465,22 @@ GPT_PAGE = """
 
     .error {
       color: var(--danger);
+    }
+
+    .raw-panel {
+      display: none;
+      border-top: 1px solid var(--line);
+      background: #0a0d0e;
+    }
+
+    .raw-panel[data-visible="true"] {
+      display: block;
+    }
+
+    .raw-panel pre {
+      min-height: 120px;
+      max-height: 320px;
+      color: var(--muted);
     }
 
     .typing::after {
@@ -510,9 +548,15 @@ GPT_PAGE = """
     <section class="output">
       <div class="output-head">
         <span>Gemini output</span>
-        <span id="duration"></span>
+        <div class="output-tools">
+          <span id="duration"></span>
+          <button class="raw-toggle" id="raw-toggle" type="button" data-active="false">Raw</button>
+        </div>
       </div>
       <pre id="output">Waiting for a prompt.</pre>
+      <div class="raw-panel" id="raw-panel" data-visible="false">
+        <pre id="raw-output">No response yet.</pre>
+      </div>
     </section>
   </main>
 
@@ -524,8 +568,17 @@ GPT_PAGE = """
     const output = document.getElementById("output");
     const status = document.getElementById("status");
     const duration = document.getElementById("duration");
+    const rawToggle = document.getElementById("raw-toggle");
+    const rawPanel = document.getElementById("raw-panel");
+    const rawOutput = document.getElementById("raw-output");
     let typingTimer = 0;
     let typingRun = 0;
+
+    rawToggle.addEventListener("click", () => {
+      const visible = rawPanel.dataset.visible !== "true";
+      rawPanel.dataset.visible = visible ? "true" : "false";
+      rawToggle.dataset.active = visible ? "true" : "false";
+    });
 
     function stopTyping() {
       typingRun += 1;
@@ -534,6 +587,27 @@ GPT_PAGE = """
         typingTimer = 0;
       }
       output.classList.remove("typing");
+    }
+
+    function parseJsonResponse(text) {
+      try {
+        return JSON.parse(text);
+      } catch (_error) {
+        return {
+          error: "Response was not JSON. Open Raw to inspect the HTTP response.",
+          output: text
+        };
+      }
+    }
+
+    function setRawResponse(details) {
+      const lines = [
+        `HTTP ${details.status} ${details.statusText || ""}`.trim(),
+        `Content-Type: ${details.contentType || "(missing)"}`,
+        "",
+        details.body || "(empty body)"
+      ];
+      rawOutput.textContent = lines.join("\\n");
     }
 
     async function typeOutput(text) {
@@ -586,6 +660,7 @@ GPT_PAGE = """
       output.textContent = "";
       output.classList.remove("error");
       duration.textContent = "";
+      rawOutput.textContent = "Waiting for response.";
       status.textContent = "Running";
       sendButton.disabled = true;
 
@@ -599,7 +674,14 @@ GPT_PAGE = """
             token: tokenInput ? tokenInput.value : ""
           })
         });
-        const data = await response.json();
+        const responseText = await response.text();
+        setRawResponse({
+          status: response.status,
+          statusText: response.statusText,
+          contentType: response.headers.get("Content-Type"),
+          body: responseText
+        });
+        const data = parseJsonResponse(responseText);
         duration.textContent = data.elapsed_seconds ? `${data.elapsed_seconds}s` : "";
 
         if (!response.ok) {
@@ -991,6 +1073,23 @@ curl -i -X POST http://127.0.0.1:5052/api/gpt \\
       sessionStorage.setItem("pocket-terminal-token", tokenInput.value.trim());
     });
 
+    function formatTerminalResult(data) {
+      const lines = [];
+      if (data.error) {
+        lines.push(data.error);
+      }
+      if (Number.isInteger(data.returncode)) {
+        lines.push(`Exit ${data.returncode}`);
+      }
+      if (data.output) {
+        if (lines.length) {
+          lines.push("");
+        }
+        lines.push(data.output);
+      }
+      return lines.join("\\n") || "Command failed.";
+    }
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const command = commandInput.value.trim();
@@ -1026,9 +1125,9 @@ curl -i -X POST http://127.0.0.1:5052/api/gpt \\
 
         duration.textContent = data.elapsed_seconds ? `${data.elapsed_seconds}s` : "";
         if (!response.ok) {
-          output.textContent = data.error || "Command failed.";
+          output.textContent = formatTerminalResult(data);
           output.classList.add("bad");
-          status.textContent = "Error";
+          status.textContent = Number.isInteger(data.returncode) ? `Exit ${data.returncode}` : "Error";
           return;
         }
 
