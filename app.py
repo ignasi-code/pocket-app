@@ -57,6 +57,8 @@ GEMINI_WORKDIR = Path(os.environ.get("POCKET_GEMINI_WORKDIR", BASE_DIR)).expandu
 GEMINI_TIMEOUT_SECONDS = int(os.environ.get("POCKET_GEMINI_TIMEOUT_SECONDS", "180"))
 POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
 MAX_PROMPT_LENGTH = int(os.environ.get("POCKET_MAX_PROMPT_LENGTH", "12000"))
+TERMINAL_TIMEOUT_SECONDS = int(os.environ.get("POCKET_TERMINAL_TIMEOUT_SECONDS", "120"))
+TERMINAL_MAX_COMMAND_LENGTH = int(os.environ.get("POCKET_TERMINAL_MAX_COMMAND_LENGTH", "20000"))
 FAST_DEFAULT_DOWNLOAD_BYTES = int(os.environ.get("POCKET_FAST_DOWNLOAD_BYTES", str(16 * 1024 * 1024)))
 FAST_DEFAULT_UPLOAD_BYTES = int(os.environ.get("POCKET_FAST_UPLOAD_BYTES", str(8 * 1024 * 1024)))
 FAST_MAX_DOWNLOAD_BYTES = int(os.environ.get("POCKET_FAST_MAX_DOWNLOAD_BYTES", str(64 * 1024 * 1024)))
@@ -160,6 +162,16 @@ def stream_test_bytes(total_bytes):
         chunk_size = min(remaining, len(FAST_CHUNK_BYTES))
         yield FAST_CHUNK_BYTES[:chunk_size]
         remaining -= chunk_size
+
+
+def terminal_shell_command():
+    shell = (
+        os.environ.get("POCKET_TERMINAL_SHELL")
+        or shutil.which("bash")
+        or shutil.which("sh")
+        or "/bin/sh"
+    )
+    return [shell, "-lc"]
 
 
 GPT_PAGE = """
@@ -654,6 +666,294 @@ ACTION_PAGE = """
 """
 
 
+TERMINAL_PAGE = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pocket Terminal</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1214;
+      --panel: #171c1f;
+      --panel-strong: #20262a;
+      --line: #333b40;
+      --text: #edf3f1;
+      --muted: #a7b2ae;
+      --accent: #73d8ba;
+      --danger: #ff927e;
+      --shadow: rgba(0, 0, 0, 0.34);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(980px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .status {
+      min-height: 34px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .terminal {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 18px 50px var(--shadow);
+    }
+
+    textarea,
+    input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      background: transparent;
+      font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    textarea {
+      display: block;
+      min-height: 260px;
+      resize: vertical;
+      padding: 18px;
+    }
+
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      padding: 12px;
+      background: var(--panel-strong);
+    }
+
+    .token-wrap {
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    input {
+      height: 42px;
+      padding: 0 12px;
+    }
+
+    button {
+      min-width: 118px;
+      height: 42px;
+      border: 0;
+      background: var(--accent);
+      color: #07110e;
+      font: inherit;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.62;
+    }
+
+    .output {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      background: #080b0c;
+    }
+
+    .output-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    pre {
+      margin: 0;
+      min-height: 240px;
+      max-height: 58vh;
+      overflow: auto;
+      padding: 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text);
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .bad { color: var(--danger); }
+
+    @media (max-width: 680px) {
+      main {
+        width: min(100vw - 20px, 980px);
+        padding-top: 18px;
+      }
+
+      header {
+        display: block;
+      }
+
+      .status {
+        margin-top: 14px;
+      }
+
+      .footer {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Pocket Terminal</h1>
+        <p class="meta">Paste shell commands and run them on this server in {{ workdir }}.</p>
+      </div>
+      <div class="status" id="status">Ready</div>
+    </header>
+
+    <form class="terminal" id="terminal-form">
+      <textarea id="command" spellcheck="false" autocomplete="off" placeholder="cd ~/pocket-app
+curl -i -X POST http://127.0.0.1:5052/api/gpt \\
+  -H 'Content-Type: application/json' \\
+  -d '{&quot;prompt&quot;:&quot;say hello&quot;,&quot;token&quot;:&quot;YOUR_POCKET_TOKEN&quot;}'"></textarea>
+      <div class="footer">
+        <div class="token-wrap">
+          <input id="token" type="password" autocomplete="current-password" placeholder="Pocket access token" required>
+        </div>
+        <button id="run" type="submit">Run</button>
+      </div>
+    </form>
+
+    <section class="output">
+      <div class="output-head">
+        <span>Output</span>
+        <span id="duration"></span>
+      </div>
+      <pre id="output">Waiting for a command.</pre>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("terminal-form");
+    const commandInput = document.getElementById("command");
+    const tokenInput = document.getElementById("token");
+    const runButton = document.getElementById("run");
+    const output = document.getElementById("output");
+    const status = document.getElementById("status");
+    const duration = document.getElementById("duration");
+
+    tokenInput.value = sessionStorage.getItem("pocket-terminal-token") || "";
+    tokenInput.addEventListener("input", () => {
+      sessionStorage.setItem("pocket-terminal-token", tokenInput.value.trim());
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const command = commandInput.value.trim();
+      if (!command) {
+        output.textContent = "Paste a command first.";
+        output.classList.add("bad");
+        return;
+      }
+
+      output.textContent = "";
+      output.classList.remove("bad");
+      duration.textContent = "";
+      status.textContent = "Running";
+      runButton.disabled = true;
+
+      const started = performance.now();
+      try {
+        const response = await fetch("/api/terminal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            command,
+            token: tokenInput.value
+          })
+        });
+        const text = await response.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (_error) {
+          data = { error: `HTTP ${response.status} returned non-JSON:\\n${text}` };
+        }
+
+        duration.textContent = data.elapsed_seconds ? `${data.elapsed_seconds}s` : "";
+        if (!response.ok) {
+          output.textContent = data.error || "Command failed.";
+          output.classList.add("bad");
+          status.textContent = "Error";
+          return;
+        }
+
+        output.textContent = data.output || "(Command returned no output.)";
+        status.textContent = `Exit ${data.returncode}`;
+      } catch (error) {
+        output.textContent = error.message || "Command failed.";
+        output.classList.add("bad");
+        status.textContent = "Error";
+        duration.textContent = `${Math.round((performance.now() - started) / 1000)}s`;
+      } finally {
+        runButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+"""
+
+
 SETUP_PAGE = """
 <!doctype html>
 <html lang="en">
@@ -799,6 +1099,65 @@ SETUP_PAGE = """
 @app.route("/")
 def home():
     return send_file(BASE_DIR / "pages" / "index.html")
+
+
+@app.route("/terminal")
+def terminal_page():
+    return render_template_string(
+        TERMINAL_PAGE,
+        workdir=str(BASE_DIR),
+    )
+
+
+@app.route("/api/terminal", methods=["POST"])
+def run_terminal_command():
+    data = request.get_json(silent=True) or {}
+    command = str(data.get("command") or "").strip()
+
+    if not POCKET_ACCESS_TOKEN:
+        return jsonify({
+            "error": "Set POCKET_ACCESS_TOKEN before using /terminal.",
+        }), 403
+
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+
+    if not command:
+        return jsonify({"error": "Command is required."}), 400
+
+    if len(command) > TERMINAL_MAX_COMMAND_LENGTH:
+        return jsonify({
+            "error": f"Command is too long. Limit is {TERMINAL_MAX_COMMAND_LENGTH} characters.",
+        }), 400
+
+    started = time.time()
+    try:
+        result = subprocess.run(
+            [*terminal_shell_command(), command],
+            cwd=str(BASE_DIR),
+            text=True,
+            capture_output=True,
+            timeout=TERMINAL_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except FileNotFoundError:
+        return jsonify({
+            "error": "Terminal shell not found. Set POCKET_TERMINAL_SHELL.",
+        }), 500
+    except subprocess.TimeoutExpired as exc:
+        output = "\n".join(part for part in [exc.stdout or "", exc.stderr or ""] if part).strip()
+        return jsonify({
+            "error": f"Command timed out after {TERMINAL_TIMEOUT_SECONDS} seconds.",
+            "output": output,
+            "elapsed_seconds": round(time.time() - started, 2),
+        }), 504
+
+    output = "\n".join(part for part in [result.stdout, result.stderr] if part).strip()
+    return jsonify({
+        "output": output,
+        "returncode": result.returncode,
+        "elapsed_seconds": round(time.time() - started, 2),
+    }), 200 if result.returncode == 0 else 502
 
 
 @app.route("/fast")
