@@ -349,6 +349,13 @@ def store_description_lines(product):
     return lines
 
 
+def store_product_description_html(product):
+    text = str(product.get("body_html") or "").strip()
+    for token in ['<meta charset="utf-8">', "<meta charset='utf-8'>"]:
+        text = text.replace(token, "")
+    return text.replace("\xa0", " ")
+
+
 def store_collection_definitions():
     extracted = load_store_merchandising().get("collections", {})
     return {
@@ -433,6 +440,7 @@ def store_template_context(**kwargs):
         "product_image": store_product_image,
         "price_label": store_price_label,
         "description_lines": store_description_lines,
+        "description_html": store_product_description_html,
         "first_variant": store_first_available_variant,
         "product_merchandising": lambda handle: merchandising.get("product_pages", {}).get(handle, {}),
         "placeholder_image": STORE_PLACEHOLDER_IMAGE,

@@ -42,6 +42,43 @@ class StoreTest(unittest.TestCase):
         self.assertIn(str(variant["id"]), html)
         self.assertIn("data-product-form", html)
 
+    def test_product_page_renders_body_html_as_short_description(self):
+        product = next(
+            item for item in pocket.load_store_catalog().get("products", [])
+            if item.get("body_html")
+        )
+
+        response = self.client.get(f"/store/products/{product['handle']}")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("product-short-description", html)
+        self.assertIn("Description", html)
+        self.assertIn("data-product-description", html)
+
+    def test_store_base_exposes_menu_and_cart_drawers(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("data-menu-drawer", html)
+        self.assertIn("data-menu-toggle", html)
+        self.assertIn("data-cart-drawer", html)
+        self.assertIn("data-cart-open", html)
+        self.assertIn("data-cart-drawer-lines", html)
+
+    def test_product_page_exposes_gallery_variant_and_quantity_hooks(self):
+        product, variant = self.first_available_variant()
+        response = self.client.get(f"/store/products/{product['handle']}")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("data-gallery-dot", html)
+        self.assertIn("data-pdp-variant-select", html)
+        self.assertIn("data-product-qty", html)
+        self.assertIn("data-qty-inc", html)
+        self.assertIn("data-qty-dec", html)
+
     def test_cart_page_renders_checkout_hooks(self):
         response = self.client.get("/store/cart")
 

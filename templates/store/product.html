@@ -5,17 +5,34 @@
     {% set product_merch = product_merchandising(product.handle) %}
     <section class="pdp">
       <div class="gallery">
-        {% for image in product.images[:6] %}
-          <img src="{{ image.src }}" alt="{{ product.title }}" loading="lazy">
-        {% else %}
-          <img src="{{ placeholder_image }}" alt="{{ product.title }}">
-        {% endfor %}
+        <div class="gallery-track" data-product-gallery>
+          {% for image in product.images[:6] %}
+            <img src="{{ image.src }}" alt="{{ product.title }}" loading="lazy" data-gallery-image data-gallery-image-src="{{ image.src }}">
+          {% else %}
+            <img src="{{ placeholder_image }}" alt="{{ product.title }}" data-gallery-image data-gallery-image-src="{{ placeholder_image }}">
+          {% endfor %}
+        </div>
+        {% if product.images|length > 1 %}
+          <div class="gallery-dots" aria-label="Product gallery">
+            {% for image in product.images[:6] %}
+              <button type="button" aria-label="Show image {{ loop.index }}" data-gallery-dot data-gallery-target="{{ image.src }}"></button>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
 
       <aside class="buy-box">
         <p class="eyebrow">{{ product.product_type }}</p>
         <h1>{{ product.title }}</h1>
         <div class="price">{{ price_label(product) }}</div>
+
+        {% set short_description = description_html(product) %}
+        {% if short_description %}
+          <div class="product-short-description" data-product-description>
+            <h2>Description</h2>
+            {{ short_description | safe }}
+          </div>
+        {% endif %}
 
         {% if product_merch.motto %}
           <div class="product-motto">{{ product_merch.motto }}</div>
@@ -25,10 +42,12 @@
           <table class="product-detail-table">
             <tbody>
               {% for row in product_merch.detail_rows %}
-                <tr>
-                  <th scope="row">{{ row.label }}</th>
-                  <td>{{ row.html | safe }}</td>
-                </tr>
+                {% if not short_description or row.label != "Description" %}
+                  <tr>
+                    <th scope="row">{{ row.label }}</th>
+                    <td>{{ row.html | safe }}</td>
+                  </tr>
+                {% endif %}
               {% endfor %}
             </tbody>
           </table>
@@ -48,14 +67,20 @@
         <form class="buy-form" data-product-form>
           <label>
             <span class="eyebrow">variant</span>
-            <select name="variant_id">
+            <select name="variant_id" data-pdp-variant-select>
               {% for variant in product.variants %}
-                <option value="{{ variant.id }}" {% if variant.available is sameas false %}disabled{% endif %}>
+                {% set variant_image = variant.featured_image.src if variant.featured_image else "" %}
+                <option value="{{ variant.id }}" data-image-src="{{ variant_image }}" {% if variant.available is sameas false %}disabled{% endif %}>
                   {{ variant.title }} - ${{ variant.price }}{% if variant.available is sameas false %} - sold out{% endif %}
                 </option>
               {% endfor %}
             </select>
           </label>
+          <div class="product-qty" aria-label="Quantity">
+            <button type="button" data-qty-dec aria-label="Decrease quantity">-</button>
+            <input type="number" name="quantity" min="1" max="99" value="1" inputmode="numeric" data-product-qty>
+            <button type="button" data-qty-inc aria-label="Increase quantity">+</button>
+          </div>
           <button class="plain-button" type="submit">Add to bag</button>
         </form>
 

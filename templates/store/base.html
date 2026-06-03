@@ -1065,12 +1065,23 @@
     }
 
     .gallery {
+      display: block;
+      overflow: visible;
+      padding: 0;
+      position: relative;
+    }
+
+    .gallery-track {
       display: flex;
       gap: 0;
       overflow-x: auto;
-      padding: 0;
       scroll-snap-type: x mandatory;
+      scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
+    }
+
+    .gallery-track::-webkit-scrollbar {
+      display: none;
     }
 
     .gallery img {
@@ -1081,6 +1092,26 @@
       height: auto;
       object-fit: cover;
       scroll-snap-align: start;
+    }
+
+    .gallery-dots {
+      bottom: 13px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      left: 0;
+      position: absolute;
+      right: 0;
+    }
+
+    .gallery-dots button {
+      background: #fff;
+      border: 1px solid #000;
+      border-radius: 50%;
+      height: 8px;
+      opacity: .75;
+      padding: 0;
+      width: 8px;
     }
 
     .buy-box {
@@ -1104,7 +1135,8 @@
       font-size: 1.125rem;
       font-weight: 700;
       line-height: 145%;
-      margin: 10px 0 0;
+      margin: 10px auto 0;
+      max-width: 280px;
       text-align: center;
       text-transform: none;
     }
@@ -1116,6 +1148,26 @@
       opacity: 1;
       padding: 6px 0 0;
       text-align: center;
+    }
+
+    .product-short-description {
+      border-top: 1px solid #e6e6e6;
+      font-size: .75rem;
+      line-height: 150%;
+      margin-top: 18px;
+      padding-top: 12px;
+      text-align: left;
+    }
+
+    .product-short-description h2 {
+      font-size: .75rem;
+      font-weight: 400;
+      line-height: 150%;
+      margin: 0 0 8px;
+    }
+
+    .product-short-description p {
+      margin: 0;
     }
 
     .product-motto {
@@ -1135,6 +1187,31 @@
       margin: 0;
       text-align: left;
       width: 100%;
+    }
+
+    .product-qty {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      display: grid;
+      grid-template-columns: 50px 1fr 50px;
+      height: 60px;
+      overflow: hidden;
+    }
+
+    .product-qty button {
+      border: 0;
+      color: #000;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .product-qty input {
+      border: 0;
+      color: #000;
+      font-size: .875rem;
+      font-weight: 700;
+      text-align: center;
     }
 
     .product-detail-table th,
@@ -1212,6 +1289,195 @@
       font-weight: 400;
       line-height: 135%;
       text-transform: lowercase;
+    }
+
+    .drawer-overlay {
+      background: rgba(0, 0, 0, .5);
+      height: 0;
+      left: 0;
+      opacity: 0;
+      position: fixed;
+      top: 0;
+      transition: opacity .35s cubic-bezier(.165,.84,.44,1), visibility 0s .35s, width 0s .35s, height 0s .35s;
+      visibility: hidden;
+      width: 0;
+      z-index: 80;
+    }
+
+    .drawer-overlay.is-active {
+      height: 100%;
+      opacity: 1;
+      transition: opacity .35s cubic-bezier(.165,.84,.44,1);
+      visibility: visible;
+      width: 100%;
+    }
+
+    .menu-drawer {
+      background: var(--blue);
+      bottom: 0;
+      box-sizing: border-box;
+      left: 0;
+      opacity: 1;
+      padding: 82px 28px 30px;
+      position: fixed;
+      top: 0;
+      transform: translateX(-100%);
+      transition: transform .35s cubic-bezier(.165,.84,.44,1), visibility 0s .35s;
+      visibility: hidden;
+      width: 100vw;
+      z-index: 90;
+    }
+
+    .menu-drawer[aria-hidden="false"] {
+      transform: translateX(0);
+      transition: transform .35s cubic-bezier(.165,.84,.44,1);
+      visibility: visible;
+    }
+
+    .menu-drawer__close,
+    .cart-drawer__close {
+      cursor: pointer;
+      height: 48px;
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      width: 48px;
+    }
+
+    .menu-drawer__close::before,
+    .menu-drawer__close::after,
+    .cart-drawer__close::before,
+    .cart-drawer__close::after {
+      background: #000;
+      content: "";
+      height: 1px;
+      left: 12px;
+      position: absolute;
+      top: 24px;
+      width: 24px;
+    }
+
+    .menu-drawer__close::before,
+    .cart-drawer__close::before { transform: rotate(45deg); }
+    .menu-drawer__close::after,
+    .cart-drawer__close::after { transform: rotate(-45deg); }
+
+    .menu-drawer nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .menu-drawer a {
+      display: block;
+      font-size: 1.4375rem;
+      font-weight: 700;
+      line-height: 1.2;
+      padding: 8px 0;
+      text-transform: lowercase;
+    }
+
+    .cart-drawer {
+      max-width: 355px;
+      opacity: 1;
+      position: fixed;
+      right: 10px;
+      top: 12px;
+      transform: translateX(400px);
+      transition: transform .35s cubic-bezier(.165,.84,.44,1), visibility 0s .35s;
+      visibility: hidden;
+      width: calc(100% - 20px);
+      z-index: 100;
+    }
+
+    .cart-drawer[aria-hidden="false"] {
+      transform: translateX(0);
+      transition: transform .35s cubic-bezier(.165,.84,.44,1);
+      visibility: visible;
+    }
+
+    .cart-drawer__content {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 24px);
+    }
+
+    .cart-drawer__content > div {
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      box-sizing: border-box;
+      flex: 0 0 auto;
+      margin-top: -1px;
+      overflow: hidden;
+      padding: 23px;
+      width: 100%;
+    }
+
+    .cart-drawer__items {
+      flex: 0 1 auto;
+      max-height: 490px;
+      overflow-y: auto;
+      padding-bottom: 8px;
+    }
+
+    .cart-drawer__line {
+      box-sizing: border-box;
+      min-height: 160px;
+      padding: 8px 0 8px 135px;
+      position: relative;
+    }
+
+    .cart-drawer__line + .cart-drawer__line {
+      border-top: 1px solid #e6e6e6;
+    }
+
+    .cart-drawer__line img {
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      height: 143px;
+      left: 0;
+      object-fit: cover;
+      position: absolute;
+      top: 8px;
+      width: 118px;
+    }
+
+    .cart-drawer__line-title {
+      font-size: .875rem;
+      line-height: 135%;
+      text-transform: lowercase;
+    }
+
+    .cart-drawer__line-meta,
+    .cart-drawer__line-price {
+      font-size: .75rem;
+      line-height: 150%;
+      margin-top: 12px;
+      text-transform: lowercase;
+    }
+
+    .cart-drawer__summary {
+      display: grid;
+      gap: 10px;
+    }
+
+    .cart-drawer__total {
+      display: flex;
+      font-size: .875rem;
+      justify-content: space-between;
+      line-height: 135%;
+    }
+
+    .cart-drawer__actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .cart-drawer__actions .button,
+    .cart-drawer__actions .plain-button {
+      width: 100%;
     }
 
     @media (min-width: 1024px) {
@@ -1322,6 +1588,10 @@
       }
 
       .gallery {
+        display: block;
+      }
+
+      .gallery-track {
         display: grid;
         grid-template-columns: 1fr;
         overflow: visible;
@@ -1342,7 +1612,7 @@
 <body>
   <div class="announcement">free US shipping over $250</div>
   <header class="site-header">
-    <button class="site-header__menu" type="button" aria-label="Toggle menu"><span>Toggle Menu</span></button>
+    <button class="site-header__menu" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="store-menu" data-menu-toggle><span>Toggle Menu</span></button>
     <nav class="nav" aria-label="Store">
       <a href="/store/collections/new-arrivals">new arrivals</a>
       <a href="/store/collections/best-sellers">best sellers</a>
@@ -1353,8 +1623,44 @@
       <img src="https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" alt="Roxanne Assoulin">
     </a>
     <a class="store-search" href="/store/collections/shop"><span>Toggle Search</span></a>
-    <a class="cart-link" href="/store/cart"><span class="bag-label">Bag </span><span data-cart-count>0</span></a>
+    <a class="cart-link" href="/store/cart" data-cart-open><span class="bag-label">Bag </span><span data-cart-count>0</span></a>
   </header>
+
+  <button class="drawer-overlay" type="button" aria-label="Close drawer" data-drawer-overlay></button>
+
+  <aside id="store-menu" class="menu-drawer" data-menu-drawer aria-hidden="true">
+    <button class="menu-drawer__close" type="button" aria-label="Close menu" data-menu-close></button>
+    <nav aria-label="Main menu">
+      <a href="/store/collections/new-arrivals">the new arrivals</a>
+      <a href="/store/collections/best-sellers">the best sellers</a>
+      <a href="/store/collections/necklaces">the necklaces</a>
+      <a href="/store/collections/the-cord-charms">the charms</a>
+      <a href="/store/collections/bracelets">the bracelets</a>
+      <a href="/store/collections/earrings">the earrings</a>
+      <a href="/store/collections/shop">shop all</a>
+    </nav>
+  </aside>
+
+  <aside class="cart-drawer" data-cart-drawer data-checkout-endpoint="/store/api/checkout" aria-hidden="true">
+    <div class="cart-drawer__content">
+      <div>
+        <button class="cart-drawer__close" type="button" aria-label="Close bag" data-cart-close></button>
+        <p>Shopping bag</p>
+      </div>
+      <div class="cart-drawer__items" data-cart-drawer-lines></div>
+      <div class="cart-drawer__summary">
+        <div class="cart-drawer__total">
+          <span>Subtotal</span>
+          <strong data-cart-drawer-subtotal>$0.00</strong>
+        </div>
+        <div class="cart-drawer__actions">
+          <button class="plain-button" type="button" data-checkout>checkout</button>
+          <a class="button" href="/store/cart">view bag</a>
+        </div>
+        <div class="notice" data-checkout-output></div>
+      </div>
+    </div>
+  </aside>
 
   {% block body %}{% endblock %}
 
