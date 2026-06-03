@@ -101,6 +101,7 @@
       justify-content: center;
       gap: 14px;
       min-height: 144px;
+      position: relative;
     }
 
     .speed-value {
@@ -116,6 +117,38 @@
       font-size: clamp(22px, 4vw, 34px);
       font-weight: 700;
       line-height: 1;
+    }
+
+    .speed.loading .speed-value,
+    .speed.loading .speed-unit {
+      opacity: 0;
+    }
+
+    .donut {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: clamp(92px, 18vw, 142px);
+      height: clamp(92px, 18vw, 142px);
+      margin: 0;
+      border-radius: 50%;
+      border: 12px solid rgba(16, 18, 20, 0.12);
+      border-top-color: var(--green);
+      border-right-color: var(--green);
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .speed.loading .donut {
+      opacity: 1;
+      animation: spin 0.82s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: translate(-50%, -50%) rotate(360deg);
+      }
     }
 
     .direction {
@@ -304,9 +337,10 @@
 
     <section class="meter" aria-live="polite">
       <div class="status" id="status">Ready</div>
-      <div class="speed">
+      <div class="speed" id="speed-wrap">
         <span class="speed-value" id="speed">0</span>
         <span class="speed-unit">Mbps</span>
+        <div class="donut" id="donut" aria-hidden="true"></div>
       </div>
       <div class="direction" id="direction">Run both directions</div>
     </section>
@@ -350,6 +384,7 @@
     const DOWNLOAD_BYTES = 16 * 1024 * 1024;
     const UPLOAD_BYTES = 8 * 1024 * 1024;
     const statusEl = document.getElementById("status");
+    const speedWrap = document.getElementById("speed-wrap");
     const speedEl = document.getElementById("speed");
     const directionEl = document.getElementById("direction");
     const messageEl = document.getElementById("message");
@@ -409,32 +444,17 @@
       speedEl.textContent = formatSpeed(value);
     }
 
-    function startActivityMeter(kind) {
-      let active = true;
-      let frameId = 0;
-      const started = performance.now();
-      const baseSpeed = kind === "download" ? 0.35 : 0.2;
+    function showDonut() {
+      speedWrap.classList.add("loading");
+    }
 
-      function tick(now) {
-        if (!active) {
-          return;
-        }
-        const seconds = Math.max((now - started) / 1000, 0);
-        const ramp = Math.min(seconds * 2.4, 12);
-        const pulse = (Math.sin(seconds * 7) + 1) * 1.6;
-        setSpeed(baseSpeed + ramp + pulse);
-        frameId = requestAnimationFrame(tick);
-      }
+    function hideDonut() {
+      speedWrap.classList.remove("loading");
+    }
 
-      frameId = requestAnimationFrame(tick);
-
-      return () => {
-        if (!active) {
-          return;
-        }
-        active = false;
-        cancelAnimationFrame(frameId);
-      };
+    function showFinalSpeed(value) {
+      hideDonut();
+      setSpeed(value);
     }
 
     function setDirectionForMode() {
@@ -528,27 +548,17 @@
       directionEl.textContent = "server -> browser";
       messageEl.textContent = "";
       const url = `/fast/api/download?bytes=${DOWNLOAD_BYTES}&n=${cacheBust()}`;
-      const stopActivity = startActivityMeter("download");
-      let sawProgress = false;
+      showDonut();
 
       let result;
       try {
-        result = await downloadWithProgress(url, (received, seconds) => {
-          if (!received) {
-            return;
-          }
-          if (!sawProgress) {
-            stopActivity();
-            sawProgress = true;
-          }
-          setSpeed(mbps(received, seconds));
-        });
+        result = await downloadWithProgress(url, () => {});
       } finally {
-        stopActivity();
+        hideDonut();
       }
 
       const speed = mbps(result.bytes, result.seconds);
-      setSpeed(speed);
+      showFinalSpeed(speed);
       downloadResult.textContent = `${formatSpeed(speed)} Mbps`;
       return speed;
     }
@@ -559,16 +569,22 @@
       messageEl.textContent = "";
       const payload = makeUploadPayload(UPLOAD_BYTES);
       const started = performance.now();
-      const response = await fetch(`/fast/api/upload?n=${cacheBust()}`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: payload
-      });
-      await ensureOk(response);
-      const data = await response.json();
+      showDonut();
+      let data;
+      try {
+        const response = await fetch(`/fast/api/upload?n=${cacheBust()}`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: payload
+        });
+        await ensureOk(response);
+        data = await response.json();
+      } finally {
+        hideDonut();
+      }
       const seconds = Math.max((performance.now() - started) / 1000, 0.001);
       const speed = mbps(data.bytes || UPLOAD_BYTES, seconds);
-      setSpeed(speed);
+      showFinalSpeed(speed);
       uploadResult.textContent = `${formatSpeed(speed)} Mbps`;
       return speed;
     }
@@ -582,6 +598,7 @@
       startButton.disabled = true;
       startButton.textContent = "Testing";
       statusEl.textContent = "Starting";
+      hideDonut();
       setSpeed(0);
       messageEl.textContent = "";
 

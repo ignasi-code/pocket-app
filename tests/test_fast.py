@@ -32,23 +32,37 @@ class FastPageTest(unittest.TestCase):
         self.assertEqual(response.headers["Cache-Control"], "no-store")
         self.assertEqual(response.headers["Content-Type"], "application/octet-stream")
 
-    def test_download_ui_starts_activity_meter_before_fetch_wait(self):
+    def test_speed_ui_shows_donut_for_each_direction_until_final_result(self):
         response = self.client.get("/fast")
 
         try:
             html = response.get_data(as_text=True)
             download_start = html.index("async function runDownloadTest()")
             upload_start = html.index("async function runUploadTest()")
+            selected_start = html.index("async function runSelectedTest()")
             download_script = html[download_start:upload_start]
-            self.assertIn('const stopActivity = startActivityMeter("download");', download_script)
-            self.assertIn("await downloadWithProgress(url", download_script)
-            meter_start = download_script.index('const stopActivity = startActivityMeter("download");')
-            download_wait = download_script.index("await downloadWithProgress(url")
+            upload_script = html[upload_start:selected_start]
 
-            self.assertIn("function startActivityMeter(kind)", html)
+            self.assertIn('<div class="donut" id="donut"', html)
+            self.assertIn("function showDonut()", html)
+            self.assertIn("function showFinalSpeed(value)", html)
+            self.assertIn("function hideDonut()", html)
+            self.assertIn("showDonut();", download_script)
+            self.assertIn("showDonut();", upload_script)
+            self.assertIn("await downloadWithProgress(url", download_script)
+            donut_start = download_script.index("showDonut();")
+            download_wait = download_script.index("await downloadWithProgress(url")
+            upload_donut_start = upload_script.index("showDonut();")
+            upload_wait = upload_script.index('await fetch(`/fast/api/upload')
+            download_final = download_script.index("showFinalSpeed(speed);")
+            upload_final = upload_script.index("showFinalSpeed(speed);")
+
             self.assertIn("function downloadWithProgress(url, onProgress)", html)
-            self.assertIn("stopActivity();", download_script)
-            self.assertLess(meter_start, download_wait)
+            self.assertNotIn("setSpeed(mbps(received, seconds));", download_script)
+            self.assertLess(donut_start, download_wait)
+            self.assertLess(upload_donut_start, upload_wait)
+            self.assertLess(download_wait, download_final)
+            self.assertLess(upload_wait, upload_final)
         finally:
             response.close()
 
