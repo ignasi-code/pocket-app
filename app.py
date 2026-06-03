@@ -8,33 +8,110 @@ from flask import Flask, jsonify, render_template_string, request
 
 
 BASE_DIR = Path(__file__).resolve().parent
+ENV_PATH = BASE_DIR / ".env"
+PLACEHOLDER_VALUES = {
+    "your-gemini-api-key-here",
+    "change-this-before-exposing-the-server",
+}
+
+
+def clean_config_value(value):
+    text = str(value or "").strip()
+    if text in PLACEHOLDER_VALUES:
+        return ""
+    return text
 
 
 def load_local_env():
-    env_path = BASE_DIR / ".env"
-    if not env_path.exists():
+    if not ENV_PATH.exists():
         return
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in ENV_PATH.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
         key = key.strip()
-        value = value.strip().strip('"').strip("'")
+        value = clean_config_value(value.strip().strip('"').strip("'"))
         if key and key not in os.environ:
             os.environ[key] = value
 
 
 load_local_env()
 
+
+def current_default_gemini_model():
+    return clean_config_value(os.environ.get("POCKET_GEMINI_MODEL")) or "gemini-2.5-flash-lite"
+
+
+def current_gemini_args():
+    return shlex.split(os.environ.get("POCKET_GEMINI_ARGS", "")) or ["-m", current_default_gemini_model()]
+
+
+DEFAULT_GEMINI_MODEL = current_default_gemini_model()
 GEMINI_COMMAND = os.environ.get("POCKET_GEMINI_COMMAND", "gemini")
-GEMINI_ARGS = shlex.split(os.environ.get("POCKET_GEMINI_ARGS", ""))
+GEMINI_ARGS = current_gemini_args()
 GEMINI_WORKDIR = Path(os.environ.get("POCKET_GEMINI_WORKDIR", BASE_DIR)).expanduser()
 GEMINI_TIMEOUT_SECONDS = int(os.environ.get("POCKET_GEMINI_TIMEOUT_SECONDS", "180"))
-POCKET_ACCESS_TOKEN = os.environ.get("POCKET_ACCESS_TOKEN", "").strip()
+POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
 MAX_PROMPT_LENGTH = int(os.environ.get("POCKET_MAX_PROMPT_LENGTH", "12000"))
 
 app = Flask(__name__)
+
+
+def truthy_env(name):
+    return str(os.environ.get(name) or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def has_gemini_api_key():
+    return bool(clean_config_value(os.environ.get("GEMINI_API_KEY")))
+
+
+def setup_is_open():
+    return truthy_env("POCKET_SETUP_ENABLED") or not has_gemini_api_key()
+
+
+def quote_env_value(value):
+    text = str(value or "")
+    text = text.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{text}"'
+
+
+def write_env_updates(updates):
+    existing_lines = ENV_PATH.read_text(encoding="utf-8").splitlines() if ENV_PATH.exists() else []
+    written = set()
+    next_lines = []
+
+    for raw_line in existing_lines:
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            next_lines.append(raw_line)
+            continue
+
+        key, _value = line.split("=", 1)
+        key = key.strip()
+        if key in updates:
+            next_lines.append(f"{key}={quote_env_value(updates[key])}")
+            written.add(key)
+        else:
+            next_lines.append(raw_line)
+
+    for key, value in updates.items():
+        if key not in written:
+            if next_lines and next_lines[-1].strip():
+                next_lines.append("")
+            next_lines.append(f"{key}={quote_env_value(value)}")
+
+    ENV_PATH.write_text("\n".join(next_lines).rstrip() + "\n", encoding="utf-8")
+    os.chmod(ENV_PATH, 0o600)
+
+
+def refresh_runtime_config(updates):
+    global DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN
+    for key, value in updates.items():
+        os.environ[key] = value
+    DEFAULT_GEMINI_MODEL = current_default_gemini_model()
+    GEMINI_ARGS = current_gemini_args()
+    POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
 
 
 GPT_PAGE = """
@@ -335,9 +412,196 @@ GPT_PAGE = """
 """
 
 
+SETUP_PAGE = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pocket Server Setup</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101315;
+      --panel: #191f22;
+      --line: #333b40;
+      --text: #eef3f2;
+      --muted: #a9b3b0;
+      --accent: #72d6b9;
+      --danger: #ff927e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(720px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    form,
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 8px;
+    }
+
+    input {
+      width: 100%;
+      height: 46px;
+      border: 1px solid var(--line);
+      background: #111619;
+      color: var(--text);
+      padding: 0 12px;
+      font: inherit;
+      outline: 0;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    button {
+      height: 44px;
+      padding: 0 18px;
+      border: 0;
+      background: var(--accent);
+      color: #07110e;
+      font: inherit;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .ok { color: var(--accent); }
+    .bad { color: var(--danger); }
+    code { color: var(--text); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Pocket Setup</h1>
+    <p>Save local Termux configuration without typing secrets in the terminal. This writes <code>.env</code> with private file permissions.</p>
+
+    {% if locked %}
+      <section class="panel">
+        <p class="ok">Setup is closed because a Gemini API key is already configured.</p>
+        <p>To reopen setup later, start the server with <code>POCKET_SETUP_ENABLED=1</code>.</p>
+      </section>
+    {% elif saved %}
+      <section class="panel">
+        <p class="ok">Configuration saved.</p>
+        <p>Open <code>/gpt</code> to use the Gemini bridge.</p>
+      </section>
+    {% else %}
+      {% if error %}
+        <p class="bad">{{ error }}</p>
+      {% endif %}
+      <form method="post" action="/setup">
+        <div class="field">
+          <label for="gemini_api_key">Gemini API key</label>
+          <input id="gemini_api_key" name="gemini_api_key" type="password" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label for="pocket_access_token">Pocket access token</label>
+          <input id="pocket_access_token" name="pocket_access_token" type="password" autocomplete="off" placeholder="Recommended before using this beyond localhost">
+        </div>
+        <div class="field">
+          <label for="gemini_model">Gemini model</label>
+          <input id="gemini_model" name="gemini_model" type="text" value="{{ default_model }}" autocomplete="off">
+        </div>
+        <button type="submit">Save Configuration</button>
+      </form>
+    {% endif %}
+  </main>
+</body>
+</html>
+"""
+
+
 @app.route("/")
 def home():
     return "Hello, World!"
+
+
+@app.route("/setup", methods=["GET", "POST"])
+def setup_page():
+    locked = not setup_is_open()
+    if request.method == "GET" or locked:
+        return render_template_string(
+            SETUP_PAGE,
+            locked=locked,
+            saved=False,
+            error="",
+            default_model=DEFAULT_GEMINI_MODEL,
+        ), 403 if locked and request.method == "POST" else 200
+
+    gemini_api_key = clean_config_value(request.form.get("gemini_api_key"))
+    pocket_access_token = clean_config_value(request.form.get("pocket_access_token"))
+    gemini_model = clean_config_value(request.form.get("gemini_model")) or DEFAULT_GEMINI_MODEL
+
+    if not gemini_api_key:
+        return render_template_string(
+            SETUP_PAGE,
+            locked=False,
+            saved=False,
+            error="Gemini API key is required.",
+            default_model=gemini_model,
+        ), 400
+
+    updates = {
+        "GEMINI_API_KEY": gemini_api_key,
+        "POCKET_GEMINI_MODEL": gemini_model,
+    }
+    if pocket_access_token:
+        updates["POCKET_ACCESS_TOKEN"] = pocket_access_token
+
+    try:
+        write_env_updates(updates)
+        refresh_runtime_config(updates)
+    except OSError as exc:
+        return render_template_string(
+            SETUP_PAGE,
+            locked=False,
+            saved=False,
+            error=f"Could not save .env: {exc}",
+            default_model=gemini_model,
+        ), 500
+
+    return render_template_string(
+        SETUP_PAGE,
+        locked=False,
+        saved=True,
+        error="",
+        default_model=gemini_model,
+    )
 
 
 @app.route("/gpt")

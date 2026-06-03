@@ -22,23 +22,23 @@ http://127.0.0.1:5052/gpt
 ```bash
 pkg install python -y
 python -m pip install -r requirements.txt
-cp .env.example .env
-nano .env
-chmod 600 .env
 POCKET_HOST=0.0.0.0 POCKET_PORT=5052 flask --app app run --host 0.0.0.0 --port 5052
 ```
+
+Then open `/setup` in a browser to paste your Gemini API key and save `.env`.
 
 The `/gpt` page sends prompts to the local Gemini CLI with:
 
 ```bash
-gemini -p "<prompt>"
+gemini -m gemini-2.5-flash-lite -p "<prompt>"
 ```
 
 ## Configuration
 
 - `GEMINI_API_KEY`: Gemini API key from Google AI Studio. Used by Gemini CLI.
+- `POCKET_GEMINI_MODEL`: Gemini model for the bridge. Default: `gemini-2.5-flash-lite`.
 - `POCKET_GEMINI_COMMAND`: Gemini executable name or path. Default: `gemini`.
-- `POCKET_GEMINI_ARGS`: Extra Gemini CLI arguments, split like shell args.
+- `POCKET_GEMINI_ARGS`: Extra Gemini CLI arguments, split like shell args. Overrides `POCKET_GEMINI_MODEL` when set.
 - `POCKET_GEMINI_WORKDIR`: Directory where Gemini runs. Default: this repo.
 - `POCKET_GEMINI_TIMEOUT_SECONDS`: Request timeout. Default: `180`.
 - `POCKET_ACCESS_TOKEN`: Optional token required by `/api/gpt`.
