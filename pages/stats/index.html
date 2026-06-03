@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pocket Stats</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d0f10;
+      --panel: #15191b;
+      --line: #2a3135;
+      --text: #d1d9dd;
+      --muted: #858e93;
+      --accent: #5ef1c8;
+      --danger: #ff7e67;
+      --font: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      padding: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 32px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      margin-left: 16px;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 20px;
+    }
+
+    .card h2 {
+      margin: 0 0 16px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+    }
+
+    .stat-value {
+      color: var(--text);
+      word-break: break-all;
+      text-align: right;
+    }
+
+    .bar-container {
+      height: 6px;
+      background: var(--line);
+      margin-top: 12px;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.5s ease;
+    }
+
+    .bar-fill.danger {
+      background: var(--danger);
+    }
+
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent);
+      z-index: 100;
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      main { padding: 16px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading"></div>
+  <main>
+    <header>
+      <h1>/STATS</h1>
+      <nav>
+        <a href="/gpt">GPT</a>
+        <a href="/fast">FAST</a>
+        <a href="/setup">SETUP</a>
+      </nav>
+    </header>
+
+    <div class="grid">
+      <!-- Battery -->
+      <section class="card" id="battery-card">
+        <h2>Battery</h2>
+        <div id="battery-content">
+          <div class="stat-row">
+            <span class="stat-label">Status</span>
+            <span class="stat-value" id="bat-status">...</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Level</span>
+            <span class="stat-value" id="bat-level">...</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Temp</span>
+            <span class="stat-value" id="bat-temp">...</span>
+          </div>
+          <div class="bar-container">
+            <div id="bat-bar" class="bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RAM -->
+      <section class="card">
+        <h2>Memory (RAM)</h2>
+        <div class="stat-row">
+          <span class="stat-label">Total</span>
+          <span class="stat-value" id="ram-total">...</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Available</span>
+          <span class="stat-value" id="ram-avail">...</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Used</span>
+          <span class="stat-value" id="ram-used">...</span>
+        </div>
+        <div class="bar-container">
+          <div id="ram-bar" class="bar-fill" style="width: 0%"></div>
+        </div>
+      </section>
+
+      <!-- Storage -->
+      <section class="card">
+        <h2>Storage</h2>
+        <div class="stat-row">
+          <span class="stat-label">Total</span>
+          <span class="stat-value" id="disk-total">...</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Free</span>
+          <span class="stat-value" id="disk-free">...</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Used</span>
+          <span class="stat-value" id="disk-used">...</span>
+        </div>
+        <div class="bar-container">
+          <div id="disk-bar" class="bar-fill" style="width: 0%"></div>
+        </div>
+      </section>
+
+      <!-- System -->
+      <section class="card">
+        <h2>System</h2>
+        <div class="stat-row">
+          <span class="stat-label">Platform</span>
+          <span class="stat-value" id="sys-platform">...</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Uptime</span>
+          <span class="stat-value" id="sys-uptime">...</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Load</span>
+          <span class="stat-value" id="sys-load">...</span>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const loading = document.getElementById('loading');
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    async function refresh() {
+      loading.style.display = 'block';
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+
+        // Battery
+        if (data.battery && !data.battery.error) {
+          document.getElementById('bat-status').textContent = data.battery.status;
+          document.getElementById('bat-level').textContent = data.battery.percentage + '%';
+          document.getElementById('bat-temp').textContent = (data.battery.temperature / 10).toFixed(1) + '°C';
+          const batBar = document.getElementById('bat-bar');
+          batBar.style.width = data.battery.percentage + '%';
+          batBar.className = 'bar-fill ' + (data.battery.percentage < 20 ? 'danger' : '');
+        } else {
+          document.getElementById('battery-content').innerHTML = '<div class="stat-muted">termux-api not available</div>';
+        }
+
+        // RAM
+        if (data.ram) {
+          const total = data.ram.total * 1024;
+          const avail = data.ram.available * 1024;
+          const used = total - avail;
+          const percent = (used / total) * 100;
+          document.getElementById('ram-total').textContent = formatBytes(total);
+          document.getElementById('ram-avail').textContent = formatBytes(avail);
+          document.getElementById('ram-used').textContent = formatBytes(used);
+          document.getElementById('ram-bar').style.width = percent + '%';
+        }
+
+        // Storage
+        if (data.storage) {
+          const percent = (data.storage.used / data.storage.total) * 100;
+          document.getElementById('disk-total').textContent = formatBytes(data.storage.total);
+          document.getElementById('disk-free').textContent = formatBytes(data.storage.free);
+          document.getElementById('disk-used').textContent = formatBytes(data.storage.used);
+          document.getElementById('disk-bar').style.width = percent + '%';
+        }
+
+        // System
+        if (data.system) {
+          document.getElementById('sys-platform').textContent = data.system.platform;
+          document.getElementById('sys-uptime').textContent = data.system.uptime;
+          document.getElementById('sys-load').textContent = data.system.load.join(', ');
+        }
+
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 10000);
+  </script>
+</body>
+</html>

@@ -30,6 +30,7 @@ Then open `/setup` in a browser to paste your Gemini API key and save `.env`.
 Control pages:
 
 - `/`: BODY POWER landing page.
+- `/stats`: Dashboard for battery, storage, RAM, and system info.
 - `/fast`: Pocket Fast speed test for the Termux tunnel.
 - `/gpt`: Gemini CLI prompt bridge.
 - `/terminal`: Token-protected browser terminal for pasted shell commands.

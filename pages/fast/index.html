@@ -52,6 +52,13 @@
       justify-content: space-between;
       align-items: center;
       gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 24px;
     }
 
     .brand {
@@ -61,6 +68,23 @@
       font-weight: 800;
       font-size: 18px;
       line-height: 1;
+    }
+
+    nav {
+      display: flex;
+      gap: 16px;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: var(--green);
     }
 
     .mark {
@@ -328,9 +352,16 @@
 <body>
   <main class="shell">
     <header class="top">
-      <div class="brand">
-        <span class="mark" aria-hidden="true"></span>
-        <span>Pocket Fast</span>
+      <div class="brand-wrap">
+        <div class="brand">
+          <span class="mark" aria-hidden="true"></span>
+          <span>Pocket Fast</span>
+        </div>
+        <nav>
+          <a href="/gpt">GPT</a>
+          <a href="/stats">STATS</a>
+          <a href="/setup">SETUP</a>
+        </nav>
       </div>
       <div class="route">/fast<br>Termux tunnel</div>
     </header>

@@ -1,4 +1,6 @@
+import json
 import os
+import platform
 import shlex
 import shutil
 import subprocess
@@ -148,6 +150,76 @@ def restart_current_process():
     threading.Thread(target=delayed_restart, daemon=True).start()
 
 
+def get_ram_info():
+    info = {}
+    try:
+        with open("/proc/meminfo", "r") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2:
+                    key = parts[0].rstrip(":")
+                    value = int(parts[1])
+                    info[key] = value
+        return {
+            "total": info.get("MemTotal", 0),
+            "available": info.get("MemAvailable", info.get("MemFree", 0) + info.get("Buffers", 0) + info.get("Cached", 0)),
+        }
+    except Exception:
+        return None
+
+
+def get_storage_info():
+    try:
+        usage = shutil.disk_usage("/")
+        return {
+            "total": usage.total,
+            "used": usage.used,
+            "free": usage.free,
+        }
+    except Exception:
+        return None
+
+
+def get_battery_info():
+    try:
+        result = subprocess.run(
+            ["termux-battery-status"],
+            text=True,
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+        return {"error": "termux-battery-status failed"}
+    except FileNotFoundError:
+        return {"error": "termux-api not installed"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def get_system_info():
+    try:
+        uptime_str = "Unknown"
+        try:
+            with open("/proc/uptime", "r") as f:
+                uptime_seconds = float(f.readline().split()[0])
+                hours = int(uptime_seconds // 3600)
+                minutes = int((uptime_seconds % 3600) // 60)
+                seconds = int(uptime_seconds % 60)
+                uptime_str = f"{hours}h {minutes}m {seconds}s"
+        except Exception:
+            pass
+
+        return {
+            "platform": platform.platform(),
+            "uptime": uptime_str,
+            "load": os.getloadavg() if hasattr(os, "getloadavg") else [0, 0, 0],
+        }
+    except Exception:
+        return None
+
+
 def parse_positive_int(value, default, maximum):
     try:
         number = int(str(value or "").strip())
@@ -225,6 +297,24 @@ GPT_PAGE = """
       line-height: 1;
       font-weight: 760;
       letter-spacing: 0;
+    }
+
+    nav {
+      margin-top: 12px;
+      display: flex;
+      gap: 16px;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: var(--accent);
     }
 
     .meta {
@@ -396,6 +486,11 @@ GPT_PAGE = """
     <header>
       <div>
         <h1>GPT</h1>
+        <nav>
+          <a href="/stats">STATS</a>
+          <a href="/fast">FAST</a>
+          <a href="/setup">SETUP</a>
+        </nav>
         <p class="meta">Gemini CLI bridge running in {{ workdir }}</p>
       </div>
       <div class="status"><span class="dot"></span><span id="status">Ready</span></div>
@@ -1211,6 +1306,22 @@ def fast_upload():
     return jsonify({
         "bytes": total_bytes,
         "elapsed_seconds": round(time.time() - started, 4),
+    })
+
+
+@app.route("/stats")
+@app.route("/stats/")
+def stats_page():
+    return send_file(BASE_DIR / "pages" / "stats" / "index.html")
+
+
+@app.route("/api/stats")
+def api_stats():
+    return jsonify({
+        "battery": get_battery_info(),
+        "ram": get_ram_info(),
+        "storage": get_storage_info(),
+        "system": get_system_info(),
     })
 
 
