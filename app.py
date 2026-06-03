@@ -149,19 +149,9 @@ def restart_command():
     configured = clean_config_value(os.environ.get("POCKET_RESTART_COMMAND"))
     if configured:
         return configured
-    host = clean_config_value(os.environ.get("POCKET_HOST")) or "0.0.0.0"
-    port = clean_config_value(os.environ.get("POCKET_PORT")) or "5052"
     return " ".join([
         shlex.quote(sys.executable),
-        "-m",
-        "flask",
-        "--app",
-        "app",
-        "run",
-        "--host",
-        shlex.quote(host),
-        "--port",
-        shlex.quote(port),
+        shlex.quote(str(BASE_DIR / "run_pocket.py")),
     ])
 
 

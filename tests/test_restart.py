@@ -8,13 +8,12 @@ class RestartTest(unittest.TestCase):
     def setUp(self):
         self.client = pocket.app.test_client()
 
-    def test_restart_command_defaults_to_flask_server_on_termux_port(self):
+    def test_restart_command_defaults_to_python_runner(self):
         with patch.dict(pocket.os.environ, {}, clear=True):
             command = pocket.restart_command()
 
-        self.assertIn("-m flask --app app run", command)
-        self.assertIn("--host 0.0.0.0", command)
-        self.assertIn("--port 5052", command)
+        self.assertIn("run_pocket.py", command)
+        self.assertNotIn("-m flask", command)
 
     def test_restart_command_can_be_overridden(self):
         with patch.dict(pocket.os.environ, {"POCKET_RESTART_COMMAND": "sh run-pocket.sh"}):

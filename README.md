@@ -22,7 +22,7 @@ http://127.0.0.1:5052/gpt
 ```bash
 pkg install python -y
 python -m pip install -r requirements.txt
-POCKET_HOST=0.0.0.0 POCKET_PORT=5052 flask --app app run --host 0.0.0.0 --port 5052
+POCKET_HOST=0.0.0.0 POCKET_PORT=5052 python run_pocket.py
 ```
 
 Then open `/setup` in a browser to paste your Gemini API key and save `.env`.
@@ -64,7 +64,7 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_FAST_MAX_UPLOAD_BYTES`: Maximum browser-to-server test size. Default: `67108864`.
 - `POCKET_STORE_BASE_URL`: Shopify store base URL used to generate mock cart permalinks. Default: `https://roxanneassoulin.com`.
 - `POCKET_STORE_CURRENCY`: Currency label for the mock checkout response. Default: `usd`.
-- `POCKET_RESTART_COMMAND`: Optional command used by `/restart`. Default starts Flask on `0.0.0.0:5052`.
+- `POCKET_RESTART_COMMAND`: Optional command used by `/restart`. Default runs `python run_pocket.py`.
 
 ## Store prototype
 
