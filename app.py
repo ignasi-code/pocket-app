@@ -4,7 +4,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from flask import Flask, jsonify, redirect, render_template_string, request
+from flask import Flask, jsonify, render_template_string, request
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -318,7 +318,7 @@ GPT_PAGE = """
 
 @app.route("/")
 def home():
-    return redirect("/gpt")
+    return "Hello, World!"
 
 
 @app.route("/gpt")
