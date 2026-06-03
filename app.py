@@ -8,6 +8,25 @@ from flask import Flask, jsonify, render_template_string, request
 
 
 BASE_DIR = Path(__file__).resolve().parent
+
+
+def load_local_env():
+    env_path = BASE_DIR / ".env"
+    if not env_path.exists():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+load_local_env()
+
 GEMINI_COMMAND = os.environ.get("POCKET_GEMINI_COMMAND", "gemini")
 GEMINI_ARGS = shlex.split(os.environ.get("POCKET_GEMINI_ARGS", ""))
 GEMINI_WORKDIR = Path(os.environ.get("POCKET_GEMINI_WORKDIR", BASE_DIR)).expanduser()

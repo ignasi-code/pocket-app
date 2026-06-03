@@ -22,6 +22,9 @@ http://127.0.0.1:5052/gpt
 ```bash
 pkg install python -y
 python -m pip install -r requirements.txt
+cp .env.example .env
+nano .env
+chmod 600 .env
 POCKET_HOST=0.0.0.0 POCKET_PORT=5052 flask --app app run --host 0.0.0.0 --port 5052
 ```
 
@@ -33,6 +36,7 @@ gemini -p "<prompt>"
 
 ## Configuration
 
+- `GEMINI_API_KEY`: Gemini API key from Google AI Studio. Used by Gemini CLI.
 - `POCKET_GEMINI_COMMAND`: Gemini executable name or path. Default: `gemini`.
 - `POCKET_GEMINI_ARGS`: Extra Gemini CLI arguments, split like shell args.
 - `POCKET_GEMINI_WORKDIR`: Directory where Gemini runs. Default: this repo.
