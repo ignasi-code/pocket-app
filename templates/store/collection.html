@@ -22,10 +22,40 @@
       </section>
     {% endif %}
 
-    <section class="collection-filter-bar" aria-label="Collection controls">
+    <section class="collection-filter-bar collection-filter__bar" aria-label="Collection controls">
       {% set labels = collection.filter_labels or ["Filter", "Sort"] %}
-      <button type="button">{{ labels[0] }}</button>
-      <button type="button">{{ labels[1] }}</button>
+      <button type="button" data-filter-toggle aria-controls="collection-filter-drawer" aria-expanded="false">{{ labels[0] }}</button>
+      <button type="button" data-sort-toggle aria-controls="collection-sort-drawer" aria-expanded="false">{{ labels[1] }}</button>
+    </section>
+
+    <section id="collection-filter-drawer" class="collection-filter__drawer collection-filter__drawer--filter" data-filter-drawer aria-hidden="true">
+      <div class="collection-filter__drawer-inner">
+        <button class="collection-filter__close" type="button" data-filter-close aria-label="Close filters"></button>
+        <h2>filter</h2>
+        <fieldset>
+          <legend>category</legend>
+          {% for label in merchandising.filters.categories %}
+            <label><input type="checkbox" value="{{ label }}"> {{ label }}</label>
+          {% endfor %}
+        </fieldset>
+        <fieldset>
+          <legend>color</legend>
+          {% for label in ["black", "blue", "green", "pink", "yellow", "white"] %}
+            <label><input type="checkbox" value="{{ label }}"> {{ label }}</label>
+          {% endfor %}
+        </fieldset>
+        <button class="button" type="button" data-filter-close>view products</button>
+      </div>
+    </section>
+
+    <section id="collection-sort-drawer" class="collection-filter__drawer collection-filter__drawer--sort" data-sort-drawer aria-hidden="true">
+      <div class="collection-filter__drawer-inner">
+        <button class="collection-filter__close" type="button" data-sort-close aria-label="Close sort"></button>
+        <h2>sort by</h2>
+        {% for label in merchandising.filters.sort %}
+          <label><input type="radio" name="sort" value="{{ label }}" {% if loop.first %}checked{% endif %}> {{ label }}</label>
+        {% endfor %}
+      </div>
     </section>
 
     {% if products %}

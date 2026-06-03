@@ -1480,6 +1480,276 @@
       width: 100%;
     }
 
+    .product-tile {
+      border: 1px solid #e5e5e5;
+      border-radius: 5px;
+      box-sizing: border-box;
+      margin-bottom: -1px;
+      margin-left: -1px;
+      overflow: hidden;
+      position: relative;
+      text-align: left;
+    }
+
+    .product-tile__image {
+      background: #fff;
+      display: block;
+      overflow: hidden;
+      padding-top: 120%;
+      position: relative;
+    }
+
+    .product-tile__image img {
+      height: 100%;
+      inset: 0;
+      object-fit: cover;
+      position: absolute;
+      width: 100%;
+    }
+
+    .product-tile__image__hover {
+      opacity: 0;
+      transition: opacity .3s cubic-bezier(.165,.84,.44,1);
+    }
+
+    .product-tile:focus-within .product-tile__image__hover,
+    .product-tile:hover .product-tile__image__hover {
+      opacity: 1;
+    }
+
+    .product-tile__details {
+      display: block;
+      min-height: 96px;
+      padding: 0;
+      position: relative;
+    }
+
+    .product-tile__badge {
+      color: #c8412d;
+      font-size: .75rem;
+      font-weight: 700;
+      line-height: 135%;
+      padding: 9px 13px 0;
+      text-transform: lowercase;
+    }
+
+    .product-tile__title {
+      color: #000;
+      font-size: .75rem;
+      font-weight: 400;
+      line-height: 135%;
+      margin: 0;
+      min-height: 45px;
+      padding: 12px 3px 4px 13px;
+    }
+
+    .product-tile__price {
+      color: #000;
+      font-size: .75rem;
+      font-weight: 400;
+      line-height: 135%;
+      opacity: .5;
+      padding: 0 13px 10px;
+    }
+
+    .product-tile__add {
+      background: #d1ebf8;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      color: #000;
+      cursor: pointer;
+      font-size: .75rem;
+      font-weight: 700;
+      height: 36px;
+      text-transform: lowercase;
+      width: 100%;
+    }
+
+    .collection-filter__drawer {
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      box-sizing: border-box;
+      left: 4px;
+      max-height: calc(100vh - 90px);
+      opacity: 1;
+      overflow-y: auto;
+      position: fixed;
+      right: 4px;
+      top: 76px;
+      transform: translateY(-12px);
+      transition: opacity .25s, transform .25s, visibility 0s .25s;
+      visibility: visible;
+      z-index: 30;
+    }
+
+    .collection-filter__drawer[aria-hidden="true"] {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-20px);
+      visibility: hidden;
+    }
+
+    .collection-filter__drawer-inner {
+      padding: 22px;
+      position: relative;
+    }
+
+    .collection-filter__drawer h2 {
+      font-size: 1.125rem;
+      line-height: 145%;
+      margin: 0 50px 20px 0;
+      text-transform: lowercase;
+    }
+
+    .collection-filter__drawer fieldset {
+      border: 0;
+      margin: 0 0 18px;
+      padding: 0;
+    }
+
+    .collection-filter__drawer legend {
+      font-size: .75rem;
+      font-weight: 700;
+      line-height: 135%;
+      margin-bottom: 8px;
+      text-transform: lowercase;
+    }
+
+    .collection-filter__drawer label {
+      display: block;
+      font-size: .875rem;
+      line-height: 145%;
+      padding: 5px 0;
+      text-transform: lowercase;
+    }
+
+    .collection-filter__close {
+      cursor: pointer;
+      height: 48px;
+      position: absolute;
+      right: 4px;
+      top: 4px;
+      width: 48px;
+    }
+
+    .collection-filter__close::before,
+    .collection-filter__close::after {
+      background: #000;
+      content: "";
+      height: 1px;
+      left: 12px;
+      position: absolute;
+      top: 24px;
+      width: 24px;
+    }
+
+    .collection-filter__close::before { transform: rotate(45deg); }
+    .collection-filter__close::after { transform: rotate(-45deg); }
+
+    .footer {
+      background: #d1ebf8;
+      box-sizing: border-box;
+      color: #000;
+      font-family: SupremeLLWeb, Helvetica, Arial, sans-serif;
+      font-weight: 700;
+      margin-top: 10px;
+      min-height: 440px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .footer__colors {
+      display: flex;
+      flex-direction: row;
+      height: 6px;
+      left: 3px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      position: absolute;
+      top: -8px;
+      width: calc(100% - 6px);
+    }
+
+    .footer__colors li {
+      flex: 1 1 10%;
+    }
+
+    .footer__colors li:nth-child(1){background-color:#c8412d;border-bottom-left-radius:6px;border-top-left-radius:6px}
+    .footer__colors li:nth-child(2){background-color:#d76a67}
+    .footer__colors li:nth-child(3){background-color:#f491a6}
+    .footer__colors li:nth-child(4){background-color:#f8b3c5}
+    .footer__colors li:nth-child(5){background-color:#fabda0}
+    .footer__colors li:nth-child(6){background-color:#fdd188}
+    .footer__colors li:nth-child(7){background-color:#fbdb60}
+    .footer__colors li:nth-child(8){background-color:#dae69a}
+    .footer__colors li:nth-child(9){background-color:#43b249}
+    .footer__colors li:nth-child(10){background-color:#1f6f3a;border-bottom-right-radius:6px;border-top-right-radius:6px}
+
+    .footer__content {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .footer__logo img {
+      width: 103px;
+    }
+
+    .footer-nav__tabset {
+      padding-left: 35px;
+    }
+
+    .footer-nav__tab {
+      display: block;
+      font-size: 1.125rem;
+      font-weight: 700;
+      line-height: 145%;
+      margin-bottom: 12px;
+      text-transform: none;
+    }
+
+    .footer-nav__panel {
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 145%;
+    }
+
+    .footer-nav__panel ul {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .footer-newsletter__header {
+      font-size: 1.125rem;
+      line-height: 145%;
+      padding-bottom: 20px;
+    }
+
+    .footer-newsletter__form__fields {
+      display: grid;
+      gap: 0;
+    }
+
+    .footer-newsletter input,
+    .footer-newsletter button {
+      background: inherit;
+      border: 1px solid #767676;
+      border-radius: 5px;
+      box-sizing: border-box;
+      color: #000;
+      font-size: 1rem;
+      font-weight: 700;
+      height: 60px;
+      padding: 0 20px;
+      width: 100%;
+    }
+
     @media (min-width: 1024px) {
       .site-header {
         background: #fff;
@@ -1606,24 +1876,59 @@
         position: sticky;
         top: 72px;
       }
+
+      .collection-filter__drawer {
+        left: auto;
+        max-width: 390px;
+        right: 8px;
+        top: 72px;
+      }
+
+      .footer {
+        padding: 49px 65px 30px;
+      }
+
+      .footer__content {
+        align-items: flex-start;
+        flex-flow: row wrap;
+        justify-content: space-between;
+      }
+
+      .footer-newsletter {
+        width: 37%;
+      }
+
+      .footer-newsletter__form__fields {
+        display: flex;
+      }
+
+      .footer-newsletter input {
+        border-radius: 5px 0 0 5px;
+      }
+
+      .footer-newsletter button {
+        border-radius: 0 5px 5px 0;
+        margin-left: -1px;
+        width: 178px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="announcement">free US shipping over $250</div>
-  <header class="site-header">
-    <button class="site-header__menu" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="store-menu" data-menu-toggle><span>Toggle Menu</span></button>
+  <header class="site-header header">
+    <button class="site-header__menu header__toggle" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="store-menu" data-menu-toggle><span>Toggle Menu</span></button>
     <nav class="nav" aria-label="Store">
       <a href="/store/collections/new-arrivals">new arrivals</a>
       <a href="/store/collections/best-sellers">best sellers</a>
       <a href="/store/collections/necklaces">necklaces</a>
       <a href="/store/collections/bracelets">bracelets</a>
     </nav>
-    <a class="brand" href="/store">
+    <a class="brand header__logo" href="/store">
       <img src="https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" alt="Roxanne Assoulin">
     </a>
-    <a class="store-search" href="/store/collections/shop"><span>Toggle Search</span></a>
-    <a class="cart-link" href="/store/cart" data-cart-open><span class="bag-label">Bag </span><span data-cart-count>0</span></a>
+    <a class="store-search header__search-toggle" href="/store/collections/shop"><span>Toggle Search</span></a>
+    <a class="cart-link header__cart" href="/store/cart" data-cart-open><span class="bag-label">Bag </span><span data-cart-count>0</span></a>
   </header>
 
   <button class="drawer-overlay" type="button" aria-label="Close drawer" data-drawer-overlay></button>
@@ -1663,6 +1968,46 @@
   </aside>
 
   {% block body %}{% endblock %}
+
+  <footer class="footer">
+    <ul class="footer__colors" role="presentation">
+      {% for _ in range(10) %}<li></li>{% endfor %}
+    </ul>
+    <div class="footer__content">
+      <div class="footer__logo">
+        <img src="https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" alt="Roxanne Assoulin">
+      </div>
+      <div class="footer-nav__tabset">
+        <span class="footer-nav__tab">About</span>
+        <div class="footer-nav__panel">
+          <ul>
+            <li><a href="/store">Our Story</a></li>
+            <li><a href="/store">Stores</a></li>
+            <li><a href="/store">Careers</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-nav__tabset">
+        <span class="footer-nav__tab">Help & Returns</span>
+        <div class="footer-nav__panel">
+          <ul>
+            <li><a href="/store">Contact</a></li>
+            <li><a href="/store">Shipping</a></li>
+            <li><a href="/store">Returns</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-newsletter">
+        <div class="footer-newsletter__header">sign up for color, drops, and delight</div>
+        <form class="footer-newsletter__form" action="#" method="post">
+          <div class="footer-newsletter__form__fields">
+            <input type="email" name="EMAIL" aria-label="enter your email" placeholder="enter your email">
+            <button type="submit">sign up</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </footer>
 
   <script src="/store/assets/store.js"></script>
 </body>

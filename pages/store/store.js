@@ -200,6 +200,21 @@
     setOverlay(true);
   }
 
+  function closeCollectionDrawers() {
+    document.querySelector("[data-filter-drawer]")?.setAttribute("aria-hidden", "true");
+    document.querySelector("[data-sort-drawer]")?.setAttribute("aria-hidden", "true");
+    document.querySelector("[data-filter-toggle]")?.setAttribute("aria-expanded", "false");
+    document.querySelector("[data-sort-toggle]")?.setAttribute("aria-expanded", "false");
+  }
+
+  function openCollectionDrawer(kind) {
+    const drawer = document.querySelector(kind === "sort" ? "[data-sort-drawer]" : "[data-filter-drawer]");
+    const toggle = document.querySelector(kind === "sort" ? "[data-sort-toggle]" : "[data-filter-toggle]");
+    closeCollectionDrawers();
+    if (drawer) drawer.setAttribute("aria-hidden", "false");
+    if (toggle) toggle.setAttribute("aria-expanded", "true");
+  }
+
   function updatePdpGallery(select) {
     const selected = select.selectedOptions?.[0];
     const target = selected?.dataset.imageSrc;
@@ -255,6 +270,7 @@
     if (overlay) {
       closeMenuDrawer();
       closeCartDrawer();
+      closeCollectionDrawers();
     }
 
     const cartOpen = event.target.closest("[data-cart-open]");
@@ -264,6 +280,10 @@
     }
 
     if (event.target.closest("[data-cart-close]")) closeCartDrawer();
+
+    if (event.target.closest("[data-filter-toggle]")) openCollectionDrawer("filter");
+    if (event.target.closest("[data-sort-toggle]")) openCollectionDrawer("sort");
+    if (event.target.closest("[data-filter-close], [data-sort-close]")) closeCollectionDrawers();
 
     const add = event.target.closest("[data-store-add]");
     if (add) {

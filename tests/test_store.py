@@ -61,11 +61,46 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
+        self.assertIn("class=\"site-header header\"", html)
+        self.assertIn("header__toggle", html)
+        self.assertIn("header__logo", html)
         self.assertIn("data-menu-drawer", html)
         self.assertIn("data-menu-toggle", html)
         self.assertIn("data-cart-drawer", html)
         self.assertIn("data-cart-open", html)
         self.assertIn("data-cart-drawer-lines", html)
+
+    def test_store_uses_live_theme_product_tile_structure(self):
+        response = self.client.get("/store/collections/the-summer-capsule")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("product-tile", html)
+        self.assertIn("product-tile__image", html)
+        self.assertIn("product-tile__image__hover", html)
+        self.assertIn("product-tile__title", html)
+        self.assertIn("product-tile__add", html)
+
+    def test_collection_page_exposes_filter_and_sort_drawers(self):
+        response = self.client.get("/store/collections/the-summer-capsule")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("collection-filter__bar", html)
+        self.assertIn("collection-filter__drawer--filter", html)
+        self.assertIn("collection-filter__drawer--sort", html)
+        self.assertIn("data-filter-toggle", html)
+        self.assertIn("data-sort-toggle", html)
+
+    def test_store_base_renders_live_style_footer(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("class=\"footer\"", html)
+        self.assertIn("footer__colors", html)
+        self.assertIn("footer-newsletter", html)
+        self.assertIn("footer-nav__tabset", html)
 
     def test_product_page_exposes_gallery_variant_and_quantity_hooks(self):
         product, variant = self.first_available_variant()

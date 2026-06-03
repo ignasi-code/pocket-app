@@ -1,12 +1,17 @@
-<article class="product-card">
-  <a href="/store/products/{{ product.handle }}">
-    <img class="product-card__image" src="{{ product_image(product) }}" alt="{{ product.title }}" loading="lazy">
+{% set hover_image = product.images[1].src if product.images|length > 1 else product_image(product) %}
+<article class="product-card product-tile">
+  <a class="product-tile__image" href="/store/products/{{ product.handle }}">
+    <img class="product-card__image product-tile__image__primary" src="{{ product_image(product) }}" alt="{{ product.title }}" loading="lazy">
+    <img class="product-tile__image__hover" src="{{ hover_image }}" alt="" loading="lazy">
   </a>
-  <div class="product-card__body">
-    <h3 class="product-card__title">
+  <div class="product-card__body product-tile__details">
+    {% if "badge_new" in product.tags %}
+      <div class="product-tile__badge">new</div>
+    {% endif %}
+    <h3 class="product-card__title product-tile__title">
       <a href="/store/products/{{ product.handle }}">{{ product.title }}</a>
     </h3>
-    <div class="price">{{ price_label(product) }}</div>
+    <div class="price product-tile__price">{{ price_label(product) }}</div>
     {% set variant = first_variant(product) %}
     <div class="quick-row">
       <select aria-label="Variant for {{ product.title }}" data-variant-select>
@@ -16,7 +21,7 @@
           </option>
         {% endfor %}
       </select>
-      <button type="button" data-store-add data-variant-id="{{ variant.id }}">Add</button>
+      <button class="product-tile__add" type="button" data-store-add data-variant-id="{{ variant.id }}">Add</button>
     </div>
   </div>
 </article>
