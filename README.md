@@ -30,6 +30,7 @@ Then open `/setup` in a browser to paste your Gemini API key and save `.env`.
 Control pages:
 
 - `/`: BODY POWER landing page.
+- `/fast`: Pocket Fast speed test for the Termux tunnel.
 - `/gpt`: Gemini CLI prompt bridge.
 - `/setup`: Save local `.env` config from the browser.
 - `/pull`: Run `git pull origin master`.
@@ -49,8 +50,12 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_GEMINI_ARGS`: Extra Gemini CLI arguments, split like shell args. Overrides `POCKET_GEMINI_MODEL` when set.
 - `POCKET_GEMINI_WORKDIR`: Directory where Gemini runs. Default: this repo.
 - `POCKET_GEMINI_TIMEOUT_SECONDS`: Request timeout. Default: `180`.
-- `POCKET_ACCESS_TOKEN`: Optional token required by `/api/gpt`.
+- `POCKET_ACCESS_TOKEN`: Optional token required by `/api/gpt`, `/fast/api/download`, and `/fast/api/upload`.
 - `POCKET_MAX_PROMPT_LENGTH`: Prompt character limit. Default: `12000`.
+- `POCKET_FAST_DOWNLOAD_BYTES`: Default server-to-browser test size. Default: `16777216`.
+- `POCKET_FAST_UPLOAD_BYTES`: Default browser-to-server test size. Default: `8388608`.
+- `POCKET_FAST_MAX_DOWNLOAD_BYTES`: Maximum server-to-browser test size. Default: `67108864`.
+- `POCKET_FAST_MAX_UPLOAD_BYTES`: Maximum browser-to-server test size. Default: `67108864`.
 
 Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`.
 

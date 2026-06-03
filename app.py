@@ -7,7 +7,7 @@ import threading
 import time
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template_string, request, send_file
+from flask import Flask, Response, jsonify, render_template_string, request, send_file
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -57,6 +57,11 @@ GEMINI_WORKDIR = Path(os.environ.get("POCKET_GEMINI_WORKDIR", BASE_DIR)).expandu
 GEMINI_TIMEOUT_SECONDS = int(os.environ.get("POCKET_GEMINI_TIMEOUT_SECONDS", "180"))
 POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
 MAX_PROMPT_LENGTH = int(os.environ.get("POCKET_MAX_PROMPT_LENGTH", "12000"))
+FAST_DEFAULT_DOWNLOAD_BYTES = int(os.environ.get("POCKET_FAST_DOWNLOAD_BYTES", str(16 * 1024 * 1024)))
+FAST_DEFAULT_UPLOAD_BYTES = int(os.environ.get("POCKET_FAST_UPLOAD_BYTES", str(8 * 1024 * 1024)))
+FAST_MAX_DOWNLOAD_BYTES = int(os.environ.get("POCKET_FAST_MAX_DOWNLOAD_BYTES", str(64 * 1024 * 1024)))
+FAST_MAX_UPLOAD_BYTES = int(os.environ.get("POCKET_FAST_MAX_UPLOAD_BYTES", str(64 * 1024 * 1024)))
+FAST_CHUNK_BYTES = bytes((index % 251 for index in range(64 * 1024)))
 
 app = Flask(__name__)
 
@@ -139,6 +144,22 @@ def restart_current_process():
         os.execv(sys.executable, [sys.executable, *restart_argv])
 
     threading.Thread(target=delayed_restart, daemon=True).start()
+
+
+def parse_positive_int(value, default, maximum):
+    try:
+        number = int(str(value or "").strip())
+    except ValueError:
+        number = default
+    return max(1, min(number, maximum))
+
+
+def stream_test_bytes(total_bytes):
+    remaining = total_bytes
+    while remaining:
+        chunk_size = min(remaining, len(FAST_CHUNK_BYTES))
+        yield FAST_CHUNK_BYTES[:chunk_size]
+        remaining -= chunk_size
 
 
 GPT_PAGE = """
@@ -717,6 +738,60 @@ SETUP_PAGE = """
 @app.route("/")
 def home():
     return send_file(BASE_DIR / "pages" / "index.html")
+
+
+@app.route("/fast")
+@app.route("/fast/")
+def fast_page():
+    return send_file(BASE_DIR / "pages" / "fast" / "index.html")
+
+
+@app.route("/fast/api/download")
+def fast_download():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+
+    total_bytes = parse_positive_int(
+        request.args.get("bytes"),
+        FAST_DEFAULT_DOWNLOAD_BYTES,
+        FAST_MAX_DOWNLOAD_BYTES,
+    )
+    response = Response(
+        stream_test_bytes(total_bytes),
+        content_type="application/octet-stream",
+    )
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Content-Length"] = str(total_bytes)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@app.route("/fast/api/upload", methods=["POST"])
+def fast_upload():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+
+    if request.content_length and request.content_length > FAST_MAX_UPLOAD_BYTES:
+        return jsonify({
+            "error": f"Upload is too large. Limit is {FAST_MAX_UPLOAD_BYTES} bytes.",
+        }), 413
+
+    started = time.time()
+    total_bytes = 0
+    while True:
+        chunk = request.stream.read(64 * 1024)
+        if not chunk:
+            break
+        total_bytes += len(chunk)
+        if total_bytes > FAST_MAX_UPLOAD_BYTES:
+            return jsonify({
+                "error": f"Upload is too large. Limit is {FAST_MAX_UPLOAD_BYTES} bytes.",
+            }), 413
+
+    return jsonify({
+        "bytes": total_bytes,
+        "elapsed_seconds": round(time.time() - started, 4),
+    })
 
 
 @app.route("/setup", methods=["GET", "POST"])
