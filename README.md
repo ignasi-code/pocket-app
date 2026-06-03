@@ -56,5 +56,5 @@ Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`.
 To let Gemini CLI auto-approve tool calls from `/gpt`, set `POCKET_GEMINI_ARGS` to:
 
 ```bash
---approval-mode=yolo
+--yolo
 ```

@@ -670,28 +670,32 @@ SETUP_PAGE = """
     <h1>Pocket Setup</h1>
     <p>Save local Termux configuration without typing secrets in the terminal. This writes <code>.env</code> with private file permissions.</p>
 
-    {% if locked %}
-      <section class="panel">
-        <p class="ok">Setup is closed because a Gemini API key is already configured.</p>
-        <p>To reopen setup later, start the server with <code>POCKET_SETUP_ENABLED=1</code>.</p>
-      </section>
-    {% elif saved %}
+    {% if saved %}
       <section class="panel">
         <p class="ok">Configuration saved.</p>
         <p>Open <code>/gpt</code> to use the Gemini bridge.</p>
       </section>
     {% else %}
+      {% if locked %}
+        <p>Setup is protected because a Gemini API key is already configured. Enter the Pocket access token to update settings.</p>
+      {% endif %}
       {% if error %}
         <p class="bad">{{ error }}</p>
       {% endif %}
       <form method="post" action="/setup">
+        {% if locked %}
+          <div class="field">
+            <label for="setup_token">Current Pocket access token</label>
+            <input id="setup_token" name="token" type="password" autocomplete="current-password" required>
+          </div>
+        {% endif %}
         <div class="field">
           <label for="gemini_api_key">Gemini API key</label>
-          <input id="gemini_api_key" name="gemini_api_key" type="password" autocomplete="off" required>
+          <input id="gemini_api_key" name="gemini_api_key" type="password" autocomplete="off" {% if api_key_required %}required{% endif %} placeholder="{{ 'Leave blank to keep existing key' if not api_key_required else '' }}">
         </div>
         <div class="field">
-          <label for="pocket_access_token">Pocket access token</label>
-          <input id="pocket_access_token" name="pocket_access_token" type="password" autocomplete="off" placeholder="Recommended before using this beyond localhost">
+          <label for="pocket_access_token">{{ 'New Pocket access token' if locked else 'Pocket access token' }}</label>
+          <input id="pocket_access_token" name="pocket_access_token" type="password" autocomplete="off" placeholder="{{ 'Leave blank to keep existing token' if locked else 'Recommended before using this beyond localhost' }}">
         </div>
         <div class="field">
           <label for="gemini_model">Gemini model</label>
@@ -699,7 +703,7 @@ SETUP_PAGE = """
         </div>
         <div class="field">
           <label for="gemini_args">Gemini extra args</label>
-          <input id="gemini_args" name="gemini_args" type="text" value="{{ gemini_args }}" autocomplete="off" placeholder="Example: --approval-mode=yolo">
+          <input id="gemini_args" name="gemini_args" type="text" value="{{ gemini_args }}" autocomplete="off" placeholder="Example: --yolo">
         </div>
         <button type="submit">Save Configuration</button>
       </form>
@@ -718,7 +722,7 @@ def home():
 @app.route("/setup", methods=["GET", "POST"])
 def setup_page():
     locked = not setup_is_open()
-    if request.method == "GET" or locked:
+    if request.method == "GET":
         return render_template_string(
             SETUP_PAGE,
             locked=locked,
@@ -726,14 +730,26 @@ def setup_page():
             error="",
             default_model=DEFAULT_GEMINI_MODEL,
             gemini_args=os.environ.get("POCKET_GEMINI_ARGS", ""),
-        ), 403 if locked and request.method == "POST" else 200
+            api_key_required=not has_gemini_api_key(),
+        )
+
+    if locked and access_denied():
+        return render_template_string(
+            SETUP_PAGE,
+            locked=locked,
+            saved=False,
+            error="Invalid Pocket access token.",
+            default_model=DEFAULT_GEMINI_MODEL,
+            gemini_args=os.environ.get("POCKET_GEMINI_ARGS", ""),
+            api_key_required=not has_gemini_api_key(),
+        ), 401
 
     gemini_api_key = clean_config_value(request.form.get("gemini_api_key"))
     pocket_access_token = clean_config_value(request.form.get("pocket_access_token"))
     gemini_model = clean_config_value(request.form.get("gemini_model")) or DEFAULT_GEMINI_MODEL
     gemini_args = clean_config_value(request.form.get("gemini_args"))
 
-    if not gemini_api_key:
+    if not gemini_api_key and not has_gemini_api_key():
         return render_template_string(
             SETUP_PAGE,
             locked=False,
@@ -741,14 +757,15 @@ def setup_page():
             error="Gemini API key is required.",
             default_model=gemini_model,
             gemini_args=gemini_args,
+            api_key_required=True,
         ), 400
 
     updates = {
-        "GEMINI_API_KEY": gemini_api_key,
         "POCKET_GEMINI_MODEL": gemini_model,
+        "POCKET_GEMINI_ARGS": gemini_args,
     }
-    if gemini_args:
-        updates["POCKET_GEMINI_ARGS"] = gemini_args
+    if gemini_api_key:
+        updates["GEMINI_API_KEY"] = gemini_api_key
     if pocket_access_token:
         updates["POCKET_ACCESS_TOKEN"] = pocket_access_token
 
@@ -763,6 +780,7 @@ def setup_page():
             error=f"Could not save .env: {exc}",
             default_model=gemini_model,
             gemini_args=gemini_args,
+            api_key_required=not has_gemini_api_key(),
         ), 500
 
     return render_template_string(
@@ -772,6 +790,7 @@ def setup_page():
         error="",
         default_model=gemini_model,
         gemini_args=gemini_args,
+        api_key_required=not has_gemini_api_key(),
     )
 
 
