@@ -1,0 +1,61 @@
+{% extends "store/base.html" %}
+{% block title %}{{ product.title }} - Pocket Store{% endblock %}
+{% block body %}
+  <main class="page">
+    <section class="pdp">
+      <div class="gallery">
+        {% for image in product.images[:6] %}
+          <img src="{{ image.src }}" alt="{{ product.title }}" loading="lazy">
+        {% else %}
+          <img src="{{ placeholder_image }}" alt="{{ product.title }}">
+        {% endfor %}
+      </div>
+
+      <aside class="buy-box">
+        <p class="eyebrow">{{ product.product_type }}</p>
+        <h1>{{ product.title }}</h1>
+        <div class="price">{{ price_label(product) }}</div>
+
+        {% set lines = description_lines(product) %}
+        {% if lines %}
+          <ul class="details-list">
+            {% for line in lines %}
+              <li>{{ line }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="notice">A bright piece from the public Shopify catalog snapshot.</p>
+        {% endif %}
+
+        <form class="buy-form" data-product-form>
+          <label>
+            <span class="eyebrow">variant</span>
+            <select name="variant_id">
+              {% for variant in product.variants %}
+                <option value="{{ variant.id }}" {% if variant.available is sameas false %}disabled{% endif %}>
+                  {{ variant.title }} - ${{ variant.price }}{% if variant.available is sameas false %} - sold out{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+          <button class="plain-button" type="submit">Add to bag</button>
+        </form>
+
+        <p class="notice">Prototype checkout verifies this variant against the local catalog, then generates a Shopify cart permalink.</p>
+      </aside>
+    </section>
+
+    {% if related %}
+      <section class="section">
+        <div class="section-head">
+          <h2 class="section-title">you may also like</h2>
+        </div>
+        <div class="grid">
+          {% for product in related %}
+            {% include "store/_product_card.html" %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </main>
+{% endblock %}

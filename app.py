@@ -1,4 +1,5 @@
 import json
+import html as html_lib
 import os
 import platform
 import shlex
@@ -9,7 +10,7 @@ import threading
 import time
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, render_template_string, request, send_file
+from flask import Flask, Response, abort, jsonify, render_template, render_template_string, request, send_file
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -68,6 +69,8 @@ FAST_MAX_DOWNLOAD_BYTES = int(os.environ.get("POCKET_FAST_MAX_DOWNLOAD_BYTES", s
 FAST_MAX_UPLOAD_BYTES = int(os.environ.get("POCKET_FAST_MAX_UPLOAD_BYTES", str(64 * 1024 * 1024)))
 FAST_CHUNK_BYTES = bytes((index % 251 for index in range(64 * 1024)))
 STORE_CATALOG_PATH = BASE_DIR / "pages" / "store" / "catalog.json"
+STORE_DATA_DIR = BASE_DIR / "pages" / "store" / "data"
+STORE_PLACEHOLDER_IMAGE = "https://placehold.co/900x1100/f8dd5f/1f1a15?text=Roxanne"
 STORE_BASE_URL = os.environ.get("POCKET_STORE_BASE_URL", "https://roxanneassoulin.com").rstrip("/")
 STORE_CURRENCY = os.environ.get("POCKET_STORE_CURRENCY", "usd").lower()
 
@@ -254,6 +257,148 @@ def format_price(cents):
 
 def load_store_catalog():
     return json.loads(STORE_CATALOG_PATH.read_text(encoding="utf-8"))
+
+
+def load_store_homepage():
+    return json.loads((STORE_DATA_DIR / "homepage.json").read_text(encoding="utf-8"))
+
+
+def store_products():
+    return load_store_catalog().get("products", [])
+
+
+def store_product_by_handle(handle):
+    return next((product for product in store_products() if product.get("handle") == handle), None)
+
+
+def store_first_available_variant(product):
+    variants = product.get("variants", [])
+    return next((variant for variant in variants if variant.get("available") is not False), variants[0] if variants else {})
+
+
+def store_product_image(product):
+    variant = store_first_available_variant(product)
+    featured = variant.get("featured_image") if isinstance(variant, dict) else None
+    if featured and featured.get("src"):
+        return featured["src"]
+    images = product.get("images", [])
+    return images[0].get("src") if images else STORE_PLACEHOLDER_IMAGE
+
+
+def store_price_label(product):
+    prices = [
+        parse_price_cents(variant.get("price"))
+        for variant in product.get("variants", [])
+        if parse_price_cents(variant.get("price")) > 0
+    ]
+    if not prices:
+        return "$0.00"
+    low = min(prices)
+    high = max(prices)
+    if low == high:
+        return f"${format_price(low)}"
+    return f"${format_price(low)} - ${format_price(high)}"
+
+
+def store_description_lines(product):
+    text = str(product.get("body_html") or "")
+    text = text.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+    for token in ["<p>", "</p>", '<meta charset="utf-8">', "<meta charset='utf-8'>"]:
+        text = text.replace(token, "")
+    text = html_lib.unescape(text).replace("\xa0", " ")
+    lines = []
+    for line in text.splitlines():
+        clean = line.strip().strip("-").strip()
+        if clean:
+            lines.append(clean)
+    return lines
+
+
+def store_collection_definitions():
+    return {
+        "shop": {
+            "title": "Shop All",
+            "description": "A static-first catalog view generated from public Shopify JSON.",
+            "matcher": lambda product: True,
+        },
+        "new-arrivals": {
+            "title": "New Arrivals",
+            "description": "Fresh pieces from the latest public catalog snapshot.",
+            "matcher": lambda product: True,
+        },
+        "the-summer-capsule": {
+            "title": "The Summer Capsule",
+            "description": "Bright cords, pearls, charms, and stacks for the seasonal story.",
+            "matcher": lambda product: True,
+        },
+        "best-sellers": {
+            "title": "Best Sellers",
+            "description": "A prototype bestseller edit using the strongest featured handles.",
+            "handles": {
+                "the-salt-pepper-cylinder-necklace-set",
+                "the-salt-pepper-cylinder-bracelet-stack",
+                "the-paprika-necklace-duo",
+                "the-pearl-branch-bracelet",
+                "the-salt-pepper-bracelet-duo",
+                "the-salt-pepper-necklace-duo",
+            },
+        },
+        "necklaces": {
+            "title": "Necklaces",
+            "description": "Necklaces filtered from product_type.",
+            "matcher": lambda product: product.get("product_type") == "Necklaces",
+        },
+        "bracelets": {
+            "title": "Bracelets",
+            "description": "Bracelets filtered from product_type.",
+            "matcher": lambda product: product.get("product_type") == "Bracelets",
+        },
+        "earrings": {
+            "title": "Earrings",
+            "description": "Earrings filtered from product_type.",
+            "matcher": lambda product: product.get("product_type") == "Earrings",
+        },
+        "the-cord-charms": {
+            "title": "The Cord Charms",
+            "description": "Cord and charm products inferred from tags and titles.",
+            "matcher": lambda product: "cord" in " ".join(product.get("tags", [])).lower() or "charm" in product.get("title", "").lower(),
+        },
+        "the-puffy-heart-club": {
+            "title": "The Puffy Heart Club",
+            "description": "Heart-led products inferred from tags and titles.",
+            "matcher": lambda product: "heart" in " ".join(product.get("tags", [])).lower() or "heart" in product.get("title", "").lower(),
+        },
+        "pearls-1": {
+            "title": "Pretty in Pearls",
+            "description": "Pearl products inferred from tags and titles.",
+            "matcher": lambda product: "pearl" in " ".join(product.get("tags", [])).lower() or "pearl" in product.get("title", "").lower(),
+        },
+    }
+
+
+def store_collection_products(handle):
+    definition = store_collection_definitions().get(handle)
+    if not definition:
+        return None, []
+    products = store_products()
+    if "handles" in definition:
+        selected = [product for product in products if product.get("handle") in definition["handles"]]
+    else:
+        selected = [product for product in products if definition["matcher"](product)]
+    return definition, selected
+
+
+def store_template_context(**kwargs):
+    context = {
+        "collections": store_collection_definitions(),
+        "product_image": store_product_image,
+        "price_label": store_price_label,
+        "description_lines": store_description_lines,
+        "first_variant": store_first_available_variant,
+        "placeholder_image": STORE_PLACEHOLDER_IMAGE,
+    }
+    context.update(kwargs)
+    return context
 
 
 def store_variant_lookup():
@@ -1459,7 +1604,60 @@ def fast_upload():
 @app.route("/store")
 @app.route("/store/")
 def store_page():
-    return send_file(BASE_DIR / "pages" / "store" / "index.html")
+    products_by_handle = {product.get("handle"): product for product in store_products()}
+    return render_template(
+        "store/home.html",
+        **store_template_context(
+            homepage=load_store_homepage(),
+            products_by_handle=products_by_handle,
+        ),
+    )
+
+
+@app.route("/store/collections/<handle>")
+def store_collection_page(handle):
+    collection, products = store_collection_products(handle)
+    if not collection:
+        abort(404)
+    return render_template(
+        "store/collection.html",
+        **store_template_context(
+            handle=handle,
+            collection=collection,
+            products=products,
+        ),
+    )
+
+
+@app.route("/store/products/<handle>")
+def store_product_page(handle):
+    product = store_product_by_handle(handle)
+    if not product:
+        abort(404)
+    related = [
+        item for item in store_products()
+        if item.get("handle") != handle and item.get("product_type") == product.get("product_type")
+    ][:4]
+    return render_template(
+        "store/product.html",
+        **store_template_context(
+            product=product,
+            related=related,
+        ),
+    )
+
+
+@app.route("/store/cart")
+def store_cart_page():
+    return render_template(
+        "store/cart.html",
+        **store_template_context(),
+    )
+
+
+@app.route("/store/assets/store.js")
+def store_asset_js():
+    return send_file(BASE_DIR / "pages" / "store" / "store.js", mimetype="text/javascript")
 
 
 @app.route("/store/catalog.json")

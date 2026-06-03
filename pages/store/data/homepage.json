@@ -1,0 +1,72 @@
+{
+  "brand": "Roxanne Assoulin",
+  "sections": [
+    {
+      "type": "hero",
+      "title": "shop the summer capsule",
+      "eyebrow": "camp RA",
+      "href": "/store/collections/the-summer-capsule",
+      "image": "https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985_760x_crop_center.jpg?v=1780086212"
+    },
+    {
+      "type": "product_module",
+      "title": "welcome to camp RA...",
+      "href": "/store/collections/the-summer-capsule",
+      "cta": "shop now",
+      "products": [
+        "the-salt-pepper-cylinder-necklace-set",
+        "the-salt-pepper-cylinder-bracelet-stack",
+        "the-paprika-necklace-duo",
+        "the-pearl-branch-bracelet"
+      ]
+    },
+    {
+      "type": "split_banner",
+      "tiles": [
+        {
+          "title": "happy hearts",
+          "href": "/store/collections/the-puffy-heart-club",
+          "image": "https://roxanneassoulin.com/cdn/shop/files/0526_Hearts_760x_crop_center.jpg?v=1779797721"
+        },
+        {
+          "title": "happy baby",
+          "href": "/store/products/the-itsy-bitsy-puffy-heart-charm-necklace",
+          "image": "https://roxanneassoulin.com/cdn/shop/files/0531_HappyBaby_Mobile_9f30ae56-b0cc-48f3-9f88-28ec80b99883_760x_crop_center.jpg?v=1780086366"
+        }
+      ]
+    },
+    {
+      "type": "hero",
+      "title": "pretty in pearls",
+      "eyebrow": "freshwater favorites",
+      "href": "/store/collections/pearls-1",
+      "image": "https://roxanneassoulin.com/cdn/shop/files/0531_Pearl_Mobile_48a1396e-8ee0-4cd6-90be-cc066e9ca7d1_760x_crop_center.jpg?v=1780086295"
+    },
+    {
+      "type": "category_module",
+      "title": "jewelry that makes you smile :)",
+      "items": [
+        { "label": "what's new", "href": "/store/collections/new-arrivals" },
+        { "label": "hearts", "href": "/store/collections/the-puffy-heart-club" },
+        { "label": "charms", "href": "/store/collections/the-cord-charms" },
+        { "label": "happy cords", "href": "/store/collections/the-cord-charms" },
+        { "label": "and more", "href": "/store/collections/shop" }
+      ]
+    },
+    {
+      "type": "split_banner",
+      "tiles": [
+        {
+          "title": "the cords",
+          "href": "/store/collections/the-cord-charms",
+          "image": "https://roxanneassoulin.com/cdn/shop/files/0531_Camp_Mobile_55bf818c-5e28-4609-93ff-1e7bf5a090d6_760x_crop_center.jpg?v=1780086477"
+        },
+        {
+          "title": "make it personal",
+          "href": "/store/products/the-happy-cord-charm-necklace-salt-pepper",
+          "image": "https://roxanneassoulin.com/cdn/shop/files/0531_ItsyBitsy_Mobile_47e7a0a7-064e-44fb-b14e-5971f5c14833_760x_crop_center.jpg?v=1780086501"
+        }
+      ]
+    }
+  ]
+}

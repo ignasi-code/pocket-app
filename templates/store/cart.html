@@ -1,0 +1,26 @@
+{% extends "store/base.html" %}
+{% block title %}Bag - Pocket Store{% endblock %}
+{% block body %}
+  <main class="page" data-cart-page data-checkout-endpoint="/store/api/checkout">
+    <section class="section-head">
+      <div>
+        <p class="eyebrow">checkout prototype</p>
+        <h1>Your bag</h1>
+        <p class="notice">Cart state is local. Flask verifies variant IDs and generates a Shopify cart permalink.</p>
+      </div>
+      <a class="button" href="/store/collections/shop">continue shopping</a>
+    </section>
+
+    <section class="cart-layout">
+      <div class="cart-panel">
+        <div data-cart-lines></div>
+      </div>
+      <aside class="cart-panel">
+        <h2>Summary</h2>
+        <p class="cart-total">Subtotal <strong data-cart-subtotal>$0.00</strong></p>
+        <button class="plain-button" type="button" data-checkout style="width:100%;margin-top:12px;">Mock checkout</button>
+        <div class="notice" data-checkout-output>Checkout response will appear here.</div>
+      </aside>
+    </section>
+  </main>
+{% endblock %}

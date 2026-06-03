@@ -1,0 +1,22 @@
+<article class="product-card">
+  <a href="/store/products/{{ product.handle }}">
+    <img class="product-card__image" src="{{ product_image(product) }}" alt="{{ product.title }}" loading="lazy">
+  </a>
+  <div class="product-card__body">
+    <h3 class="product-card__title">
+      <a href="/store/products/{{ product.handle }}">{{ product.title }}</a>
+    </h3>
+    <div class="price">{{ price_label(product) }}</div>
+    {% set variant = first_variant(product) %}
+    <div class="quick-row">
+      <select aria-label="Variant for {{ product.title }}" data-variant-select>
+        {% for item in product.variants %}
+          <option value="{{ item.id }}" {% if item.available is sameas false %}disabled{% endif %}>
+            {{ item.title }}{% if item.available is sameas false %} - sold out{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <button type="button" data-store-add data-variant-id="{{ variant.id }}">Add</button>
+    </div>
+  </div>
+</article>

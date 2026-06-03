@@ -1,0 +1,26 @@
+{% extends "store/base.html" %}
+{% block title %}{{ collection.title }} - Pocket Store{% endblock %}
+{% block body %}
+  <main class="page">
+    <section class="section-head">
+      <div>
+        <p class="eyebrow">collection</p>
+        <h1>{{ collection.title }}</h1>
+        <p class="notice">{{ collection.description }}</p>
+      </div>
+      <a class="button" href="/store/cart">view bag</a>
+    </section>
+
+    {% if products %}
+      <section class="grid">
+        {% for product in products %}
+          {% include "store/_product_card.html" %}
+        {% endfor %}
+      </section>
+    {% else %}
+      <section class="empty-state">
+        <p>No products in this prototype bucket yet.</p>
+      </section>
+    {% endif %}
+  </main>
+{% endblock %}

@@ -33,7 +33,7 @@ Control pages:
 - `/stats`: Dashboard for battery, storage, RAM, and system info.
 - `/fast`: Pocket Fast speed test for the Termux tunnel.
 - `/gpt`: Gemini CLI prompt bridge.
-- `/store`: Public static Shopify storefront prototype with local cart and mock checkout.
+- `/store`: Public static-first Shopify storefront prototype with home, collection, product, cart, and mock checkout.
 - `/terminal`: Token-protected browser terminal for pasted shell commands.
 - `/setup`: Save local `.env` config from the browser.
 - `/pull`: Run `git pull origin master`.
@@ -67,13 +67,21 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 
 ## Store prototype
 
-The `/store` prototype uses a local snapshot at `pages/store/catalog.json`, captured from:
+The `/store` prototype uses local snapshots at `pages/store/catalog.json` and `pages/store/data/homepage.json`. The catalog was captured from:
 
 ```text
 https://roxanneassoulin.com/products.json
 ```
 
-The browser owns cart state in `localStorage`. The mock checkout endpoint verifies variant IDs and prices against the server-side catalog before returning totals and a Shopify cart permalink.
+The browser owns cart state in `localStorage`. The mock checkout endpoint verifies variant IDs and prices against the server-side catalog before returning totals and a Shopify cart permalink. Prototype routes:
+
+```text
+/store
+/store/collections/<handle>
+/store/products/<handle>
+/store/cart
+/store/api/checkout
+```
 
 Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`.
 

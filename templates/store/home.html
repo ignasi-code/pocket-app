@@ -1,0 +1,51 @@
+{% extends "store/base.html" %}
+{% block title %}Pocket Store - Roxanne Prototype{% endblock %}
+{% block body %}
+  <main class="wide">
+    {% for section in homepage.sections %}
+      {% if section.type == "hero" %}
+        <section class="hero">
+          <img src="{{ section.image or placeholder_image }}" alt="">
+          <div class="hero-copy">
+            <p class="eyebrow">{{ section.eyebrow }}</p>
+            <h1 class="hero-title">{{ section.title }}</h1>
+            <a class="button" href="{{ section.href }}">shop now</a>
+          </div>
+        </section>
+      {% elif section.type == "product_module" %}
+        <section class="section">
+          <div class="section-head">
+            <h2 class="section-title">{{ section.title }}</h2>
+            <a class="button" href="{{ section.href }}">{{ section.cta }}</a>
+          </div>
+          <div class="grid">
+            {% for handle in section.products %}
+              {% set product = products_by_handle.get(handle) %}
+              {% if product %}
+                {% include "store/_product_card.html" %}
+              {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+      {% elif section.type == "split_banner" %}
+        <section class="split-banner">
+          {% for tile in section.tiles %}
+            <a class="split-tile" href="{{ tile.href }}">
+              <img src="{{ tile.image or placeholder_image }}" alt="">
+              <span>{{ tile.title }}</span>
+            </a>
+          {% endfor %}
+        </section>
+      {% elif section.type == "category_module" %}
+        <section class="section category-module">
+          <h2 class="section-title">{{ section.title }}</h2>
+          <div class="category-list">
+            {% for item in section["items"] %}
+              <a class="button" href="{{ item.href }}">{{ item.label }}</a>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+    {% endfor %}
+  </main>
+{% endblock %}
