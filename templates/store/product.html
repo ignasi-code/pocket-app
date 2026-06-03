@@ -3,17 +3,21 @@
 {% block body %}
   <main class="page">
     {% set product_merch = product_merchandising(product.handle) %}
-    <section class="pdp">
-      <div class="gallery">
-        <div class="gallery-track" data-product-gallery>
+    <section class="pdp product-info">
+      <div class="gallery product-gallery__wrapper">
+        <div class="gallery-track product-gallery js-productGallery" data-product-gallery>
           {% for image in product.images[:6] %}
-            <img src="{{ image.src }}" alt="{{ product.title }}" loading="lazy" data-gallery-image data-gallery-image-src="{{ image.src }}">
+            <div class="product-gallery__image__wrapper js-productImage">
+              <img src="{{ image.src }}" alt="{{ product.title }}" loading="lazy" data-gallery-image data-gallery-image-src="{{ image.src }}">
+            </div>
           {% else %}
-            <img src="{{ placeholder_image }}" alt="{{ product.title }}" data-gallery-image data-gallery-image-src="{{ placeholder_image }}">
+            <div class="product-gallery__image__wrapper js-productImage">
+              <img src="{{ placeholder_image }}" alt="{{ product.title }}" data-gallery-image data-gallery-image-src="{{ placeholder_image }}">
+            </div>
           {% endfor %}
         </div>
         {% if product.images|length > 1 %}
-          <div class="gallery-dots" aria-label="Product gallery">
+          <div class="gallery-dots product-gallery__image__dots" aria-label="Product gallery">
             {% for image in product.images[:6] %}
               <button type="button" aria-label="Show image {{ loop.index }}" data-gallery-dot data-gallery-target="{{ image.src }}"></button>
             {% endfor %}
@@ -21,70 +25,83 @@
         {% endif %}
       </div>
 
-      <aside class="buy-box">
-        <p class="eyebrow">{{ product.product_type }}</p>
-        <h1>{{ product.title }}</h1>
-        <div class="price">{{ price_label(product) }}</div>
+      <aside class="buy-box product-details">
+        <div class="product-details-top">
+          <p class="eyebrow">{{ product.product_type }}</p>
+          <h1 class="product-details-top__name">{{ product.title }}</h1>
+          <div class="price product-details-top__price">{{ price_label(product) }}</div>
+        </div>
 
-        {% set short_description = description_html(product) %}
-        {% if short_description %}
-          <div class="product-short-description" data-product-description>
-            <h2>Description</h2>
-            {{ short_description | safe }}
+        <div class="product-details-bottom js-productDetailsContent">
+          <div class="product-details-bottom__col product-details-bottom__col--info">
+            {% set short_description = description_html(product) %}
+            {% if short_description %}
+              <div class="product-short-description" data-product-description>
+                <h2>Description</h2>
+                {{ short_description | safe }}
+              </div>
+            {% endif %}
+
+            {% if product_merch.motto %}
+              <div class="product-motto product-details-bottom__motto">
+                <div class="product-details-bottom__motto__text">{{ product_merch.motto }}</div>
+              </div>
+            {% endif %}
+
+            {% if product_merch.detail_rows %}
+              <table class="product-detail-table product-details-bottom__content">
+                <tbody>
+                  {% for row in product_merch.detail_rows %}
+                    {% if not short_description or row.label != "Description" %}
+                      <tr>
+                        <th scope="row">{{ row.label }}</th>
+                        <td>{{ row.html | safe }}</td>
+                      </tr>
+                    {% endif %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% endif %}
+
+            {% set lines = description_lines(product) %}
+            {% if lines and not product_merch.detail_rows %}
+              <ul class="details-list">
+                {% for line in lines %}
+                  <li>{{ line }}</li>
+                {% endfor %}
+              </ul>
+            {% elif not product_merch.detail_rows %}
+              <p class="notice">A bright piece from the public Shopify catalog snapshot.</p>
+            {% endif %}
           </div>
-        {% endif %}
 
-        {% if product_merch.motto %}
-          <div class="product-motto">{{ product_merch.motto }}</div>
-        {% endif %}
+          <div class="product-details-bottom__col product-details-bottom__col--options">
+            <form class="buy-form product-buy-options" data-product-form>
+              <label class="option-selector product-option-selector">
+                <span class="eyebrow option-selector__label">variant</span>
+                <select class="option-selector__toggle js-optionSelectorToggle" name="variant_id" data-pdp-variant-select>
+                  {% for variant in product.variants %}
+                    {% set variant_image = variant.featured_image.src if variant.featured_image else "" %}
+                    <option value="{{ variant.id }}" data-image-src="{{ variant_image }}" {% if variant.available is sameas false %}disabled{% endif %}>
+                      {{ variant.title }} - ${{ variant.price }}{% if variant.available is sameas false %} - sold out{% endif %}
+                    </option>
+                  {% endfor %}
+                </select>
+              </label>
+              <div class="product-buy-options__qty product-qty" aria-label="Quantity">
+                <button class="product-buy-options__qty__minus" type="button" data-qty-dec aria-label="Decrease quantity">-</button>
+                <input type="number" name="quantity" min="1" max="99" value="1" inputmode="numeric" data-product-qty>
+                <button class="product-buy-options__qty__plus" type="button" data-qty-inc aria-label="Increase quantity">+</button>
+              </div>
+              <div class="product-buy-options__add-wrapper">
+                <button class="plain-button button button--blue js-addToBag js-addToBag2" type="submit">Add to bag</button>
+                <div class="product-buy-options__price">{{ price_label(product) }}</div>
+              </div>
+            </form>
 
-        {% if product_merch.detail_rows %}
-          <table class="product-detail-table">
-            <tbody>
-              {% for row in product_merch.detail_rows %}
-                {% if not short_description or row.label != "Description" %}
-                  <tr>
-                    <th scope="row">{{ row.label }}</th>
-                    <td>{{ row.html | safe }}</td>
-                  </tr>
-                {% endif %}
-              {% endfor %}
-            </tbody>
-          </table>
-        {% endif %}
-
-        {% set lines = description_lines(product) %}
-        {% if lines and not product_merch.detail_rows %}
-          <ul class="details-list">
-            {% for line in lines %}
-              <li>{{ line }}</li>
-            {% endfor %}
-          </ul>
-        {% elif not product_merch.detail_rows %}
-          <p class="notice">A bright piece from the public Shopify catalog snapshot.</p>
-        {% endif %}
-
-        <form class="buy-form" data-product-form>
-          <label>
-            <span class="eyebrow">variant</span>
-            <select name="variant_id" data-pdp-variant-select>
-              {% for variant in product.variants %}
-                {% set variant_image = variant.featured_image.src if variant.featured_image else "" %}
-                <option value="{{ variant.id }}" data-image-src="{{ variant_image }}" {% if variant.available is sameas false %}disabled{% endif %}>
-                  {{ variant.title }} - ${{ variant.price }}{% if variant.available is sameas false %} - sold out{% endif %}
-                </option>
-              {% endfor %}
-            </select>
-          </label>
-          <div class="product-qty" aria-label="Quantity">
-            <button type="button" data-qty-dec aria-label="Decrease quantity">-</button>
-            <input type="number" name="quantity" min="1" max="99" value="1" inputmode="numeric" data-product-qty>
-            <button type="button" data-qty-inc aria-label="Increase quantity">+</button>
+            <p class="notice">Prototype checkout verifies this variant against the local catalog, then generates a Shopify cart permalink.</p>
           </div>
-          <button class="plain-button" type="submit">Add to bag</button>
-        </form>
-
-        <p class="notice">Prototype checkout verifies this variant against the local catalog, then generates a Shopify cart permalink.</p>
+        </div>
       </aside>
     </section>
 

@@ -114,6 +114,26 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-qty-inc", html)
         self.assertIn("data-qty-dec", html)
 
+    def test_product_page_uses_live_pdp_structure_and_buy_options(self):
+        product, _variant = self.first_available_variant()
+        response = self.client.get(f"/store/products/{product['handle']}")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("product-info", html)
+        self.assertIn("product-gallery__wrapper", html)
+        self.assertIn("product-gallery__image__wrapper", html)
+        self.assertIn("product-details", html)
+        self.assertIn("product-details-top__name", html)
+        self.assertIn("product-details-bottom__col--options", html)
+        self.assertIn("product-buy-options", html)
+        self.assertIn("product-buy-options__add-wrapper", html)
+        self.assertIn("product-buy-options__price", html)
+        self.assertIn("js-addToBag", html)
+        self.assertIn("button--blue", html)
+        self.assertIn(".product-buy-options__add-wrapper button", html)
+        self.assertIn("height: 60px", html)
+
     def test_cart_page_renders_checkout_hooks(self):
         response = self.client.get("/store/cart")
 
