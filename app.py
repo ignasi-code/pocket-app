@@ -697,6 +697,10 @@ SETUP_PAGE = """
           <label for="gemini_model">Gemini model</label>
           <input id="gemini_model" name="gemini_model" type="text" value="{{ default_model }}" autocomplete="off">
         </div>
+        <div class="field">
+          <label for="gemini_args">Gemini extra args</label>
+          <input id="gemini_args" name="gemini_args" type="text" value="{{ gemini_args }}" autocomplete="off" placeholder="Example: --approval-mode=yolo">
+        </div>
         <button type="submit">Save Configuration</button>
       </form>
     {% endif %}
@@ -721,11 +725,13 @@ def setup_page():
             saved=False,
             error="",
             default_model=DEFAULT_GEMINI_MODEL,
+            gemini_args=os.environ.get("POCKET_GEMINI_ARGS", ""),
         ), 403 if locked and request.method == "POST" else 200
 
     gemini_api_key = clean_config_value(request.form.get("gemini_api_key"))
     pocket_access_token = clean_config_value(request.form.get("pocket_access_token"))
     gemini_model = clean_config_value(request.form.get("gemini_model")) or DEFAULT_GEMINI_MODEL
+    gemini_args = clean_config_value(request.form.get("gemini_args"))
 
     if not gemini_api_key:
         return render_template_string(
@@ -734,12 +740,15 @@ def setup_page():
             saved=False,
             error="Gemini API key is required.",
             default_model=gemini_model,
+            gemini_args=gemini_args,
         ), 400
 
     updates = {
         "GEMINI_API_KEY": gemini_api_key,
         "POCKET_GEMINI_MODEL": gemini_model,
     }
+    if gemini_args:
+        updates["POCKET_GEMINI_ARGS"] = gemini_args
     if pocket_access_token:
         updates["POCKET_ACCESS_TOKEN"] = pocket_access_token
 
@@ -753,6 +762,7 @@ def setup_page():
             saved=False,
             error=f"Could not save .env: {exc}",
             default_model=gemini_model,
+            gemini_args=gemini_args,
         ), 500
 
     return render_template_string(
@@ -761,6 +771,7 @@ def setup_page():
         saved=True,
         error="",
         default_model=gemini_model,
+        gemini_args=gemini_args,
     )
 
 
