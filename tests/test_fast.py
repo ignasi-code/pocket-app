@@ -32,6 +32,26 @@ class FastPageTest(unittest.TestCase):
         self.assertEqual(response.headers["Cache-Control"], "no-store")
         self.assertEqual(response.headers["Content-Type"], "application/octet-stream")
 
+    def test_download_ui_starts_activity_meter_before_fetch_wait(self):
+        response = self.client.get("/fast")
+
+        try:
+            html = response.get_data(as_text=True)
+            download_start = html.index("async function runDownloadTest()")
+            upload_start = html.index("async function runUploadTest()")
+            download_script = html[download_start:upload_start]
+            self.assertIn('const stopActivity = startActivityMeter("download");', download_script)
+            self.assertIn("await downloadWithProgress(url", download_script)
+            meter_start = download_script.index('const stopActivity = startActivityMeter("download");')
+            download_wait = download_script.index("await downloadWithProgress(url")
+
+            self.assertIn("function startActivityMeter(kind)", html)
+            self.assertIn("function downloadWithProgress(url, onProgress)", html)
+            self.assertIn("stopActivity();", download_script)
+            self.assertLess(meter_start, download_wait)
+        finally:
+            response.close()
+
     def test_upload_endpoint_reports_received_bytes(self):
         payload = b"speed-test" * 128
 

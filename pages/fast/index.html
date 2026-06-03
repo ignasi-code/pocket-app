@@ -409,6 +409,34 @@
       speedEl.textContent = formatSpeed(value);
     }
 
+    function startActivityMeter(kind) {
+      let active = true;
+      let frameId = 0;
+      const started = performance.now();
+      const baseSpeed = kind === "download" ? 0.35 : 0.2;
+
+      function tick(now) {
+        if (!active) {
+          return;
+        }
+        const seconds = Math.max((now - started) / 1000, 0);
+        const ramp = Math.min(seconds * 2.4, 12);
+        const pulse = (Math.sin(seconds * 7) + 1) * 1.6;
+        setSpeed(baseSpeed + ramp + pulse);
+        frameId = requestAnimationFrame(tick);
+      }
+
+      frameId = requestAnimationFrame(tick);
+
+      return () => {
+        if (!active) {
+          return;
+        }
+        active = false;
+        cancelAnimationFrame(frameId);
+      };
+    }
+
     function setDirectionForMode() {
       if (selectedMode === "download") {
         directionEl.textContent = "Termux upload: server -> browser";
@@ -455,40 +483,71 @@
       throw new Error(detail || `Request failed with status ${response.status}.`);
     }
 
+    function downloadWithProgress(url, onProgress) {
+      const started = performance.now();
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", url, true);
+        xhr.responseType = "arraybuffer";
+        Object.entries(authHeaders()).forEach(([name, value]) => {
+          xhr.setRequestHeader(name, value);
+        });
+
+        let loadedBytes = 0;
+
+        xhr.onprogress = (event) => {
+          loadedBytes = event.loaded || loadedBytes;
+          onProgress(loadedBytes, Math.max((performance.now() - started) / 1000, 0.001));
+        };
+
+        xhr.onload = () => {
+          const seconds = Math.max((performance.now() - started) / 1000, 0.001);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const responseBytes = xhr.response ? xhr.response.byteLength : 0;
+            resolve({ bytes: responseBytes || loadedBytes, seconds });
+            return;
+          }
+
+          if (xhr.status === 401) {
+            reject(new Error("Pocket token required or invalid."));
+            return;
+          }
+
+          reject(new Error(`Request failed with status ${xhr.status}.`));
+        };
+
+        xhr.onerror = () => reject(new Error("Download request failed."));
+        xhr.ontimeout = () => reject(new Error("Download request timed out."));
+        xhr.send();
+      });
+    }
+
     async function runDownloadTest() {
       statusEl.textContent = "Testing Termux upload";
       directionEl.textContent = "server -> browser";
       messageEl.textContent = "";
       const url = `/fast/api/download?bytes=${DOWNLOAD_BYTES}&n=${cacheBust()}`;
-      const response = await fetch(url, { headers: authHeaders() });
-      await ensureOk(response);
+      const stopActivity = startActivityMeter("download");
+      let sawProgress = false;
 
-      const started = performance.now();
-      let received = 0;
-      let lastPaint = started;
-
-      if (response.body && response.body.getReader) {
-        const reader = response.body.getReader();
-        while (true) {
-          const result = await reader.read();
-          if (result.done) {
-            break;
+      let result;
+      try {
+        result = await downloadWithProgress(url, (received, seconds) => {
+          if (!received) {
+            return;
           }
-          received += result.value.byteLength;
-          const now = performance.now();
-          const elapsed = (now - started) / 1000;
-          if (elapsed > 0.1 && now - lastPaint > 150) {
-            setSpeed(mbps(received, elapsed));
-            lastPaint = now;
+          if (!sawProgress) {
+            stopActivity();
+            sawProgress = true;
           }
-        }
-      } else {
-        const buffer = await response.arrayBuffer();
-        received = buffer.byteLength;
+          setSpeed(mbps(received, seconds));
+        });
+      } finally {
+        stopActivity();
       }
 
-      const seconds = Math.max((performance.now() - started) / 1000, 0.001);
-      const speed = mbps(received, seconds);
+      const speed = mbps(result.bytes, result.seconds);
       setSpeed(speed);
       downloadResult.textContent = `${formatSpeed(speed)} Mbps`;
       return speed;
