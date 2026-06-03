@@ -7,7 +7,7 @@ import threading
 import time
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template_string, request
+from flask import Flask, jsonify, render_template_string, request, send_file
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -716,7 +716,7 @@ SETUP_PAGE = """
 
 @app.route("/")
 def home():
-    return "Hello, World!"
+    return send_file(BASE_DIR / "pages" / "index.html")
 
 
 @app.route("/setup", methods=["GET", "POST"])

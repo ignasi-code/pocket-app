@@ -29,6 +29,7 @@ Then open `/setup` in a browser to paste your Gemini API key and save `.env`.
 
 Control pages:
 
+- `/`: BODY POWER landing page.
 - `/gpt`: Gemini CLI prompt bridge.
 - `/setup`: Save local `.env` config from the browser.
 - `/pull`: Run `git pull origin master`.
