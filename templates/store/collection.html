@@ -1,18 +1,35 @@
 {% extends "store/base.html" %}
 {% block title %}{{ collection.title }} - Pocket Store{% endblock %}
 {% block body %}
-  <main class="page">
-    <section class="section-head">
-      <div>
-        <p class="eyebrow">collection</p>
-        <h1>{{ collection.title }}</h1>
-        <p class="notice">{{ collection.description }}</p>
-      </div>
-      <a class="button" href="/store/cart">view bag</a>
+  <main class="collection-page">
+    {% if collection.hero_image_mobile %}
+      <section class="collection-hero">
+        <div class="collection-hero__image">
+          <img src="{{ collection.hero_image_mobile }}" alt="{{ collection.hero_title or collection.title }}">
+        </div>
+        <h1>{{ collection.hero_title or collection.title }}</h1>
+      </section>
+    {% else %}
+      <section class="page">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">collection</p>
+            <h1>{{ collection.title }}</h1>
+            <p class="notice">{{ collection.description }}</p>
+          </div>
+          <a class="button" href="/store/cart">view bag</a>
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="collection-filter-bar" aria-label="Collection controls">
+      {% set labels = collection.filter_labels or ["Filter", "Sort"] %}
+      <button type="button">{{ labels[0] }}</button>
+      <button type="button">{{ labels[1] }}</button>
     </section>
 
     {% if products %}
-      <section class="grid">
+      <section class="grid collection-grid">
         {% for product in products %}
           {% include "store/_product_card.html" %}
         {% endfor %}

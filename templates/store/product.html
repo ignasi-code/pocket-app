@@ -2,6 +2,7 @@
 {% block title %}{{ product.title }} - Pocket Store{% endblock %}
 {% block body %}
   <main class="page">
+    {% set product_merch = product_merchandising(product.handle) %}
     <section class="pdp">
       <div class="gallery">
         {% for image in product.images[:6] %}
@@ -16,14 +17,31 @@
         <h1>{{ product.title }}</h1>
         <div class="price">{{ price_label(product) }}</div>
 
+        {% if product_merch.motto %}
+          <div class="product-motto">{{ product_merch.motto }}</div>
+        {% endif %}
+
+        {% if product_merch.detail_rows %}
+          <table class="product-detail-table">
+            <tbody>
+              {% for row in product_merch.detail_rows %}
+                <tr>
+                  <th scope="row">{{ row.label }}</th>
+                  <td>{{ row.html | safe }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+
         {% set lines = description_lines(product) %}
-        {% if lines %}
+        {% if lines and not product_merch.detail_rows %}
           <ul class="details-list">
             {% for line in lines %}
               <li>{{ line }}</li>
             {% endfor %}
           </ul>
-        {% else %}
+        {% elif not product_merch.detail_rows %}
           <p class="notice">A bright piece from the public Shopify catalog snapshot.</p>
         {% endif %}
 

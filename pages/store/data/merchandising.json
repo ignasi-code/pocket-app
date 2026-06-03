@@ -1,0 +1,42 @@
+{
+  "source": "Live Roxanne Assoulin DOM/template inspection. These values are not reliably available in public products.json feeds.",
+  "collections": {
+    "the-summer-capsule": {
+      "hero_title": "the summer capsule",
+      "hero_image_mobile": "https://cdn.shopify.com/s/files/1/0998/6780/collections/0526_CasualCapsule_Mobile.jpg?v=1779889222",
+      "filter_labels": ["Filter", "Sort"]
+    }
+  },
+  "product_pages": {
+    "the-salt-pepper-cylinder-necklace-set": {
+      "motto": "Your no-sweat summer showpiece",
+      "detail_rows": [
+        {
+          "label": "Description",
+          "html": "- The Salt &amp; Pepper Necklace Duo: Striped agate, moss agate, imitation bone &amp; coconut shell<br>- The Cylinder Cord Necklace in Lemon: Acrylic cylinder sliders, cubic zirconia detail, cord base"
+        },
+        {
+          "label": "Size",
+          "html": "- Moss Agate Necklace: 16\" length<br>- Imitation Bone &amp; Black Coconut Necklace: 17\" length<br>- The Cylinder Cord Necklace: 15' length"
+        },
+        {
+          "label": "Care",
+          "html": "View <button type=\"button\">product care guide</button>"
+        },
+        {
+          "label": "Styled with",
+          "html": "<a href=\"/store/products/the-salt-pepper-cylinder-bracelet-stack\">The Salt &amp; Pepper Cylinder Bracelet Stack</a>, <a href=\"/store/products/the-pearl-branch-bracelet\">The Pearl Branch Bracelet</a>"
+        }
+      ]
+    }
+  },
+  "cart": {
+    "empty": "Your shopping bag is empty",
+    "start_shopping": "Start shopping",
+    "checkout": "Checkout"
+  },
+  "filters": {
+    "categories": ["Necklaces", "Bracelets", "Earrings", "Charms"],
+    "sort": ["Newest", "Best selling", "Price, low to high", "Price, high to low"]
+  }
+}

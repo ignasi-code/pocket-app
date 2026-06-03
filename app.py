@@ -291,6 +291,13 @@ def load_store_homepage():
     return json.loads((STORE_DATA_DIR / "homepage.json").read_text(encoding="utf-8"))
 
 
+def load_store_merchandising():
+    path = STORE_DATA_DIR / "merchandising.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def store_products():
     return load_store_catalog().get("products", [])
 
@@ -343,6 +350,7 @@ def store_description_lines(product):
 
 
 def store_collection_definitions():
+    extracted = load_store_merchandising().get("collections", {})
     return {
         "shop": {
             "title": "Shop All",
@@ -357,6 +365,7 @@ def store_collection_definitions():
         "the-summer-capsule": {
             "title": "The Summer Capsule",
             "description": "Bright cords, pearls, charms, and stacks for the seasonal story.",
+            **extracted.get("the-summer-capsule", {}),
             "matcher": lambda product: True,
         },
         "best-sellers": {
@@ -417,12 +426,15 @@ def store_collection_products(handle):
 
 
 def store_template_context(**kwargs):
+    merchandising = load_store_merchandising()
     context = {
         "collections": store_collection_definitions(),
+        "merchandising": merchandising,
         "product_image": store_product_image,
         "price_label": store_price_label,
         "description_lines": store_description_lines,
         "first_variant": store_first_available_variant,
+        "product_merchandising": lambda handle: merchandising.get("product_pages", {}).get(handle, {}),
         "placeholder_image": STORE_PLACEHOLDER_IMAGE,
     }
     context.update(kwargs)
