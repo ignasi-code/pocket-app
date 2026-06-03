@@ -73,6 +73,12 @@ STORE_DATA_DIR = BASE_DIR / "pages" / "store" / "data"
 STORE_PLACEHOLDER_IMAGE = "https://placehold.co/900x1100/f8dd5f/1f1a15?text=Roxanne"
 STORE_BASE_URL = os.environ.get("POCKET_STORE_BASE_URL", "https://roxanneassoulin.com").rstrip("/")
 STORE_CURRENCY = os.environ.get("POCKET_STORE_CURRENCY", "usd").lower()
+STORE_SWATCH_COLORS = {
+    "cloud": "#8ED1D1",
+    "lemon": "#E3D43C",
+    "sienna": "#C75530",
+    "salt & pepper": "#1f1f1f",
+}
 RESTART_LOG_PATH = BASE_DIR / "pocket-restart.log"
 
 app = Flask(__name__)
@@ -335,6 +341,87 @@ def store_price_label(product):
     return f"${format_price(low)} - ${format_price(high)}"
 
 
+def store_variant_price_label(variant):
+    return f"${format_price(parse_price_cents(variant.get('price')))}"
+
+
+def store_primary_option_name(product):
+    options = product.get("options") or []
+    if options and isinstance(options[0], dict):
+        return str(options[0].get("name") or "Variant").strip() or "Variant"
+    if options and isinstance(options[0], str):
+        return str(options[0]).strip() or "Variant"
+    return "Variant"
+
+
+def store_variant_image_src(product, variant):
+    featured = variant.get("featured_image") if isinstance(variant, dict) else None
+    if featured and featured.get("src"):
+        return featured["src"]
+    return store_product_image(product)
+
+
+def store_pdp_sibling_products(product):
+    variants = product.get("variants", [])
+    option_name = store_primary_option_name(product).lower()
+    if len(variants) != 1 or option_name != "color":
+        return [product]
+
+    siblings = [
+        item for item in store_products()
+        if item.get("title") == product.get("title")
+        and item.get("product_type") == product.get("product_type")
+        and item.get("vendor") == product.get("vendor")
+        and len(item.get("variants", [])) == 1
+        and store_primary_option_name(item).lower() == option_name
+    ]
+    if len(siblings) <= 1:
+        return [product]
+    return [product, *[item for item in siblings if item.get("handle") != product.get("handle")]]
+
+
+def store_swatch_color(label):
+    key = str(label or "").strip().lower()
+    return STORE_SWATCH_COLORS.get(key, "")
+
+
+def store_pdp_variant_options(product):
+    selected_variant = store_first_available_variant(product)
+    option_name = store_primary_option_name(product).lower()
+    entries = []
+
+    for source_product in store_pdp_sibling_products(product):
+        for variant in source_product.get("variants", []):
+            title = variant.get("option1") or variant.get("title") or "Default"
+            entries.append({
+                "variant": variant,
+                "title": title,
+                "price_label": store_variant_price_label(variant),
+                "image_src": store_variant_image_src(source_product, variant),
+                "url": "" if source_product.get("handle") == product.get("handle") else f"/store/products/{source_product.get('handle')}",
+                "selected": str(variant.get("id")) == str(selected_variant.get("id")),
+                "swatch": store_swatch_color(title) if option_name == "color" else "",
+            })
+
+    return entries
+
+
+def store_pdp_gallery_images(product):
+    images = list(product.get("images", []))
+    if not images:
+        return [{"src": STORE_PLACEHOLDER_IMAGE, "variant_ids": []}]
+
+    variants = product.get("variants", [])
+    option_name = store_primary_option_name(product).lower()
+    if len(variants) == 1 and option_name == "color":
+        lifestyle_images = [image for image in images if not image.get("variant_ids")]
+        variant_images = [image for image in images if image.get("variant_ids")]
+        if lifestyle_images and variant_images:
+            return [*lifestyle_images, *variant_images]
+
+    return images
+
+
 def store_description_lines(product):
     text = str(product.get("body_html") or "")
     text = text.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
@@ -439,9 +526,13 @@ def store_template_context(**kwargs):
         "merchandising": merchandising,
         "product_image": store_product_image,
         "price_label": store_price_label,
+        "variant_price_label": store_variant_price_label,
         "description_lines": store_description_lines,
         "description_html": store_product_description_html,
         "first_variant": store_first_available_variant,
+        "pdp_gallery_images": store_pdp_gallery_images,
+        "pdp_option_label": store_primary_option_name,
+        "pdp_variant_options": store_pdp_variant_options,
         "product_merchandising": lambda handle: merchandising.get("product_pages", {}).get(handle, {}),
         "placeholder_image": STORE_PLACEHOLDER_IMAGE,
     }

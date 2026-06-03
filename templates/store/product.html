@@ -3,22 +3,30 @@
 {% block body %}
   <main class="page">
     {% set product_merch = product_merchandising(product.handle) %}
+    {% set gallery_images = pdp_gallery_images(product) %}
+    {% set variant_options = pdp_variant_options(product) %}
+    {% set selected_option = variant_options | selectattr("selected") | first or variant_options[0] %}
+    {% set option_label = pdp_option_label(product) | lower %}
     <section class="pdp product-info">
       <div class="gallery product-gallery__wrapper">
         <div class="gallery-track product-gallery js-productGallery" data-product-gallery>
-          {% for image in product.images[:6] %}
+          {% for image in gallery_images[:6] %}
             <div class="product-gallery__image__wrapper js-productImage">
-              <img src="{{ image.src }}" alt="{{ product.title }}" loading="lazy" data-gallery-image data-gallery-image-src="{{ image.src }}">
+              <button class="product-gallery__zoom" type="button" data-lightbox-open data-lightbox-src="{{ image.src }}" data-lightbox-alt="{{ product.title }}">
+                <img src="{{ image.src }}" alt="{{ product.title }}" loading="lazy" data-gallery-image data-gallery-image-src="{{ image.src }}">
+              </button>
             </div>
           {% else %}
             <div class="product-gallery__image__wrapper js-productImage">
-              <img src="{{ placeholder_image }}" alt="{{ product.title }}" data-gallery-image data-gallery-image-src="{{ placeholder_image }}">
+              <button class="product-gallery__zoom" type="button" data-lightbox-open data-lightbox-src="{{ placeholder_image }}" data-lightbox-alt="{{ product.title }}">
+                <img src="{{ placeholder_image }}" alt="{{ product.title }}" data-gallery-image data-gallery-image-src="{{ placeholder_image }}">
+              </button>
             </div>
           {% endfor %}
         </div>
-        {% if product.images|length > 1 %}
+        {% if gallery_images|length > 1 %}
           <div class="gallery-dots product-gallery__image__dots" aria-label="Product gallery">
-            {% for image in product.images[:6] %}
+            {% for image in gallery_images[:6] %}
               <button type="button" aria-label="Show image {{ loop.index }}" data-gallery-dot data-gallery-target="{{ image.src }}"></button>
             {% endfor %}
           </div>
@@ -76,18 +84,41 @@
           </div>
 
           <div class="product-details-bottom__col product-details-bottom__col--options">
-            <form class="buy-form product-buy-options" data-product-form>
-              <label class="option-selector product-option-selector">
-                <span class="eyebrow option-selector__label">variant</span>
-                <select class="option-selector__toggle js-optionSelectorToggle" name="variant_id" data-pdp-variant-select>
-                  {% for variant in product.variants %}
-                    {% set variant_image = variant.featured_image.src if variant.featured_image else "" %}
-                    <option value="{{ variant.id }}" data-image-src="{{ variant_image }}" {% if variant.available is sameas false %}disabled{% endif %}>
-                      {{ variant.title }} - ${{ variant.price }}{% if variant.available is sameas false %} - sold out{% endif %}
+            <form class="buy-form product-buy-options" data-product-form data-selected-price="{{ selected_option.price_label }}">
+              <div class="option-selector product-option-selector" data-option-selector>
+                <select class="option-selector__native" name="variant_id" data-pdp-variant-select aria-hidden="true" tabindex="-1">
+                  {% for option in variant_options %}
+                    <option value="{{ option.variant.id }}" data-image-src="{{ option.image_src }}" data-price="{{ option.price_label }}" data-title="{{ option.title }}" data-option-url="{{ option.url }}" {% if option.variant.available is sameas false %}disabled{% endif %} {% if option.selected %}selected{% endif %}>
+                      {{ option.title }} - {{ option.price_label }}{% if option.variant.available is sameas false %} - sold out{% endif %}
                     </option>
                   {% endfor %}
                 </select>
-              </label>
+                <button class="option-selector__toggle js-optionSelectorToggle" id="pdp-variant-selector-toggle" type="button" aria-expanded="false" aria-controls="pdp-option-selector-panel" data-option-trigger>
+                  <span>{{ option_label }}</span>
+                  <span class="option-selector__toggle__swatch-container">
+                    <span class="option-selector__toggle__color" data-option-selected-title>{{ selected_option.title }}</span>
+                    {% if selected_option.swatch %}
+                      <i class="option-selector__swatch" style="background: {{ selected_option.swatch }}"></i>
+                    {% endif %}
+                  </span>
+                </button>
+                <div class="option-selector__overlay" role="presentation" data-option-close></div>
+                <div class="option-selector__panel" id="pdp-option-selector-panel" aria-labelledby="pdp-variant-selector-toggle" aria-hidden="true" data-option-drawer>
+                  <button class="option-selector__close js-optionSelectorClose" type="button" aria-label="Close {{ option_label }} selector" data-option-close></button>
+                  <ul class="option-selector__list" aria-label="{{ option_label }} options">
+                    {% for option in variant_options %}
+                      <li class="option-selector__variant{% if option.selected %} option-selector__variant--selected{% endif %}">
+                        <button class="js-optionSelectorOption{% if option.selected %} is-current{% endif %}" type="button" data-option-choice data-variant-id="{{ option.variant.id }}" data-option-title="{{ option.title }}" data-option-price="{{ option.price_label }}" data-option-image-src="{{ option.image_src }}" data-option-url="{{ option.url }}" {% if option.swatch %}data-option-swatch="{{ option.swatch }}"{% endif %}>
+                          {% if option.swatch %}
+                            <i class="option-selector__swatch" style="background: {{ option.swatch }}"></i>
+                          {% endif %}
+                          <span>{{ option.title }}</span>
+                        </button>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
               <div class="product-buy-options__qty product-qty" aria-label="Quantity">
                 <button class="product-buy-options__qty__minus" type="button" data-qty-dec aria-label="Decrease quantity">-</button>
                 <input type="number" name="quantity" min="1" max="99" value="1" inputmode="numeric" data-product-qty>
@@ -95,7 +126,7 @@
               </div>
               <div class="product-buy-options__add-wrapper">
                 <button class="plain-button button button--blue js-addToBag js-addToBag2" type="submit">Add to bag</button>
-                <div class="product-buy-options__price">{{ price_label(product) }}</div>
+                <div class="product-buy-options__price">{{ selected_option.price_label }}</div>
               </div>
             </form>
 
@@ -104,6 +135,11 @@
         </div>
       </aside>
     </section>
+
+    <div class="product-lightbox" data-product-lightbox aria-hidden="true">
+      <button class="product-lightbox__close" type="button" aria-label="Close image preview" data-lightbox-close></button>
+      <img alt="" data-lightbox-image>
+    </div>
 
     {% if related %}
       <section class="section">

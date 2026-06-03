@@ -134,6 +134,42 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".product-buy-options__add-wrapper button", html)
         self.assertIn("height: 60px", html)
 
+    def test_product_page_exposes_custom_option_drawer_and_lightbox(self):
+        product = pocket.store_product_by_handle("the-salt-pepper-cylinder-necklace-set")
+        response = self.client.get(f"/store/products/{product['handle']}")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("data-option-trigger", html)
+        self.assertIn("data-option-selected-title", html)
+        self.assertIn("data-option-drawer", html)
+        self.assertIn("data-option-choice", html)
+        self.assertIn("option-selector__native", html)
+        self.assertIn("data-product-lightbox", html)
+        self.assertIn("data-lightbox-open", html)
+        self.assertIn("data-lightbox-image", html)
+        self.assertIn("data-lightbox-close", html)
+
+    def test_price_pill_uses_selected_variant_price_for_price_ranges(self):
+        product = pocket.store_product_by_handle("the-salt-pepper-cylinder-necklace-set")
+        first_variant = pocket.store_pdp_variant_options(product)[0]["variant"]
+        response = self.client.get(f"/store/products/{product['handle']}")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn(f'data-selected-price="{pocket.store_variant_price_label(first_variant)}"', html)
+        self.assertIn(f'product-buy-options__price">{pocket.store_variant_price_label(first_variant)}</div>', html)
+        self.assertNotIn('product-buy-options__price">$125.00 - $450.00</div>', html)
+
+    def test_cloud_blue_product_promotes_live_lifestyle_image_first(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        lifestyle_index = html.index("THE_CYLINDER_CORD_NECKLACE_2495")
+        flat_index = html.index("CylinderCordNecklace_Cloud_1")
+        self.assertLess(lifestyle_index, flat_index)
+
     def test_cart_page_renders_checkout_hooks(self):
         response = self.client.get("/store/cart")
 

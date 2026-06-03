@@ -207,6 +207,25 @@
     document.querySelector("[data-sort-toggle]")?.setAttribute("aria-expanded", "false");
   }
 
+  function closeOptionDrawers() {
+    document.querySelectorAll("[data-option-selector]").forEach(selector => {
+      selector.classList.remove("is-open");
+      selector.querySelector("[data-option-trigger]")?.setAttribute("aria-expanded", "false");
+      selector.querySelector("[data-option-drawer]")?.setAttribute("aria-hidden", "true");
+    });
+    document.body.classList.remove("option-is-open");
+  }
+
+  function openOptionDrawer(trigger) {
+    const selector = trigger.closest("[data-option-selector]");
+    if (!selector) return;
+    closeOptionDrawers();
+    selector.classList.add("is-open");
+    trigger.setAttribute("aria-expanded", "true");
+    selector.querySelector("[data-option-drawer]")?.setAttribute("aria-hidden", "false");
+    document.body.classList.add("option-is-open");
+  }
+
   function openCollectionDrawer(kind) {
     const drawer = document.querySelector(kind === "sort" ? "[data-sort-drawer]" : "[data-filter-drawer]");
     const toggle = document.querySelector(kind === "sort" ? "[data-sort-toggle]" : "[data-filter-toggle]");
@@ -221,6 +240,63 @@
     if (!target) return;
     const image = document.querySelector(`[data-gallery-image-src="${CSS.escape(target)}"]`);
     image?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+  }
+
+  function updatePdpSelection(select, scrollGallery = true) {
+    const selected = select.selectedOptions?.[0];
+    if (!selected) return;
+    const form = select.closest("[data-product-form]");
+    const title = selected.dataset.title || selected.textContent.trim();
+    const triggerTitle = form?.querySelector("[data-option-selected-title]");
+    const priceNode = form?.querySelector(".product-buy-options__price");
+    const price = selected.dataset.price;
+
+    if (triggerTitle) triggerTitle.textContent = title;
+    if (priceNode && price) priceNode.textContent = price;
+    if (form && price) form.dataset.selectedPrice = price;
+    if (scrollGallery) updatePdpGallery(select);
+  }
+
+  function selectPdpOption(choice) {
+    const form = choice.closest("[data-product-form]");
+    const select = form?.querySelector("[data-pdp-variant-select]");
+    if (!select) return;
+
+    const targetUrl = choice.dataset.optionUrl;
+    if (targetUrl && targetUrl !== window.location.pathname) {
+      window.location.href = targetUrl;
+      return;
+    }
+
+    select.value = choice.dataset.variantId;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    const selector = choice.closest("[data-option-selector]");
+    selector?.querySelectorAll("[data-option-choice]").forEach(node => {
+      node.classList.toggle("is-current", node === choice);
+      node.closest(".option-selector__variant")?.classList.toggle("option-selector__variant--selected", node === choice);
+    });
+
+    closeOptionDrawers();
+  }
+
+  function openLightbox(button) {
+    const lightbox = document.querySelector("[data-product-lightbox]");
+    const image = lightbox?.querySelector("[data-lightbox-image]");
+    if (!lightbox || !image) return;
+    image.src = button.dataset.lightboxSrc || "";
+    image.alt = button.dataset.lightboxAlt || "";
+    lightbox.setAttribute("aria-hidden", "false");
+    document.body.classList.add("lightbox-is-open");
+  }
+
+  function closeLightbox() {
+    const lightbox = document.querySelector("[data-product-lightbox]");
+    const image = lightbox?.querySelector("[data-lightbox-image]");
+    if (!lightbox) return;
+    lightbox.setAttribute("aria-hidden", "true");
+    if (image) image.removeAttribute("src");
+    document.body.classList.remove("lightbox-is-open");
   }
 
   function changeProductQty(button, delta) {
@@ -271,6 +347,7 @@
       closeMenuDrawer();
       closeCartDrawer();
       closeCollectionDrawers();
+      closeOptionDrawers();
     }
 
     const cartOpen = event.target.closest("[data-cart-open]");
@@ -284,6 +361,14 @@
     if (event.target.closest("[data-filter-toggle]")) openCollectionDrawer("filter");
     if (event.target.closest("[data-sort-toggle]")) openCollectionDrawer("sort");
     if (event.target.closest("[data-filter-close], [data-sort-close]")) closeCollectionDrawers();
+
+    const optionTrigger = event.target.closest("[data-option-trigger]");
+    if (optionTrigger) openOptionDrawer(optionTrigger);
+
+    if (event.target.closest("[data-option-close]")) closeOptionDrawers();
+
+    const optionChoice = event.target.closest("[data-option-choice]");
+    if (optionChoice) selectPdpOption(optionChoice);
 
     const add = event.target.closest("[data-store-add]");
     if (add) {
@@ -314,13 +399,25 @@
       image?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
     }
 
+    const lightboxOpen = event.target.closest("[data-lightbox-open]");
+    if (lightboxOpen) openLightbox(lightboxOpen);
+
+    if (event.target.closest("[data-lightbox-close]")) closeLightbox();
+
     const checkoutButton = event.target.closest("[data-checkout]");
     if (checkoutButton) checkout(checkoutButton.closest("[data-cart-page], [data-cart-drawer]") || document);
   });
 
   document.addEventListener("change", event => {
     const select = event.target.closest("[data-pdp-variant-select]");
-    if (select) updatePdpGallery(select);
+    if (select) updatePdpSelection(select);
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      closeOptionDrawers();
+      closeLightbox();
+    }
   });
 
   document.addEventListener("submit", event => {
@@ -333,6 +430,7 @@
   });
 
   updateCount();
+  document.querySelectorAll("[data-pdp-variant-select]").forEach(select => updatePdpSelection(select, false));
   renderCartDrawer();
   renderCartPage();
 })();
