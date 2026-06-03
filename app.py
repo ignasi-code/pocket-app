@@ -1,6 +1,9 @@
 import os
 import shlex
+import shutil
 import subprocess
+import sys
+import threading
 import time
 from pathlib import Path
 
@@ -112,6 +115,30 @@ def refresh_runtime_config(updates):
     DEFAULT_GEMINI_MODEL = current_default_gemini_model()
     GEMINI_ARGS = current_gemini_args()
     POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
+
+
+def request_token():
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        return str(data.get("token") or request.headers.get("X-Pocket-Token") or "").strip()
+    return str(request.form.get("token") or request.headers.get("X-Pocket-Token") or "").strip()
+
+
+def access_denied():
+    return bool(POCKET_ACCESS_TOKEN and request_token() != POCKET_ACCESS_TOKEN)
+
+
+def restart_current_process():
+    def delayed_restart():
+        time.sleep(0.8)
+        restart_argv = list(sys.argv)
+        if restart_argv:
+            command = Path(restart_argv[0])
+            if not command.exists():
+                restart_argv[0] = shutil.which(restart_argv[0]) or restart_argv[0]
+        os.execv(sys.executable, [sys.executable, *restart_argv])
+
+    threading.Thread(target=delayed_restart, daemon=True).start()
 
 
 GPT_PAGE = """
@@ -412,6 +439,139 @@ GPT_PAGE = """
 """
 
 
+ACTION_PAGE = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101315;
+      --panel: #191f22;
+      --line: #333b40;
+      --text: #eef3f2;
+      --muted: #a9b3b0;
+      --accent: #72d6b9;
+      --danger: #ff927e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(760px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    form,
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 8px;
+    }
+
+    input {
+      width: 100%;
+      height: 46px;
+      border: 1px solid var(--line);
+      background: #111619;
+      color: var(--text);
+      padding: 0 12px;
+      font: inherit;
+      outline: 0;
+      margin-bottom: 14px;
+    }
+
+    button,
+    a.button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 0;
+      background: var(--accent);
+      color: #07110e;
+      font: inherit;
+      font-weight: 760;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    pre {
+      margin: 14px 0 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--text);
+    }
+
+    .ok { color: var(--accent); }
+    .bad { color: var(--danger); }
+    code { color: var(--text); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>{{ heading }}</h1>
+    <p>{{ description }}</p>
+
+    {% if result %}
+      <section class="panel">
+        <p class="{{ 'ok' if ok else 'bad' }}">{{ result }}</p>
+        {% if output %}
+          <pre>{{ output }}</pre>
+        {% endif %}
+        {% if next_href %}
+          <p><a class="button" href="{{ next_href }}">{{ next_label }}</a></p>
+        {% endif %}
+      </section>
+    {% else %}
+      <form method="post" action="{{ action }}">
+        {% if auth_required %}
+          <label for="token">Pocket access token</label>
+          <input id="token" name="token" type="password" autocomplete="current-password" required>
+        {% endif %}
+        <button type="submit">{{ button }}</button>
+      </form>
+    {% endif %}
+  </main>
+</body>
+</html>
+"""
+
+
 SETUP_PAGE = """
 <!doctype html>
 <html lang="en">
@@ -604,6 +764,111 @@ def setup_page():
     )
 
 
+@app.route("/pull", methods=["GET", "POST"])
+def pull_page():
+    if request.method == "GET":
+        return render_template_string(
+            ACTION_PAGE,
+            title="Pocket Pull",
+            heading="Pull",
+            description="Fetch and merge the latest code from origin/master.",
+            action="/pull",
+            button="Pull from Git",
+            auth_required=bool(POCKET_ACCESS_TOKEN),
+            result="",
+            output="",
+            ok=False,
+        )
+
+    if access_denied():
+        return render_template_string(
+            ACTION_PAGE,
+            title="Pocket Pull",
+            heading="Pull",
+            description="Fetch and merge the latest code from origin/master.",
+            action="/pull",
+            button="Pull from Git",
+            auth_required=bool(POCKET_ACCESS_TOKEN),
+            result="Invalid Pocket access token.",
+            output="",
+            ok=False,
+        ), 401
+
+    started = time.time()
+    result = subprocess.run(
+        ["git", "pull", "origin", "master"],
+        cwd=str(BASE_DIR),
+        text=True,
+        capture_output=True,
+        timeout=120,
+        check=False,
+    )
+    output = "\n".join(part for part in [result.stdout, result.stderr] if part).strip()
+    elapsed = round(time.time() - started, 2)
+    ok = result.returncode == 0
+    message = f"Pull completed in {elapsed}s." if ok else f"Pull failed with code {result.returncode}."
+
+    return render_template_string(
+        ACTION_PAGE,
+        title="Pocket Pull",
+        heading="Pull",
+        description="Fetch and merge the latest code from origin/master.",
+        action="/pull",
+        button="Pull from Git",
+        auth_required=bool(POCKET_ACCESS_TOKEN),
+        result=message,
+        output=output,
+        ok=ok,
+        next_href="/restart" if ok else "",
+        next_label="Restart Server",
+    ), 200 if ok else 502
+
+
+@app.route("/restart", methods=["GET", "POST"])
+def restart_page():
+    if request.method == "GET":
+        return render_template_string(
+            ACTION_PAGE,
+            title="Pocket Restart",
+            heading="Restart",
+            description="Restart the current Pocket Server process with the same command.",
+            action="/restart",
+            button="Restart Server",
+            auth_required=bool(POCKET_ACCESS_TOKEN),
+            result="",
+            output="",
+            ok=False,
+        )
+
+    if access_denied():
+        return render_template_string(
+            ACTION_PAGE,
+            title="Pocket Restart",
+            heading="Restart",
+            description="Restart the current Pocket Server process with the same command.",
+            action="/restart",
+            button="Restart Server",
+            auth_required=bool(POCKET_ACCESS_TOKEN),
+            result="Invalid Pocket access token.",
+            output="",
+            ok=False,
+        ), 401
+
+    restart_current_process()
+    return render_template_string(
+        ACTION_PAGE,
+        title="Pocket Restart",
+        heading="Restart",
+        description="Restart the current Pocket Server process with the same command.",
+        action="/restart",
+        button="Restart Server",
+        auth_required=bool(POCKET_ACCESS_TOKEN),
+        result="Restart requested. Wait a moment, then reload the page.",
+        output="",
+        ok=True,
+    )
+
+
 @app.route("/gpt")
 def gpt_page():
     return render_template_string(
@@ -617,9 +882,8 @@ def gpt_page():
 def run_gemini_prompt():
     data = request.get_json(silent=True) or {}
     prompt = str(data.get("prompt") or "").strip()
-    token = str(data.get("token") or request.headers.get("X-Pocket-Token") or "").strip()
 
-    if POCKET_ACCESS_TOKEN and token != POCKET_ACCESS_TOKEN:
+    if access_denied():
         return jsonify({"error": "Invalid Pocket access token."}), 401
 
     if not prompt:

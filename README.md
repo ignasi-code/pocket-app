@@ -27,6 +27,13 @@ POCKET_HOST=0.0.0.0 POCKET_PORT=5052 flask --app app run --host 0.0.0.0 --port 5
 
 Then open `/setup` in a browser to paste your Gemini API key and save `.env`.
 
+Control pages:
+
+- `/gpt`: Gemini CLI prompt bridge.
+- `/setup`: Save local `.env` config from the browser.
+- `/pull`: Run `git pull origin master`.
+- `/restart`: Restart the current Pocket Server process.
+
 The `/gpt` page sends prompts to the local Gemini CLI with:
 
 ```bash
