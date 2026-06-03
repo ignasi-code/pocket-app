@@ -49,7 +49,7 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `GEMINI_API_KEY`: Gemini API key from Google AI Studio. Used by Gemini CLI.
 - `POCKET_GEMINI_MODEL`: Gemini model for the bridge. Default: `gemini-2.5-flash-lite`.
 - `POCKET_GEMINI_COMMAND`: Gemini executable name or path. Default: `gemini`.
-- `POCKET_GEMINI_ARGS`: Extra Gemini CLI arguments, split like shell args. Overrides `POCKET_GEMINI_MODEL` when set.
+- `POCKET_GEMINI_ARGS`: Extra Gemini CLI arguments appended after `-m POCKET_GEMINI_MODEL`, split like shell args.
 - `POCKET_GEMINI_WORKDIR`: Directory where Gemini runs. Default: this repo.
 - `POCKET_GEMINI_TIMEOUT_SECONDS`: Request timeout. Default: `180`.
 - `POCKET_ACCESS_TOKEN`: Token required by `/terminal` and `/api/terminal`; optional token required by `/api/gpt`, `/fast/api/download`, and `/fast/api/upload`.

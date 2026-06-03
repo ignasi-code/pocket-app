@@ -49,7 +49,8 @@ def current_default_gemini_model():
 
 
 def current_gemini_args():
-    return shlex.split(os.environ.get("POCKET_GEMINI_ARGS", "")) or ["-m", current_default_gemini_model()]
+    extra_args = shlex.split(os.environ.get("POCKET_GEMINI_ARGS", ""))
+    return ["-m", current_default_gemini_model(), *extra_args]
 
 
 DEFAULT_GEMINI_MODEL = current_default_gemini_model()

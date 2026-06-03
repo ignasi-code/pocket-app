@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import app as pocket
 
@@ -35,6 +36,19 @@ class GptPageTest(unittest.TestCase):
         self.assertIn("const responseText = await response.text();", html)
         self.assertIn("setRawResponse({", html)
         self.assertNotIn("await response.json()", html)
+
+    def test_gemini_extra_args_are_appended_after_model_arg(self):
+        with patch.dict(
+            pocket.os.environ,
+            {
+                "POCKET_GEMINI_MODEL": "gemini-test-model",
+                "POCKET_GEMINI_ARGS": "--yolo --no-sandbox",
+            },
+        ):
+            self.assertEqual(
+                pocket.current_gemini_args(),
+                ["-m", "gemini-test-model", "--yolo", "--no-sandbox"],
+            )
 
 
 if __name__ == "__main__":
