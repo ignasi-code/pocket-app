@@ -1,0 +1,43 @@
+# Pocket Server
+
+Small Flask app for controlling a local machine from a browser.
+
+## Run locally
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+POCKET_PORT=5052 flask --app app run --host 127.0.0.1 --port 5052
+```
+
+Open:
+
+```text
+http://127.0.0.1:5052/gpt
+```
+
+## Run on Termux
+
+```bash
+pkg install python -y
+python -m pip install -r requirements.txt
+POCKET_HOST=0.0.0.0 POCKET_PORT=5052 flask --app app run --host 0.0.0.0 --port 5052
+```
+
+The `/gpt` page sends prompts to the local Gemini CLI with:
+
+```bash
+gemini -p "<prompt>"
+```
+
+## Configuration
+
+- `POCKET_GEMINI_COMMAND`: Gemini executable name or path. Default: `gemini`.
+- `POCKET_GEMINI_ARGS`: Extra Gemini CLI arguments, split like shell args.
+- `POCKET_GEMINI_WORKDIR`: Directory where Gemini runs. Default: this repo.
+- `POCKET_GEMINI_TIMEOUT_SECONDS`: Request timeout. Default: `180`.
+- `POCKET_ACCESS_TOKEN`: Optional token required by `/api/gpt`.
+- `POCKET_MAX_PROMPT_LENGTH`: Prompt character limit. Default: `12000`.
+
+Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`.
