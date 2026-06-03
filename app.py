@@ -67,6 +67,9 @@ FAST_DEFAULT_UPLOAD_BYTES = int(os.environ.get("POCKET_FAST_UPLOAD_BYTES", str(8
 FAST_MAX_DOWNLOAD_BYTES = int(os.environ.get("POCKET_FAST_MAX_DOWNLOAD_BYTES", str(64 * 1024 * 1024)))
 FAST_MAX_UPLOAD_BYTES = int(os.environ.get("POCKET_FAST_MAX_UPLOAD_BYTES", str(64 * 1024 * 1024)))
 FAST_CHUNK_BYTES = bytes((index % 251 for index in range(64 * 1024)))
+STORE_CATALOG_PATH = BASE_DIR / "pages" / "store" / "catalog.json"
+STORE_BASE_URL = os.environ.get("POCKET_STORE_BASE_URL", "https://roxanneassoulin.com").rstrip("/")
+STORE_CURRENCY = os.environ.get("POCKET_STORE_CURRENCY", "usd").lower()
 
 app = Flask(__name__)
 
@@ -235,6 +238,50 @@ def stream_test_bytes(total_bytes):
         chunk_size = min(remaining, len(FAST_CHUNK_BYTES))
         yield FAST_CHUNK_BYTES[:chunk_size]
         remaining -= chunk_size
+
+
+def parse_price_cents(price):
+    text = str(price or "0").strip().replace(",", "")
+    try:
+        return int(round(float(text) * 100))
+    except ValueError:
+        return 0
+
+
+def format_price(cents):
+    return f"{cents / 100:.2f}"
+
+
+def load_store_catalog():
+    return json.loads(STORE_CATALOG_PATH.read_text(encoding="utf-8"))
+
+
+def store_variant_lookup():
+    lookup = {}
+    for product in load_store_catalog().get("products", []):
+        for variant in product.get("variants", []):
+            try:
+                variant_id = int(variant.get("id"))
+            except (TypeError, ValueError):
+                continue
+            lookup[variant_id] = {
+                "product": product,
+                "variant": variant,
+            }
+    return lookup
+
+
+def parse_cart_item(raw_item):
+    if not isinstance(raw_item, dict):
+        raise ValueError("Each cart item must be an object.")
+    try:
+        variant_id = int(raw_item.get("id"))
+        quantity = int(raw_item.get("qty"))
+    except (TypeError, ValueError):
+        raise ValueError("Cart items require numeric id and qty.")
+    if quantity < 1 or quantity > 99:
+        raise ValueError("Cart item quantity must be between 1 and 99.")
+    return variant_id, quantity
 
 
 def terminal_shell_command():
@@ -1406,6 +1453,83 @@ def fast_upload():
     return jsonify({
         "bytes": total_bytes,
         "elapsed_seconds": round(time.time() - started, 4),
+    })
+
+
+@app.route("/store")
+@app.route("/store/")
+def store_page():
+    return send_file(BASE_DIR / "pages" / "store" / "index.html")
+
+
+@app.route("/store/catalog.json")
+def store_catalog():
+    return send_file(STORE_CATALOG_PATH, mimetype="application/json")
+
+
+@app.route("/store/api/checkout", methods=["POST"])
+def store_mock_checkout():
+    data = request.get_json(silent=True) or {}
+    cart_items = data.get("cartItems")
+
+    if not isinstance(cart_items, list):
+        return jsonify({"error": "cartItems must be an array."}), 400
+    if not cart_items:
+        return jsonify({"error": "Cart is empty."}), 400
+    if len(cart_items) > 100:
+        return jsonify({"error": "Cart has too many lines."}), 400
+
+    try:
+        variants = store_variant_lookup()
+    except OSError as exc:
+        return jsonify({"error": f"Store catalog is unavailable: {exc}"}), 500
+    except json.JSONDecodeError as exc:
+        return jsonify({"error": f"Store catalog is invalid: {exc}"}), 500
+
+    verified_items = []
+    subtotal_cents = 0
+    permalink_parts = []
+
+    try:
+        for raw_item in cart_items:
+            variant_id, quantity = parse_cart_item(raw_item)
+            catalog_item = variants.get(variant_id)
+            if not catalog_item:
+                raise ValueError(f"Unknown variant id: {variant_id}")
+
+            product = catalog_item["product"]
+            variant = catalog_item["variant"]
+            if variant.get("available") is False:
+                raise ValueError(f"Variant is unavailable: {variant_id}")
+
+            unit_amount_cents = parse_price_cents(variant.get("price"))
+            if unit_amount_cents <= 0:
+                raise ValueError(f"Variant has invalid price: {variant_id}")
+
+            line_total_cents = unit_amount_cents * quantity
+            subtotal_cents += line_total_cents
+            permalink_parts.append(f"{variant_id}:{quantity}")
+            verified_items.append({
+                "id": variant_id,
+                "title": product.get("title", "Untitled product"),
+                "variant_title": variant.get("title") or "",
+                "qty": quantity,
+                "unit_amount_cents": unit_amount_cents,
+                "unit_amount": format_price(unit_amount_cents),
+                "line_total_cents": line_total_cents,
+                "line_total": format_price(line_total_cents),
+            })
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify({
+        "mode": "mock",
+        "currency": STORE_CURRENCY,
+        "item_count": sum(item["qty"] for item in verified_items),
+        "subtotal_cents": subtotal_cents,
+        "subtotal": format_price(subtotal_cents),
+        "line_items": verified_items,
+        "shopify_cart_url": f"{STORE_BASE_URL}/cart/{','.join(permalink_parts)}",
     })
 
 
