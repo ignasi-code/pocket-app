@@ -64,6 +64,25 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".double-image-banner__tile__cta--black", source)
         self.assertNotIn(".split-tile::before", source)
 
+    def test_homepage_uses_live_desktop_split_assets_and_custom_category_link(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("0526_Hearts_957x_crop_center", html)
+        self.assertIn("0531_HappyBaby_Mobile_9f30ae56-b0cc-48f3-9f88-28ec80b99883_957x_crop_center", html)
+        self.assertIn("0531_Camp_Mobile_55bf818c-5e28-4609-93ff-1e7bf5a090d6_957x_crop_center", html)
+        self.assertIn("0531_ItsyBitsy_Mobile_47e7a0a7-064e-44fb-b14e-5971f5c14833_957x_crop_center", html)
+        self.assertIn("href=\"/store/collections/custom\"", html)
+
+    def test_custom_collection_alias_matches_live_homepage_link(self):
+        response = self.client.get("/store/collections/custom")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("custom", html.lower())
+        self.assertIn("product-tile", html)
+
     def test_homepage_exposes_live_shells_and_product_tile_controls(self):
         response = self.client.get("/store")
 

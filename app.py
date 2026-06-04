@@ -502,6 +502,11 @@ def store_collection_definitions():
             "description": "Cord and charm products inferred from tags and titles.",
             "matcher": lambda product: "cord" in " ".join(product.get("tags", [])).lower() or "charm" in product.get("title", "").lower(),
         },
+        "custom": {
+            "title": "Custom",
+            "description": "Personalized cords and charms inferred from tags and titles.",
+            "matcher": lambda product: "cord" in " ".join(product.get("tags", [])).lower() or "charm" in product.get("title", "").lower(),
+        },
         "the-puffy-heart-club": {
             "title": "The Puffy Heart Club",
             "description": "Heart-led products inferred from tags and titles.",
