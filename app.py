@@ -595,8 +595,16 @@ def store_sort_collection_products(products, sort_by):
 STORE_COLOR_ALIASES = {
     "black": {"black", "salt", "pepper"},
     "blue": {"blue", "cloud", "lapis"},
+    "brown": {"brown", "buckwheat", "driftwood", "espresso", "natural"},
+    "diamond": {"diamond", "cubic", "cz", "zirconia"},
+    "gold": {"gold"},
     "green": {"green", "forest", "moss"},
+    "lemon": {"lemon", "yellow"},
+    "multi": {"multi", "rainbow", "duo", "stack", "assorted"},
+    "orange": {"orange", "paprika", "sienna", "coral", "blood orange"},
     "pink": {"pink", "rose"},
+    "rainbow": {"rainbow", "multi"},
+    "red": {"red", "blood orange"},
     "white": {"white", "bone", "pearl", "coconut"},
     "yellow": {"yellow", "lemon"},
 }
@@ -639,13 +647,19 @@ def store_apply_search_filter(products, query):
 def store_apply_collection_filters(products, args):
     categories = [value for value in args.getlist("filter.p.product_type[]") if value]
     colors = [value for value in args.getlist("filter.p.m.roxanne-assoulin.filter_color[]") if value]
+    category_keys = {category.lower() for category in categories}
+    color_keys = {color.lower() for color in colors}
     filtered = list(products)
     if categories:
-        category_set = {category.lower() for category in categories}
-        filtered = [product for product in filtered if str(product.get("product_type", "")).lower() in category_set]
+        filtered = [product for product in filtered if str(product.get("product_type", "")).lower() in category_keys]
     if colors:
         filtered = [product for product in filtered if any(store_product_matches_color(product, color) for color in colors)]
-    return filtered, {"categories": categories, "colors": colors}
+    return filtered, {
+        "categories": categories,
+        "colors": colors,
+        "category_keys": category_keys,
+        "color_keys": color_keys,
+    }
 
 
 def store_query_url(**updates):

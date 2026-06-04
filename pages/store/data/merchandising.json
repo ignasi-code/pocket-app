@@ -221,7 +221,8 @@
     "checkout": "Checkout"
   },
   "filters": {
-    "categories": ["Necklaces", "Bracelets", "Earrings", "Charms"],
+    "categories": ["Bracelets", "Earrings", "Necklaces"],
+    "colors": ["Black", "Blue", "Brown", "Diamond", "Gold", "Lemon", "Multi", "Orange", "Rainbow", "Red", "White", "Yellow"],
     "sort": ["Newest", "Best selling", "Price, low to high", "Price, high to low"]
   }
 }

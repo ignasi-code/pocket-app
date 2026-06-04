@@ -2747,12 +2747,22 @@
       text-align: left;
     }
 
+    .product-tile__link {
+      display: block;
+      height: 100%;
+      position: relative;
+    }
+
     .product-tile__image {
       background: #fff;
       display: block;
       overflow: hidden;
       padding-top: 120%;
       position: relative;
+    }
+
+    .product-tile__image picture {
+      display: block;
     }
 
     .product-tile__image img {
@@ -3178,13 +3188,17 @@
       padding: 8px 22px 0;
     }
 
-    .collection-filter__drawer fieldset {
-      border: 0;
+    .collection-filter__options {
       margin: 0;
       padding: 0;
     }
 
-    .collection-filter__drawer legend {
+    .collection-filter__options + .collection-filter__options {
+      margin-top: 20px;
+    }
+
+    .collection-filter__options strong {
+      display: block;
       font-size: .75rem;
       font-weight: 700;
       line-height: 135%;
@@ -3192,13 +3206,34 @@
       text-transform: lowercase;
     }
 
-    .collection-filter__option {
-      align-items: center;
+    .collection-filter__options ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .collection-filter__options li {
       border-top: 1px solid #e6e6e6;
+      margin: 0;
+      padding: 0;
+    }
+
+    .collection-filter__options li:first-child {
+      border-top: 0;
+    }
+
+    .collection-filter__options input {
+      height: 1px;
+      opacity: 0;
+      position: absolute;
+      width: 1px;
+    }
+
+    .collection-filter__options label {
+      align-items: center;
       cursor: pointer;
       display: flex;
       font-size: .875rem;
-      gap: 14px;
       line-height: 145%;
       min-height: 56px;
       padding: 0;
@@ -3206,28 +3241,19 @@
       text-transform: lowercase;
     }
 
-    .collection-filter__option:first-of-type {
-      border-top: 0;
-    }
-
-    .collection-filter__option input {
-      height: 1px;
-      opacity: 0;
-      position: absolute;
-      width: 1px;
-    }
-
-    .collection-filter__checkbox {
+    .collection-filter__options label::before {
       border: 1px solid #000;
       border-radius: 2px;
       box-sizing: border-box;
+      content: "";
       display: inline-block;
       flex: 0 0 auto;
       height: 16px;
+      margin-right: 14px;
       width: 16px;
     }
 
-    .collection-filter__option input:checked + .collection-filter__checkbox {
+    .collection-filter__options input:checked + label::before {
       background: #000;
       box-shadow: inset 0 0 0 3px #fff;
     }

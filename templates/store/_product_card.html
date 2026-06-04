@@ -1,25 +1,28 @@
 {% set hover_image = product.images[1].src if product.images|length > 1 else product_image(product) %}
 <article class="product-card product-tile js-productTile product-tile--collection" data-product-handle="{{ product.handle }}">
-  <a class="product-tile__image" href="/store/products/{{ product.handle }}">
-    <img class="product-card__image product-tile__image__primary" src="{{ product_image(product) }}" alt="{{ product.title }}" loading="lazy">
-    <img class="product-tile__image__hover" src="{{ hover_image }}" alt="" loading="lazy">
+  <a href="/store/products/{{ product.handle }}" class="product-tile__link">
+    <div class="product-tile__image">
+      <picture>
+        <source media="(min-width: 1024px)" srcset="{{ product_image(product) }}">
+        <img class="product-tile__image__primary" src="{{ product_image(product) }}" alt="{{ product.title }}" loading="lazy">
+      </picture>
+      <img class="product-tile__image__hover is-loading" src="{{ hover_image }}" alt="" loading="lazy">
+    </div>
+    <div class="product-tile__top"></div>
+    <div class="product-card__body product-tile__details product-tile__copy__wrapper">
+      <div class="product-tile__copy">
+        <h3 class="product-card__title product-tile__title">{{ product.title }}</h3>
+        <div class="price product-tile__price">{{ price_label(product) }}</div>
+      </div>
+      {% set variant = first_variant(product) %}
+      <div class="quick-row">
+        <button class="product-tile__add js-quickshopOpen" type="button" name="add" data-quickshop-open data-handle="{{ product.handle }}" data-variant-id="{{ variant.id }}">
+          <span class="visually-hidden">open quick shop</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12.4699 12.4697H23.4688V11.4697H12.4699V0.471011H11.4699V11.4697H0.468749V12.4697H11.4699V23.471H12.4699V12.4697Z" fill="black"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
   </a>
-  <div class="product-tile__top"></div>
-  <div class="product-card__body product-tile__details product-tile__copy__wrapper">
-    <div class="product-tile__copy">
-      <h3 class="product-card__title product-tile__title">
-        <a href="/store/products/{{ product.handle }}">{{ product.title }}</a>
-      </h3>
-      <div class="price product-tile__price">{{ price_label(product) }}</div>
-    </div>
-    {% set variant = first_variant(product) %}
-    <div class="quick-row">
-      <button class="product-tile__add js-quickshopOpen" type="button" name="add" data-quickshop-open data-handle="{{ product.handle }}" data-variant-id="{{ variant.id }}">
-        <span class="visually-hidden">open quick shop</span>
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M12.4699 12.4697H23.4688V11.4697H12.4699V0.471011H11.4699V11.4697H0.468749V12.4697H11.4699V23.471H12.4699V12.4697Z" fill="black"></path>
-        </svg>
-      </button>
-    </div>
-  </div>
 </article>

@@ -387,10 +387,53 @@ class StoreTest(unittest.TestCase):
         self.assertIn("collection-filter__drawer__head", html)
         self.assertIn("collection-filter__drawer__scroll", html)
         self.assertIn("collection-filter__options", html)
-        self.assertIn("collection-filter__option", html)
-        self.assertIn("collection-filter__checkbox", html)
+        self.assertIn('<strong id="filter-p-product_type-heading">Category</strong>', html)
+        self.assertIn('<ul aria-labelledby="filter-p-product_type-heading">', html)
+        self.assertIn('id="filter-p-product_type1"', html)
+        self.assertIn('for="filter-p-product_type1">Bracelets</label>', html)
+        self.assertNotIn("<fieldset", html)
+        self.assertNotIn("collection-filter__checkbox", html)
         self.assertIn("collection-filter__buttons", html)
         self.assertIn(">Apply<", html)
+
+    def test_collection_filter_drawer_uses_live_color_facets(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        expected_colors = [
+            "Black",
+            "Blue",
+            "Brown",
+            "Diamond",
+            "Gold",
+            "Lemon",
+            "Multi",
+            "Orange",
+            "Rainbow",
+            "Red",
+            "White",
+            "Yellow",
+        ]
+        for index, color in enumerate(expected_colors, start=1):
+            with self.subTest(color=color):
+                self.assertIn(f'id="filter-p-m-roxanne-assoulin-filter_color{index}"', html)
+                self.assertIn(f'value="{color}"', html)
+                self.assertIn(f'for="filter-p-m-roxanne-assoulin-filter_color{index}">{color}</label>', html)
+        self.assertNotIn('value="Charms"', html)
+        self.assertNotIn('value="green"', html)
+        self.assertNotIn('value="pink"', html)
+
+    def test_collection_product_tile_uses_live_full_card_link_and_picture(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<a href="/store/products/the-salt-pepper-cylinder-necklace-set" class="product-tile__link">', html)
+        self.assertIn("<picture>", html)
+        self.assertIn('class="product-tile__image__primary"', html)
+        self.assertIn('class="product-tile__image__hover is-loading"', html)
+        self.assertNotIn('<a class="product-tile__image"', html)
 
     def test_key_collection_pages_use_extracted_live_hero_assets(self):
         cases = {
@@ -452,7 +495,7 @@ class StoreTest(unittest.TestCase):
         self.assertLess(cheapest, curated)
 
     def test_collection_color_filter_filters_products_and_preserves_checked_state(self):
-        response = self.client.get("/store/collections/necklaces?filter.p.m.roxanne-assoulin.filter_color%5B%5D=yellow")
+        response = self.client.get("/store/collections/necklaces?filter.p.m.roxanne-assoulin.filter_color%5B%5D=Yellow")
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
@@ -462,7 +505,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn('data-product-handle="the-itsy-bitsy-puffy-heart-charms"', html)
         self.assertIn('data-product-handle="tiny-treasure-charms"', html)
         self.assertNotIn('data-product-handle="the-cylinder-cord-necklace-cloud-blue"', html)
-        self.assertIn('name="filter.p.m.roxanne-assoulin.filter_color[]" value="yellow" checked', html)
+        self.assertIn('name="filter.p.m.roxanne-assoulin.filter_color[]" type="checkbox" value="Yellow" checked', html)
         self.assertNotIn("pagination__next", html)
 
     def test_collection_category_filter_filters_custom_collection_and_preserves_checked_state(self):
@@ -472,7 +515,7 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn('data-product-handle="the-cylinder-cord-bracelet-lemon-yellow"', html)
         self.assertNotIn('data-product-handle="the-cylinder-cord-necklace-lemon-yellow"', html)
-        self.assertIn('name="filter.p.product_type[]" value="Bracelets" checked', html)
+        self.assertIn('name="filter.p.product_type[]" type="checkbox" value="Bracelets" checked', html)
         self.assertIn("type=\"submit\"", html)
 
     def test_shop_collection_search_query_filters_products_and_preserves_input(self):
@@ -491,17 +534,17 @@ class StoreTest(unittest.TestCase):
 
     def test_collection_sort_links_preserve_search_and_filter_state(self):
         response = self.client.get(
-            "/store/collections/necklaces?q=lemon&filter.p.m.roxanne-assoulin.filter_color%5B%5D=yellow"
+            "/store/collections/necklaces?q=lemon&filter.p.m.roxanne-assoulin.filter_color%5B%5D=Yellow"
         )
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn(
-            'href="?q=lemon&amp;filter.p.m.roxanne-assoulin.filter_color%5B%5D=yellow&amp;sort_by=price-ascending"',
+            'href="?q=lemon&amp;filter.p.m.roxanne-assoulin.filter_color%5B%5D=Yellow&amp;sort_by=price-ascending"',
             html,
         )
         self.assertIn(
-            'href="?q=lemon&amp;filter.p.m.roxanne-assoulin.filter_color%5B%5D=yellow&amp;sort_by=price-descending"',
+            'href="?q=lemon&amp;filter.p.m.roxanne-assoulin.filter_color%5B%5D=Yellow&amp;sort_by=price-descending"',
             html,
         )
 
