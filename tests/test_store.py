@@ -284,6 +284,28 @@ class StoreTest(unittest.TestCase):
         curated = html.index('data-product-handle="the-salt-pepper-cylinder-necklace-set"')
         self.assertLess(cheapest, curated)
 
+    def test_collection_color_filter_filters_products_and_preserves_checked_state(self):
+        response = self.client.get("/store/collections/necklaces?filter.p.m.roxanne-assoulin.filter_color%5B%5D=yellow")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('data-results-count="2"', html)
+        self.assertIn('data-product-handle="the-salt-pepper-cylinder-necklace-set"', html)
+        self.assertIn('data-product-handle="the-cylinder-cord-necklace-lemon-yellow"', html)
+        self.assertNotIn('data-product-handle="the-cylinder-cord-necklace-cloud-blue"', html)
+        self.assertIn('name="filter.p.m.roxanne-assoulin.filter_color[]" value="yellow" checked', html)
+        self.assertNotIn("pagination__next", html)
+
+    def test_collection_category_filter_filters_custom_collection_and_preserves_checked_state(self):
+        response = self.client.get("/store/collections/custom?filter.p.product_type%5B%5D=Bracelets")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('data-product-handle="the-cylinder-cord-bracelet-lemon-yellow"', html)
+        self.assertNotIn('data-product-handle="the-cylinder-cord-necklace-lemon-yellow"', html)
+        self.assertIn('name="filter.p.product_type[]" value="Bracelets" checked', html)
+        self.assertIn("type=\"submit\"", html)
+
     def test_store_base_renders_live_style_footer(self):
         response = self.client.get("/store")
 

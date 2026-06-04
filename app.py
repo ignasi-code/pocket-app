@@ -555,6 +555,46 @@ def store_sort_collection_products(products, sort_by):
     return sorted_products
 
 
+STORE_COLOR_ALIASES = {
+    "black": {"black", "salt", "pepper"},
+    "blue": {"blue", "cloud", "lapis"},
+    "green": {"green", "forest", "moss"},
+    "pink": {"pink", "rose"},
+    "white": {"white", "bone", "pearl", "coconut"},
+    "yellow": {"yellow", "lemon"},
+}
+
+
+def store_product_search_text(product):
+    values = [
+        product.get("title", ""),
+        product.get("handle", ""),
+        product.get("product_type", ""),
+        " ".join(product.get("tags", [])),
+    ]
+    values.extend(variant.get("title", "") for variant in product.get("variants", []))
+    values.extend(image.get("src", "") for image in product.get("images", []))
+    return " ".join(str(value) for value in values).lower()
+
+
+def store_product_matches_color(product, color):
+    needles = STORE_COLOR_ALIASES.get(str(color).lower(), {str(color).lower()})
+    haystack = store_product_search_text(product)
+    return any(needle in haystack for needle in needles)
+
+
+def store_apply_collection_filters(products, args):
+    categories = [value for value in args.getlist("filter.p.product_type[]") if value]
+    colors = [value for value in args.getlist("filter.p.m.roxanne-assoulin.filter_color[]") if value]
+    filtered = list(products)
+    if categories:
+        category_set = {category.lower() for category in categories}
+        filtered = [product for product in filtered if str(product.get("product_type", "")).lower() in category_set]
+    if colors:
+        filtered = [product for product in filtered if any(store_product_matches_color(product, color) for color in colors)]
+    return filtered, {"categories": categories, "colors": colors}
+
+
 def store_template_context(**kwargs):
     merchandising = load_store_merchandising()
     context = {
@@ -1797,6 +1837,7 @@ def store_collection_page(handle):
     collection, products = store_collection_products(handle)
     if not collection:
         abort(404)
+    products, active_filters = store_apply_collection_filters(products, request.args)
     products = store_sort_collection_products(products, request.args.get("sort_by"))
     return render_template(
         "store/collection.html",
@@ -1804,6 +1845,8 @@ def store_collection_page(handle):
             handle=handle,
             collection=collection,
             products=products,
+            active_filters=active_filters,
+            current_sort=request.args.get("sort_by", ""),
         ),
     )
 

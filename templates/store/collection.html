@@ -4,8 +4,9 @@
   <main role="main" id="main" class="content">
     <div class="collection" data-view="collection">
       <section class="shopify-section">
-        {% set results_count = collection.results_count or products|length %}
-        {% set page_count = collection.page_count or 1 %}
+        {% set active_filtering = active_filters.categories or active_filters.colors %}
+        {% set results_count = products|length if active_filtering else collection.results_count or products|length %}
+        {% set page_count = 1 if active_filtering else collection.page_count or 1 %}
         <div class="collection-items" data-results-count="{{ results_count }}">
           {% if collection.hero_image_mobile %}
             <section class="collection-hero">
@@ -54,6 +55,9 @@
 
           <form id="collection-filter-drawer" class="collection-filter__drawer collection-filter__drawer--filter js-filterDrawer" method="GET" action="" data-filter-drawer aria-hidden="true">
             <div class="collection-filter__drawer-inner">
+              {% if current_sort %}
+                <input type="hidden" name="sort_by" value="{{ current_sort }}">
+              {% endif %}
               <div class="collection-filter__drawer__head">
                 <h2>filter</h2>
                 <button class="collection-filter__close js-filterClose" type="button" data-filter-close aria-label="Close filters"></button>
@@ -63,7 +67,7 @@
                   <legend>category</legend>
                   {% for label in merchandising.filters.categories %}
                     <label class="collection-filter__option">
-                      <input class="js-filterOption" type="checkbox" name="filter.p.product_type[]" value="{{ label }}">
+                      <input class="js-filterOption" type="checkbox" name="filter.p.product_type[]" value="{{ label }}"{% if label in active_filters.categories %} checked{% endif %}>
                       <span class="collection-filter__checkbox" aria-hidden="true"></span>
                       <span>{{ label }}</span>
                     </label>
@@ -73,7 +77,7 @@
                   <legend>color</legend>
                   {% for label in ["black", "blue", "green", "pink", "yellow", "white"] %}
                     <label class="collection-filter__option">
-                      <input class="js-filterOption" type="checkbox" name="filter.p.m.roxanne-assoulin.filter_color[]" value="{{ label }}">
+                      <input class="js-filterOption" type="checkbox" name="filter.p.m.roxanne-assoulin.filter_color[]" value="{{ label }}"{% if label in active_filters.colors %} checked{% endif %}>
                       <span class="collection-filter__checkbox" aria-hidden="true"></span>
                       <span>{{ label }}</span>
                     </label>
@@ -81,7 +85,7 @@
                 </fieldset>
               </div>
               <div class="collection-filter__buttons">
-                <button class="button button--blue" type="button" data-filter-close>Apply</button>
+                <button class="button button--blue" type="submit" data-filter-close>Apply</button>
               </div>
             </div>
           </form>
