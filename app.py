@@ -685,6 +685,7 @@ def store_template_context(**kwargs):
         "store_query_url": store_query_url,
         "store_display_currency": STORE_DISPLAY_CURRENCY,
         "store_display_eur_rate": STORE_DISPLAY_EUR_RATE,
+        "cart_upsells": store_cart_upsell_products(),
     }
     context.update(kwargs)
     return context

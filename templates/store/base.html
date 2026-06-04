@@ -2519,6 +2519,85 @@
       padding: 0;
     }
 
+    .cart-drawer__upsell {
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      box-sizing: border-box;
+      margin-top: -1px;
+      overflow: hidden;
+      padding: 18px 23px 20px;
+      width: 100%;
+    }
+
+    .cart-drawer__upsell .title {
+      align-items: center;
+      display: flex;
+      font-size: .875rem;
+      font-weight: 700;
+      justify-content: space-between;
+      line-height: 135%;
+      margin-bottom: 14px;
+      text-transform: none;
+    }
+
+    .cart-drawer__upsell-nav {
+      display: inline-flex;
+      gap: 12px;
+    }
+
+    .swiper-upsell-prev,
+    .swiper-upsell-next {
+      display: inline-block;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .cart-drawer__upsell-track {
+      display: flex;
+      gap: 15px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+      scroll-snap-type: x mandatory;
+    }
+
+    .cart-drawer__upsell-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cart-drawer__upsell-slide {
+      flex: 0 0 109px;
+      scroll-snap-align: start;
+    }
+
+    .cart-drawer__upsell-slide img {
+      aspect-ratio: 1;
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      height: 109px;
+      object-fit: cover;
+      width: 109px;
+    }
+
+    .cart-drawer__upsell-slide .name,
+    .cart-drawer__upsell-slide .price {
+      font-size: .75rem;
+      line-height: 135%;
+      margin-top: 7px;
+      text-transform: lowercase;
+    }
+
+    .cart-drawer__upsell-slide .button {
+      font-size: .75rem;
+      height: 36px;
+      line-height: 36px;
+      margin-top: 8px;
+      min-height: 36px;
+      padding: 0 10px;
+      width: 100%;
+    }
+
     .cart-drawer__summary {
       display: grid;
       gap: 10px;
@@ -3477,6 +3556,30 @@
       <div class="cart-drawer__items">
         <ul class="cart-drawer__items__container" data-cart-drawer-lines></ul>
       </div>
+      {% if cart_upsells %}
+        <div class="cart-drawer__upsell slick-slider" aria-label="A few more ideas">
+          <div class="title">
+            <span>A few more ideas...</span>
+            <span class="cart-drawer__upsell-nav" aria-hidden="true">
+              <span class="swiper-upsell-prev">←</span>
+              <span class="swiper-upsell-next">→</span>
+            </span>
+          </div>
+          <div class="cart-drawer__upsell-track">
+            {% for product in cart_upsells %}
+              {% set variant = first_variant(product) %}
+              <div class="cart-drawer__upsell-slide">
+                <a href="/store/products/{{ product.handle }}">
+                  <img src="{{ product_image(product) }}" alt="{{ product.title }}" loading="lazy">
+                  <div class="name">{{ product.title }}</div>
+                  <div class="price">{{ price_label(product) }}</div>
+                </a>
+                <button class="button button--blue" type="button" data-store-add data-handle="{{ product.handle }}" data-variant-id="{{ variant.id }}">Add to Bag</button>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
       <div class="cart-drawer__summary">
         <div class="cart-drawer__total">
           <span>subtotal</span>

@@ -594,6 +594,18 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<a class="cart-drawer__checkout button button--blue" href="/store/cart">Checkout</a>', html)
         self.assertNotIn("cart-drawer__view-cart", html)
 
+    def test_cart_drawer_renders_live_upsell_carousel_shell(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("cart-drawer__upsell slick-slider", html)
+        self.assertIn("A few more ideas...", html)
+        self.assertIn("swiper-upsell-prev", html)
+        self.assertIn("swiper-upsell-next", html)
+        self.assertIn("cart-drawer__upsell-track", html)
+        self.assertIn('data-store-add data-handle="the-salt-pepper-cylinder-bracelet-stack"', html)
+
     def test_cart_javascript_renders_live_line_item_classes(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
