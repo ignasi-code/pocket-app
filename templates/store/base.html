@@ -596,6 +596,10 @@
 
     .nav { display: none; }
 
+    .header-extra {
+      display: none;
+    }
+
     .brand {
       background: #fff;
       border: 1px solid rgba(0, 0, 0, .1);
@@ -3469,7 +3473,39 @@
         width: 290px;
       }
 
-      .store-search { display: none; }
+      .store-search {
+        display: block;
+        height: 50px;
+        right: 209px;
+        width: 38px;
+      }
+
+      .store-search::before {
+        top: 16px;
+      }
+
+      .store-search::after {
+        top: 29px;
+      }
+
+      .header-extra {
+        align-items: center;
+        display: flex !important;
+        gap: 22px;
+        height: 50px;
+        position: absolute;
+        right: 92px;
+        top: 0;
+        z-index: 3;
+      }
+
+      .header-extra a {
+        display: block;
+        font-size: .75rem;
+        font-weight: 400;
+        line-height: 50px;
+        text-decoration: none;
+      }
 
       .cart-link {
         border: 0;
@@ -3969,6 +4005,10 @@
       <img src="https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" alt="Roxanne Assoulin">
     </a>
     <button class="store-search header__search-toggle" type="button" aria-expanded="false" aria-controls="search-drawer" data-search-open><span>Toggle Search</span></button>
+    <nav class="header-extra desktop-visible" aria-label="Account links">
+      <a href="/store">Login</a>
+      <a href="/store">About</a>
+    </nav>
     <button class="cart-link header__cart header__cart--drawer desktop-visible" type="button" aria-expanded="false" aria-controls="cart-drawer" data-cart-open><span class="bag-label">Bag </span><span data-cart-count>0</span></button>
     <a class="cart-link header__cart header__cart--page mobile-visible" href="/store/cart" aria-label="Open bag"><span data-cart-count>0</span></a>
   </header>

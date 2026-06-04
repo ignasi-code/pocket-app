@@ -217,6 +217,19 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-search-close", html)
         self.assertIn("search-drawer__form", html)
 
+    def test_desktop_header_renders_live_search_login_about_cluster(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        self.assertIn('class="header-extra desktop-visible"', html)
+        self.assertIn(">Login</a>", html)
+        self.assertIn(">About</a>", html)
+        self.assertIn(".header-extra {\n      display: none;", source)
+        self.assertIn(".store-search {\n        display: block;\n        height: 50px;\n        right: 209px;", source)
+        self.assertIn(".header-extra {\n        align-items: center;\n        display: flex !important;\n        gap: 22px;", source)
+
     def test_store_uses_live_theme_product_tile_structure(self):
         response = self.client.get("/store/collections/the-summer-capsule")
 
