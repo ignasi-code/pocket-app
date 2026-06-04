@@ -488,6 +488,11 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-page__item", source)
         self.assertIn("cart-page__checkout", source)
 
+    def test_cart_page_item_options_do_not_duplicate_unit_price(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertNotIn('cart-page__item__options">${escapeHtml(meta.variant.title)}<br>${price(meta.variant.price)}', source)
+
     def test_store_javascript_toggles_search_and_collection_overlay(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 

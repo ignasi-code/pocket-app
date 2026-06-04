@@ -153,7 +153,7 @@
               <a class="cart-page__item__title" href="${productUrl}">${escapeHtml(meta.product.title)}</a>
               <strong class="cart-page__item__line-price">${formatDisplayAmount(lineTotal)}</strong>
             </div>
-            <div class="cart-page__item__options">${escapeHtml(meta.variant.title)}<br>${price(meta.variant.price)}</div>
+            <div class="cart-page__item__options">${escapeHtml(meta.variant.title)}</div>
             <div class="cart-page__item__quantity qty-controls cart-page__quantity">
               <span>quantity</span>
               <button class="cart-page__item__button cart-page__item__button--minus" type="button" data-cart-dec="${item.id}" aria-label="Decrease quantity">-</button>
