@@ -1222,7 +1222,7 @@
 
     .collection-hero {
       position: relative;
-      padding: 0 0 4px;
+      padding: 0;
     }
 
     .collection-hero__image {
@@ -1292,7 +1292,7 @@
       display: flex;
       font-size: .875rem;
       font-weight: 700;
-      height: 52px;
+      height: 74px;
       justify-content: space-between;
       padding: 0 18px;
       text-transform: lowercase;
@@ -2755,7 +2755,7 @@
       font-family: SupremeLLWeb, Helvetica, Arial, sans-serif;
       font-weight: 700;
       margin-top: 10px;
-      min-height: 440px;
+      min-height: 638px;
       padding: 20px;
       position: relative;
     }
@@ -2791,7 +2791,7 @@
     .footer__content {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
     }
 
     .footer__logo img {
@@ -2807,11 +2807,12 @@
       font-size: 1.125rem;
       font-weight: 700;
       line-height: 145%;
-      margin-bottom: 12px;
+      margin-bottom: 0;
       text-transform: none;
     }
 
     .footer-nav__panel {
+      display: none;
       font-size: 1rem;
       font-weight: 400;
       line-height: 145%;
@@ -3120,13 +3121,23 @@
       }
 
       .footer {
+        min-height: 440px;
         padding: 49px 65px 30px;
       }
 
       .footer__content {
         align-items: flex-start;
         flex-flow: row wrap;
+        gap: 24px;
         justify-content: space-between;
+      }
+
+      .footer-nav__tab {
+        margin-bottom: 12px;
+      }
+
+      .footer-nav__panel {
+        display: block;
       }
 
       .footer-newsletter {

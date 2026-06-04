@@ -256,6 +256,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn("?sort_by=created-descending", html)
         self.assertIn("pagination", html)
 
+    def test_collection_mobile_hero_and_filter_match_live_geometry(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".collection-hero {\n      position: relative;\n      padding: 0;", source)
+        self.assertIn(".collection-filter-bar button", source)
+        self.assertIn("height: 74px", source)
+
     def test_collection_filter_drawer_uses_live_inner_structure(self):
         response = self.client.get("/store/collections/necklaces")
 
@@ -371,6 +378,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn("footer__colors", html)
         self.assertIn("footer-newsletter", html)
         self.assertIn("footer-nav__tabset", html)
+
+    def test_store_mobile_footer_starts_from_collapsed_live_state(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".footer-nav__panel {\n      display: none;", source)
+        self.assertIn(".footer-nav__panel {\n        display: block;", source)
+        self.assertIn("min-height: 638px", source)
 
     def test_product_page_exposes_gallery_variant_and_quantity_hooks(self):
         product, variant = self.first_available_variant()
