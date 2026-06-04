@@ -3728,14 +3728,32 @@
       }
 
       .collection-filter-bar {
+        background: transparent;
+        display: flex;
         grid-column: 1 / -1;
         height: 76px;
         order: -1;
         top: 72px;
       }
 
+      .collection-filter__bar__button {
+        flex: 0 0 calc(50% - 4px);
+        height: 75px;
+        margin-left: 0;
+        margin-top: 1px;
+      }
+
+      .collection-filter__bar__button:first-child {
+        margin-left: 9px;
+      }
+
       .collection-filter-bar button {
-        height: 76px;
+        display: block;
+        height: 55px;
+        margin-top: 5px;
+        padding: 0 12px;
+        text-align: center;
+        width: calc(100% - 9px);
       }
 
       .collection-grid {

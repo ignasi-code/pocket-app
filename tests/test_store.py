@@ -395,10 +395,20 @@ class StoreTest(unittest.TestCase):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
         self.assertIn(".collection-items {\n        display: grid;\n        grid-template-columns: repeat(4, minmax(0, 1fr));\n        padding-top: 72px;", source)
-        self.assertIn(".collection-filter-bar {\n        grid-column: 1 / -1;\n        height: 76px;\n        order: -1;\n        top: 72px;", source)
+        self.assertIn("grid-column: 1 / -1;\n        height: 76px;\n        order: -1;\n        top: 72px;", source)
         self.assertIn(".collection-grid {\n        display: contents;", source)
         self.assertIn(".collection-hero {\n        grid-column: 1 / span 2;\n        grid-row: span 2;\n        height: 765px;", source)
         self.assertIn(".product-tile {\n        height: 384px;", source)
+
+    def test_collection_desktop_filter_bar_matches_live_inset_controls(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".collection-filter-bar {\n        background: transparent;\n        display: flex;", source)
+        self.assertIn(".collection-filter__bar__button {\n        flex: 0 0 calc(50% - 4px);\n        height: 75px;\n        margin-left: 0;", source)
+        self.assertIn("margin-left: 0;\n        margin-top: 1px;", source)
+        self.assertIn(".collection-filter__bar__button:first-child {\n        margin-left: 9px;", source)
+        self.assertIn(".collection-filter-bar button {\n        display: block;\n        height: 55px;\n        margin-top: 5px;", source)
+        self.assertIn("padding: 0 12px;\n        text-align: center;\n        width: calc(100% - 9px);", source)
 
     def test_collection_filter_drawer_uses_live_inner_structure(self):
         response = self.client.get("/store/collections/necklaces")
