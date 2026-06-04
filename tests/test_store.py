@@ -275,6 +275,15 @@ class StoreTest(unittest.TestCase):
         second = html.index('data-product-handle="the-cylinder-cord-necklace-lemon-yellow"')
         self.assertLess(first, second)
 
+    def test_collection_price_sort_reorders_products(self):
+        response = self.client.get("/store/collections/necklaces?sort_by=price-ascending")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        cheapest = html.index('data-product-handle="the-happy-cord-charm-necklace-blood-orange-red"')
+        curated = html.index('data-product-handle="the-salt-pepper-cylinder-necklace-set"')
+        self.assertLess(cheapest, curated)
+
     def test_store_base_renders_live_style_footer(self):
         response = self.client.get("/store")
 

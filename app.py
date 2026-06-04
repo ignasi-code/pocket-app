@@ -536,6 +536,25 @@ def store_collection_products(handle):
     return definition, selected
 
 
+def store_product_price_values(product):
+    values = []
+    for variant in product.get("variants", []):
+        try:
+            values.append(float(variant.get("price") or 0))
+        except (TypeError, ValueError):
+            continue
+    return values or [0]
+
+
+def store_sort_collection_products(products, sort_by):
+    sorted_products = list(products)
+    if sort_by == "price-ascending":
+        sorted_products.sort(key=lambda product: (min(store_product_price_values(product)), product.get("title", "")))
+    elif sort_by == "price-descending":
+        sorted_products.sort(key=lambda product: (max(store_product_price_values(product)), product.get("title", "")), reverse=True)
+    return sorted_products
+
+
 def store_template_context(**kwargs):
     merchandising = load_store_merchandising()
     context = {
@@ -1778,6 +1797,7 @@ def store_collection_page(handle):
     collection, products = store_collection_products(handle)
     if not collection:
         abort(404)
+    products = store_sort_collection_products(products, request.args.get("sort_by"))
     return render_template(
         "store/collection.html",
         **store_template_context(
