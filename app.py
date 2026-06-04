@@ -9,7 +9,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from flask import Flask, Response, abort, jsonify, render_template, render_template_string, request, send_file
 
@@ -368,6 +368,55 @@ def store_product_image(product):
     return images[0].get("src") if images else STORE_PLACEHOLDER_IMAGE
 
 
+def store_is_shopify_image(src):
+    text = str(src or "")
+    return "cdn.shopify.com/" in text or "/cdn/shop/" in text
+
+
+def store_image_url(src, width=None, height=None, crop=None):
+    text = str(src or STORE_PLACEHOLDER_IMAGE)
+    if not store_is_shopify_image(text):
+        return text
+
+    parts = urlsplit(text)
+    query = [
+        (key, value)
+        for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        if key not in {"width", "height", "crop"}
+    ]
+    if width:
+        query.append(("width", str(int(width))))
+    if height:
+        query.append(("height", str(int(height))))
+    if crop:
+        query.append(("crop", str(crop)))
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+
+def store_image_widths(widths):
+    if isinstance(widths, str):
+        values = widths.split(",")
+    else:
+        values = widths or []
+
+    parsed = []
+    for value in values:
+        try:
+            parsed.append(int(value))
+        except (TypeError, ValueError):
+            continue
+    return sorted({width for width in parsed if width > 0})
+
+
+def store_image_srcset(src, widths):
+    if not store_is_shopify_image(src):
+        return ""
+    return ", ".join(
+        f"{store_image_url(src, width=width)} {width}w"
+        for width in store_image_widths(widths)
+    )
+
+
 def store_price_label(product):
     prices = [
         parse_price_cents(variant.get("price"))
@@ -685,6 +734,8 @@ def store_template_context(**kwargs):
         "collections": store_collection_definitions(),
         "merchandising": merchandising,
         "product_image": store_product_image,
+        "image_url": store_image_url,
+        "image_srcset": store_image_srcset,
         "price_label": store_price_label,
         "variant_price_label": store_variant_price_label,
         "description_lines": store_description_lines,
@@ -1973,6 +2024,17 @@ def store_asset_js():
     response = send_file(
         BASE_DIR / "pages" / "store" / "store.js",
         mimetype="text/javascript",
+        max_age=31536000,
+    )
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
+@app.route("/store/assets/store.css")
+def store_asset_css():
+    response = send_file(
+        BASE_DIR / "pages" / "store" / "store.css",
+        mimetype="text/css",
         max_age=31536000,
     )
     response.headers["Cache-Control"] = "public, max-age=31536000, immutable"

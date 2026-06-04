@@ -78,8 +78,24 @@
     return (data.products || []).find(product => product.handle === handle);
   }
 
-  function productImage(product, variant) {
-    return variant?.featured_image?.src || product?.images?.[0]?.src || "https://placehold.co/360x450";
+  function shopifyImageUrl(src, width) {
+    const value = String(src || "");
+    if (!value.includes("cdn.shopify.com/") && !value.includes("/cdn/shop/")) return value;
+    try {
+      const url = new URL(value, window.location.href);
+      url.searchParams.delete("width");
+      url.searchParams.delete("height");
+      url.searchParams.delete("crop");
+      if (width) url.searchParams.set("width", String(width));
+      return url.toString();
+    } catch {
+      return value;
+    }
+  }
+
+  function productImage(product, variant, width) {
+    const src = variant?.featured_image?.src || product?.images?.[0]?.src || "https://placehold.co/360x450";
+    return shopifyImageUrl(src, width);
   }
 
   function escapeHtml(value) {
@@ -161,7 +177,7 @@
 
     return children.map(child => ({
       id: child.id,
-      image: productImage(product, child),
+      image: productImage(product, child, 120),
       title: bundleIncludeTitle(product, child)
     }));
   }
@@ -288,7 +304,7 @@
           <div class="cart-page__item__copy">
             <div class="cart-page__item__details">
               <a class="cart-page__item__image-mobile cart-page__item__image-mobile--top" href="${productUrl}">
-                <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
+                <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant, 180)}" alt="">
               </a>
               <a class="cart-page__item__title" href="${productUrl}">${escapeHtml(meta.product.title)}</a>
               <strong class="cart-page__item__line-price">${formatDisplayAmount(lineTotal)}</strong>
@@ -348,7 +364,7 @@
       return `
         <li class="cart-drawer__item${drawerBundleClass}">
           <a class="cart-drawer__item__link" href="${productUrl}">
-            <img class="cart-drawer__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
+            <img class="cart-drawer__item__image" src="${productImage(meta.product, meta.variant, 180)}" alt="">
             <div class="cart-drawer__item__details">
               <span>${escapeHtml(meta.product.title)}</span>
               <span class="cart-drawer__item__price">${formatDisplayAmount(lineTotal)}</span>
@@ -483,7 +499,7 @@
 
   function quickshopOptionHtml(product, selectedVariant) {
     return (product.variants || []).map(variant => `
-      <option value="${variant.id}" data-price="${formatDisplayPrice(variant.price)}" data-image-src="${productImage(product, variant)}" ${Number(variant.id) === Number(selectedVariant.id) ? "selected" : ""} ${variant.available === false ? "disabled" : ""}>
+      <option value="${variant.id}" data-price="${formatDisplayPrice(variant.price)}" data-image-src="${productImage(product, variant, 480)}" ${Number(variant.id) === Number(selectedVariant.id) ? "selected" : ""} ${variant.available === false ? "disabled" : ""}>
         ${escapeHtml(variant.title)} - ${formatDisplayPrice(variant.price)}${variant.available === false ? " - sold out" : ""}
       </option>
     `).join("");
@@ -507,7 +523,7 @@
       `;
     }
     if (image) {
-      image.innerHTML = `<img src="${productImage(product, selectedVariant)}" alt="${escapeHtml(product.title)}" data-quickshop-image-current>`;
+      image.innerHTML = `<img src="${productImage(product, selectedVariant, 480)}" alt="${escapeHtml(product.title)}" data-quickshop-image-current>`;
     }
     if (details) {
       details.innerHTML = `
@@ -628,12 +644,13 @@
     const price = selected.dataset.price;
     const detailImage = document.querySelector("[data-product-details-image]");
     const imageSrc = selected.dataset.imageSrc;
+    const fullImageSrc = selected.dataset.fullImageSrc || imageSrc;
 
     if (triggerTitle) triggerTitle.textContent = title;
     if (priceNode && price) priceNode.textContent = price;
     if (detailImage && imageSrc) {
       detailImage.src = imageSrc;
-      detailImage.closest("[data-lightbox-open]")?.setAttribute("data-lightbox-src", imageSrc);
+      detailImage.closest("[data-lightbox-open]")?.setAttribute("data-lightbox-src", fullImageSrc);
     }
     if (form && price) form.dataset.selectedPrice = price;
     if (scrollGallery) updatePdpGallery(select);

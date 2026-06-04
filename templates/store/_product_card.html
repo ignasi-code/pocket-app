@@ -1,12 +1,13 @@
 {% set hover_image = product.images[1].src if product.images|length > 1 else product_image(product) %}
+{% set primary_image = product_image(product) %}
 <article class="product-card product-tile js-productTile product-tile--collection" data-product-handle="{{ product.handle }}">
   <a href="/store/products/{{ product.handle }}" class="product-tile__link">
     <div class="product-tile__image">
       <picture>
-        <source media="(min-width: 1024px)" srcset="{{ product_image(product) }}">
-        <img class="product-tile__image__primary" src="{{ product_image(product) }}" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async">
+        <source media="(min-width: 1024px)" srcset="{{ image_srcset(primary_image, [360, 540, 760]) }}" sizes="25vw">
+        <img class="product-tile__image__primary" src="{{ image_url(primary_image, 540) }}" srcset="{{ image_srcset(primary_image, [240, 360, 540, 760]) }}" sizes="(min-width: 1024px) 25vw, 50vw" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async">
       </picture>
-      <img class="product-tile__image__hover is-loading" src="{{ hover_image }}" alt="" width="760" height="912" loading="lazy" decoding="async">
+      <img class="product-tile__image__hover is-loading" src="{{ image_url(hover_image, 540) }}" srcset="{{ image_srcset(hover_image, [240, 360, 540, 760]) }}" sizes="(min-width: 1024px) 25vw, 50vw" alt="" width="760" height="912" loading="lazy" decoding="async">
     </div>
     <div class="product-tile__top"></div>
     <div class="product-card__body product-tile__details product-tile__copy__wrapper">

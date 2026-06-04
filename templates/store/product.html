@@ -13,7 +13,7 @@
           {% for image in gallery_images[:6] %}
             <div class="product-gallery__image__wrapper js-productImage">
               <button class="product-gallery__zoom" type="button" data-lightbox-open data-lightbox-src="{{ image.src }}" data-lightbox-alt="{{ product.title }}">
-                <img src="{{ image.src }}" alt="{{ product.title }}" loading="lazy" data-gallery-image data-gallery-image-src="{{ image.src }}">
+                <img src="{{ image_url(image.src, 760) }}" srcset="{{ image_srcset(image.src, [390, 760, 1200]) }}" sizes="(min-width: 1024px) 50vw, 100vw" alt="{{ product.title }}" width="760" height="912" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async"{% if loop.first %} fetchpriority="high"{% endif %} data-gallery-image data-gallery-image-src="{{ image.src }}">
               </button>
             </div>
           {% else %}
@@ -34,11 +34,11 @@
       </div>
 
       <aside class="buy-box product-details">
-        <div class="product-details-top">
-          <div class="product-details-top__images">
-            <button class="product-details-top__image" type="button" data-lightbox-open data-lightbox-src="{{ selected_option.image_src }}" data-lightbox-alt="{{ product.title }}">
-              <span>Zoom image</span>
-              <img src="{{ selected_option.image_src }}" alt="{{ product.title }}" loading="lazy" data-product-details-image>
+          <div class="product-details-top">
+            <div class="product-details-top__images">
+              <button class="product-details-top__image" type="button" data-lightbox-open data-lightbox-src="{{ selected_option.image_src }}" data-lightbox-alt="{{ product.title }}">
+                <span>Zoom image</span>
+              <img src="{{ image_url(selected_option.image_src, 320) }}" srcset="{{ image_srcset(selected_option.image_src, [180, 320, 480]) }}" sizes="(min-width: 1024px) 320px, 42vw" alt="{{ product.title }}" width="320" height="384" loading="lazy" decoding="async" data-product-details-image>
             </button>
           </div>
           <div class="js-productDetailsTop">
@@ -91,7 +91,7 @@
               <div class="option-selector product-option-selector" data-option-selector>
                 <select class="option-selector__native" name="variant_id" data-pdp-variant-select aria-hidden="true" tabindex="-1">
                   {% for option in variant_options %}
-                    <option value="{{ option.variant.id }}" data-image-src="{{ option.image_src }}" data-price="{{ option.price_label }}" data-title="{{ option.title }}" data-option-url="{{ option.url }}" {% if option.variant.available is sameas false %}disabled{% endif %} {% if option.selected %}selected{% endif %}>
+                    <option value="{{ option.variant.id }}" data-image-src="{{ image_url(option.image_src, 320) }}" data-full-image-src="{{ option.image_src }}" data-price="{{ option.price_label }}" data-title="{{ option.title }}" data-option-url="{{ option.url }}" {% if option.variant.available is sameas false %}disabled{% endif %} {% if option.selected %}selected{% endif %}>
                       {{ option.title }} - {{ option.price_label }}{% if option.variant.available is sameas false %} - sold out{% endif %}
                     </option>
                   {% endfor %}
@@ -111,7 +111,7 @@
                   <ul class="option-selector__list" aria-label="{{ option_label }} options">
                     {% for option in variant_options %}
                       <li class="option-selector__variant{% if option.selected %} option-selector__variant--selected{% endif %}">
-                        <button class="js-optionSelectorOption{% if option.selected %} is-current{% endif %}" type="button" data-option-choice data-variant-id="{{ option.variant.id }}" data-option-title="{{ option.title }}" data-option-price="{{ option.price_label }}" data-option-image-src="{{ option.image_src }}" data-option-url="{{ option.url }}" {% if option.swatch %}data-option-swatch="{{ option.swatch }}"{% endif %}>
+                        <button class="js-optionSelectorOption{% if option.selected %} is-current{% endif %}" type="button" data-option-choice data-variant-id="{{ option.variant.id }}" data-option-title="{{ option.title }}" data-option-price="{{ option.price_label }}" data-option-image-src="{{ image_url(option.image_src, 320) }}" data-option-full-image-src="{{ option.image_src }}" data-option-url="{{ option.url }}" {% if option.swatch %}data-option-swatch="{{ option.swatch }}"{% endif %}>
                           {% if option.swatch %}
                             <i class="option-selector__swatch" style="background: {{ option.swatch }}"></i>
                           {% endif %}

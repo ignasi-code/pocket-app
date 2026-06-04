@@ -17,9 +17,9 @@
               <div class="collection-hero__image">
                 <picture>
                   {% if collection.hero_image_desktop %}
-                    <source media="(min-width: 1024px)" srcset="{{ collection.hero_image_desktop }}">
+                    <source media="(min-width: 1024px)" srcset="{{ image_srcset(collection.hero_image_desktop, [760, 1200, 1600]) }}" sizes="50vw">
                   {% endif %}
-                  <img src="{{ collection.hero_image_mobile }}" alt="{{ collection.hero_title or collection.title }}">
+                  <img src="{{ image_url(collection.hero_image_mobile, 760) }}" srcset="{{ image_srcset(collection.hero_image_mobile, [390, 760, 1200]) }}" sizes="(min-width: 1024px) 50vw, 100vw" alt="{{ collection.hero_title or collection.title }}" width="760" height="760" loading="eager" decoding="async" fetchpriority="high">
                 </picture>
               </div>
               <div class="collection-hero__copy">

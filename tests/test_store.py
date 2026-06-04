@@ -8,6 +8,12 @@ class StoreTest(unittest.TestCase):
     def setUp(self):
         self.client = pocket.app.test_client()
 
+    def store_css_source(self):
+        path = pocket.BASE_DIR / "pages" / "store" / "store.css"
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+        return (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
     def first_available_variant(self):
         for product in pocket.load_store_catalog().get("products", []):
             for variant in product.get("variants", []):
@@ -43,6 +49,23 @@ class StoreTest(unittest.TestCase):
         self.assertIn("info-module__content mobile-visible", html)
         self.assertIn("info-module__content desktop-visible", html)
 
+    def test_store_base_links_cached_css_asset_for_lighthouse(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<link rel="stylesheet" href="/store/assets/store.css?v=20260605-css-images">', html)
+        self.assertNotIn("<style>", html)
+
+    def test_store_css_asset_is_cacheable_for_lighthouse(self):
+        response = self.client.get("/store/assets/store.css?v=20260605-css-images")
+        self.addCleanup(response.close)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("public", response.headers.get("Cache-Control", ""))
+        self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
+        self.assertIn(".site-header", response.get_data(as_text=True))
+
     def test_homepage_mobile_shipping_grid_includes_heart_tile(self):
         response = self.client.get("/store")
 
@@ -69,27 +92,27 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("shipping-promo js-shippingPromo", html)
 
     def test_shipping_promo_css_matches_live_mobile_bar(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".shipping-promo {\n      background: #cf3d2f;", source)
         self.assertIn("position: fixed;\n      right: 10px;\n      top: 79px;", source)
         self.assertIn(".shipping-promo.is-hidden {\n      display: none;", source)
 
     def test_shipping_promo_css_matches_live_desktop_compact_box(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".shipping-promo {\n        background: #c5402c;\n        display: block;\n        height: 81px;\n        left: auto;", source)
         self.assertIn("padding: 20px 60px 20px 19px;\n        right: 10px;\n        top: 79px;\n        width: 320px;", source)
         self.assertIn(".shipping-promo__close {\n        height: 48px;\n        margin-top: 16px;\n        right: 8px;\n        top: 0;\n        width: 48px;", source)
 
     def test_homepage_product_module_title_uses_live_regular_weight(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".product-module__title", source)
         self.assertIn("font-weight: 400", source)
 
     def test_homepage_desktop_category_module_matches_live_height(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".category-module {\n        height: 460px;\n        padding: 0;", source)
         self.assertIn(".category-module__text {\n        font-size: 3rem;\n        line-height: 1.2;", source)
@@ -97,7 +120,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".category-module__text--pink::after {\n        border-bottom: 2px solid #000;\n        top: 57px;", source)
 
     def test_homepage_split_banner_uses_live_mobile_cta_treatment(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".double-image-banner__tile a", source)
         self.assertIn("bottom: 5%", source)
@@ -109,7 +132,7 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("font-size: 9.375rem", source)
 
     def test_homepage_desktop_product_module_matches_live_spacing(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".product-module__title {\n        font-size: 3rem;\n        line-height: 1.2;", source)
         self.assertIn("padding-bottom: 30px;\n        padding-left: 65px;", source)
@@ -117,7 +140,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".product-module__products {\n        flex-wrap: wrap;\n        padding: 0 2px 1px;", source)
 
     def test_homepage_desktop_product_module_matches_live_height_contract(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".product-module {\n        padding: 40px 0 50px;", source)
         self.assertIn("max-width: 559px;\n        padding-bottom: 30px;", source)
@@ -125,7 +148,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".product-module__cta--mobile {\n        display: none;", source)
 
     def test_homepage_desktop_hero_matches_live_viewport_contract(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".hero {\n        padding: 2px;", source)
         self.assertIn(".hero__image,\n      .hero img {\n        height: calc(100vh - 4px);", source)
@@ -140,6 +163,27 @@ class StoreTest(unittest.TestCase):
         self.assertIn('decoding="async"', html)
         self.assertIn('width="760"', html)
         self.assertIn('height="760"', html)
+
+    def test_homepage_hero_uses_responsive_shopify_image_delivery(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("MainImage_Mobile", html)
+        self.assertIn("&amp;width=760", html)
+        self.assertIn("&amp;width=390 390w", html)
+        self.assertIn("&amp;width=760 760w", html)
+        self.assertIn('sizes="100vw"', html)
+
+    def test_product_tiles_use_responsive_shopify_image_delivery(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('class="product-tile__image__primary"', html)
+        self.assertIn("&amp;width=360 360w", html)
+        self.assertIn("&amp;width=540 540w", html)
+        self.assertIn('sizes="(min-width: 1024px) 25vw, 50vw"', html)
 
     def test_homepage_uses_live_desktop_split_assets_and_custom_category_link(self):
         response = self.client.get("/store")
@@ -190,6 +234,16 @@ class StoreTest(unittest.TestCase):
         self.assertIn("Necklaces", html)
         self.assertIn("data-store-add", html)
 
+    def test_collection_hero_uses_responsive_shopify_image_delivery(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("collection-hero__image", html)
+        self.assertIn("&amp;width=760 760w", html)
+        self.assertIn("&amp;width=1200 1200w", html)
+        self.assertIn('sizes="(min-width: 1024px) 50vw, 100vw"', html)
+
     def test_product_page_renders_variant_add_to_cart(self):
         product, variant = self.first_available_variant()
         response = self.client.get(f"/store/products/{product['handle']}")
@@ -229,7 +283,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-cart-drawer-lines", html)
 
     def test_menu_open_state_has_body_scoped_visibility_override(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn('.drawer-is-open .menu-drawer[aria-hidden="false"]', source)
         self.assertIn("transform: translateX(0) !important", source)
@@ -265,7 +319,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("search-drawer__form", html)
 
     def test_search_open_state_has_body_scoped_visibility_override(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn('.search-is-open .search-drawer[aria-hidden="false"]', source)
         self.assertIn("opacity: 1 !important", source)
@@ -276,7 +330,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
         self.assertIn('class="header-extra desktop-visible"', html)
         self.assertIn(">Login</a>", html)
         self.assertIn(">About</a>", html)
@@ -308,13 +362,13 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn('class="product-tile__add js-quickshopOpen" type="button" data-store-add', html)
 
     def test_product_tile_desktop_copy_band_matches_live_overlay_geometry(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".product-tile__copy__wrapper {\n        left: 3px;\n        right: 3px;\n        bottom: 2px;\n        grid-template-columns: minmax(0, 1fr) 76px;", source)
         self.assertIn(".product-tile__add {\n        border-radius: 0;\n        height: auto;\n        min-height: 76px;\n        width: 76px;", source)
 
     def test_product_tile_desktop_copy_typography_matches_live_band(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn("left: 3px;\n        right: 3px;\n        bottom: 2px;", source)
         self.assertIn(".product-tile__copy {\n        padding: 17px 20px;", source)
@@ -339,7 +393,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("quickshop-is-open", source)
 
     def test_quickshop_open_state_has_body_scoped_transform_override(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn('.quickshop-is-open .quickshop__drawer[aria-hidden="false"]', source)
         self.assertIn("transform: translateY(0) !important", source)
@@ -372,7 +426,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("convertedWholeUnits", source)
 
     def test_product_tiles_hide_quick_add_on_mobile_like_live_theme(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".product-tile__add", source)
         self.assertIn("display: none", source)
@@ -418,7 +472,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("pagination", html)
 
     def test_collection_mobile_hero_and_filter_match_live_geometry(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".collection-hero {\n      position: relative;\n      padding: 0;", source)
         self.assertIn(".collection-filter-bar button", source)
@@ -438,7 +492,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("M7 2v10", html)
 
     def test_collection_desktop_hero_flows_inside_live_product_grid(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".collection-items {\n        display: grid;\n        grid-template-columns: repeat(4, minmax(0, 1fr));\n        padding-top: 72px;", source)
         self.assertIn("grid-column: 1 / -1;\n        height: 76px;\n        order: -1;\n        top: 72px;", source)
@@ -447,7 +501,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".product-tile {\n        height: 384px;", source)
 
     def test_collection_desktop_filter_bar_matches_live_inset_controls(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".collection-filter-bar {\n        background: transparent;\n        display: flex;", source)
         self.assertIn("top: 72px;\n        z-index: 12;", source)
@@ -637,7 +691,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("footer-nav__tabset", html)
 
     def test_store_mobile_footer_starts_from_collapsed_live_state(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".footer-nav__panel {\n      display: none;", source)
         self.assertIn(".footer-nav__panel {\n        display: block;", source)
@@ -683,8 +737,9 @@ class StoreTest(unittest.TestCase):
         self.assertIn("product-buy-options__price", html)
         self.assertIn("js-addToBag", html)
         self.assertIn("button--blue", html)
-        self.assertIn(".product-buy-options__add-wrapper button", html)
-        self.assertIn("height: 60px", html)
+        source = self.store_css_source()
+        self.assertIn(".product-buy-options__add-wrapper button", source)
+        self.assertIn("height: 60px", source)
 
     def test_product_page_exposes_custom_option_drawer_and_lightbox(self):
         product = pocket.store_product_by_handle("the-salt-pepper-cylinder-necklace-set")
@@ -737,11 +792,22 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
         self.assertIn("product-details-top__image", html)
         self.assertIn("data-product-details-image", html)
         self.assertIn("CylinderCordNecklace_Cloud_1", html)
         self.assertIn(".product-details-top__image", source)
+
+    def test_product_page_uses_responsive_shopify_image_delivery(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("product-gallery__image__wrapper", html)
+        self.assertIn("&amp;width=760 760w", html)
+        self.assertIn("&amp;width=1200 1200w", html)
+        self.assertIn('sizes="(min-width: 1024px) 50vw, 100vw"', html)
+        self.assertIn('sizes="(min-width: 1024px) 320px, 42vw"', html)
 
     def test_product_javascript_updates_details_top_image_for_variant_switch(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -759,14 +825,14 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn('class="product-short-description"', html)
 
     def test_product_css_matches_live_mobile_buy_box_spacing(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".product-details-bottom__col--options {\n      border-bottom: 1px solid #e6e6e6;\n      order: 1;\n      padding-bottom: 0;\n      padding-top: 0;", source)
         self.assertIn("padding: 10px 0 22px;", source)
         self.assertIn("padding: 0 0 16px;", source)
 
     def test_product_css_matches_live_desktop_gallery_depth(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".product-gallery__image__wrapper:nth-child(n+3) {\n        display: none;", source)
         self.assertIn(".product-page {\n        padding: 0;", source)
@@ -783,7 +849,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
         self.assertIn('class="page product-page"', html)
         self.assertIn(".product-page {\n      padding-top: 5px;", source)
 
@@ -792,7 +858,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
         self.assertIn(">Add to Bag<", html)
         self.assertIn("Enjoy complimentary ground shipping on US orders $250+", html)
         self.assertIn("text-transform: none;", source)
@@ -846,13 +912,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn('data-product-handle="the-netted-stone-pendant"', html)
 
     def test_cart_page_mobile_summary_spacing_matches_live_checkout_width(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".cart-page__summary", source)
         self.assertIn("padding: 14px;", source)
 
     def test_cart_css_matches_live_mobile_item_and_page_spacing(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".cart {\n      padding: 79px 0 0;", source)
         self.assertIn(".cart-page {\n      display: block;\n      padding: 0 10px;", source)
@@ -868,7 +934,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".cart-upsell .product-tile {\n      height: 379px;\n      width: 267px;", source)
 
     def test_cart_css_matches_live_desktop_single_item_geometry(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".cart {\n        box-sizing: border-box;\n        min-height: 1016px;\n        padding: 63px 0 10px;", source)
         self.assertIn(".cart-page {\n        display: flex;\n        padding: 0 10px;\n        position: static;", source)
@@ -952,7 +1018,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("<li>quantity: ${item.qty}</li>", source)
 
     def test_cart_drawer_css_keeps_live_checkout_visible_on_desktop(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".cart-drawer__header {\n      min-height: 55px;", source)
         self.assertIn("height: 55px;\n      padding: 17px 23px;", source)
@@ -964,7 +1030,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".cart-drawer__checkout {\n      height: 52px;\n      line-height: 52px;\n      min-height: 52px;", source)
 
     def test_cart_css_matches_live_mobile_line_item_internals(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".cart-page__item__copy {\n      display: flex;\n      flex-direction: column;\n      min-height: 235px;\n      padding-left: 0;", source)
         self.assertIn(".cart-page__item__details {\n      display: flex;\n      font-size: 1.125rem;\n      font-weight: 600;\n      justify-content: space-between;\n      line-height: 145%;\n      min-height: 101px;\n      padding-left: 101px;", source)
@@ -995,7 +1061,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn('drawer.style.setProperty("visibility", "visible", "important")', source)
 
     def test_cart_open_state_has_body_scoped_transform_override(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".cart-drawer.is-open", source)
         self.assertIn('.drawer-is-open .cart-drawer[aria-hidden="false"]', source)
@@ -1004,7 +1070,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("right: 8px !important", source)
 
     def test_cart_css_supports_live_bundle_line_heights(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".cart-page__item--bundle {\n      min-height: 399px;", source)
         self.assertIn(".cart-drawer__item--bundle {\n      min-height: 160px;", source)
@@ -1027,7 +1093,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn('drawer.style.setProperty("visibility", "visible", "important")', source)
 
     def test_collection_filter_drawer_uses_live_mobile_bottom_sheet_motion(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".collection-filter__drawer", source)
         self.assertIn("bottom: 0", source)
@@ -1035,13 +1101,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn('.collection-filter__drawer[aria-hidden="false"]', source)
 
     def test_collection_filter_open_state_has_body_scoped_override(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn('.collection-filter-is-open .collection-filter__drawer[aria-hidden="false"]', source)
         self.assertIn("transform: translateY(0) !important", source)
 
     def test_collection_desktop_filter_drawer_uses_live_panel_width(self):
-        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        source = self.store_css_source()
 
         self.assertIn(".collection-filter__drawer {\n        border-radius: 5px;\n        bottom: auto;\n        left: auto;\n        max-width: 390px;\n        right: 8px;\n        top: 72px;\n        width: 390px;", source)
         self.assertIn(".collection-filter__drawer__head svg {\n        height: 15px;\n        width: 15px;", source)
@@ -1051,7 +1117,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-perf-lcp", html)
+        self.assertIn("/store/assets/store.js?v=20260605-images", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1068,12 +1134,19 @@ class StoreTest(unittest.TestCase):
         )
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-perf-lcp")
+        response = self.client.get("/store/assets/store.js?v=20260605-images")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("public", response.headers.get("Cache-Control", ""))
         self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
+
+    def test_store_js_runtime_images_request_small_shopify_widths(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("function shopifyImageUrl(src, width)", source)
+        self.assertIn("productImage(meta.product, meta.variant, 180)", source)
+        self.assertIn("productImage(product, selectedVariant, 480)", source)
 
     def test_unknown_product_returns_404(self):
         response = self.client.get("/store/products/nope")
