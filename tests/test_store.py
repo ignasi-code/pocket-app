@@ -85,6 +85,9 @@ class StoreTest(unittest.TestCase):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
         self.assertIn(".category-module {\n        height: 460px;\n        padding: 0;", source)
+        self.assertIn(".category-module__text {\n        font-size: 3rem;\n        line-height: 1.2;", source)
+        self.assertIn("max-width: 850px;\n        padding-bottom: 177px;", source)
+        self.assertIn(".category-module__text--pink::after {\n        border-bottom: 2px solid #000;\n        top: 57px;", source)
 
     def test_homepage_split_banner_uses_live_mobile_cta_treatment(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
@@ -92,8 +95,19 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".double-image-banner__tile a", source)
         self.assertIn("bottom: 5%", source)
         self.assertIn("font-size: 1rem", source)
+        self.assertIn("left: 50%", source)
+        self.assertIn("transform: translate3d(-57%, -50%, 0)", source)
         self.assertIn(".double-image-banner__tile__cta--black", source)
         self.assertNotIn(".split-tile::before", source)
+        self.assertNotIn("font-size: 9.375rem", source)
+
+    def test_homepage_desktop_product_module_matches_live_spacing(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".product-module__title {\n        font-size: 3rem;\n        line-height: 1.2;", source)
+        self.assertIn("padding-bottom: 30px;\n        padding-left: 65px;", source)
+        self.assertIn(".product-module__cta {\n        font-size: 1.125rem;\n        padding-right: 92px;", source)
+        self.assertIn(".product-module__products {\n        flex-wrap: wrap;\n        padding: 0 2px 1px;", source)
 
     def test_homepage_uses_live_desktop_split_assets_and_custom_category_link(self):
         response = self.client.get("/store")
