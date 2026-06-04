@@ -123,6 +123,16 @@
       && /\b(set|stack)\b/i.test(title);
   }
 
+  function isSetProduct(product) {
+    return Array.isArray(product?.variants)
+      && product.variants.length > 1
+      && /\b(set|stack)\b/i.test(String(product?.title || ""));
+  }
+
+  function isBundleStyleLine(product, variant) {
+    return isSetProduct(product) || isBundleVariant(product, variant);
+  }
+
   function bundleIncludeTitle(product, variant) {
     const title = String(variant?.title || "");
     const productTitle = String(product?.title || "");
@@ -140,28 +150,39 @@
   }
 
   function bundleIncludes(product, variant) {
-    if (!isBundleVariant(product, variant)) return [];
-    return product.variants
-      .filter(child => Number(child.id) !== Number(variant.id))
-      .slice()
-      .reverse()
-      .map(child => bundleIncludeTitle(product, child));
+    return bundleIncludeItems(product, variant).map(item => item.title);
+  }
+
+  function bundleIncludeItems(product, variant) {
+    if (!isBundleStyleLine(product, variant)) return [];
+    const children = isBundleVariant(product, variant)
+      ? product.variants.filter(child => Number(child.id) !== Number(variant.id)).slice().reverse()
+      : [variant];
+
+    return children.map(child => ({
+      id: child.id,
+      image: productImage(product, child),
+      title: bundleIncludeTitle(product, child)
+    }));
   }
 
   function cartPageOptionsHtml(meta) {
-    const includes = bundleIncludes(meta.product, meta.variant);
+    const includes = bundleIncludeItems(meta.product, meta.variant);
     if (!includes.length) {
       return `<div class="cart-page__item__options">${escapeHtml(meta.variant.title)}</div>`;
     }
 
     return `
-      <div class="cart-page__item__options cart-page__item__options--includes">
-        <span>${escapeHtml(meta.variant.title)}</span>
-        <span>Includes:</span>
-        <ul>
-          ${includes.map(title => `<li>${escapeHtml(title)}</li>`).join("")}
-        </ul>
-      </div>
+      <ul class="cart-page__item__options cart-page__item__options--includes">
+        <li>${escapeHtml(meta.variant.title)}</li>
+        <li class="bundle-options-label">includes:</li>
+        ${includes.map((item, index) => `
+          <li class="${index === 0 ? "bundle-child first" : "bundle-child"}">
+            <img src="${item.image}" alt="">
+            <span>${escapeHtml(item.title)}</span>
+          </li>
+        `).join("")}
+      </ul>
     `;
   }
 
@@ -186,7 +207,7 @@
   }
 
   function cartPageQuantityHtml(item, meta) {
-    if (isBundleVariant(meta.product, meta.variant)) return "";
+    if (isBundleStyleLine(meta.product, meta.variant)) return "";
 
     return `
       <div class="cart-page__item__quantity qty-controls cart-page__quantity">
@@ -249,14 +270,16 @@
       const meta = variants.get(Number(item.id));
       const lineTotal = displayAmount(meta.variant.price) * item.qty;
       const productUrl = `/store/products/${meta.product.handle}`;
-      const bundleClass = isBundleVariant(meta.product, meta.variant) ? " cart-page__item--bundle" : "";
+      const bundleStyle = isBundleStyleLine(meta.product, meta.variant);
+      const bundleSingleClass = bundleStyle && bundleIncludeItems(meta.product, meta.variant).length <= 1 ? " cart-page__item--bundle-single" : "";
+      const bundleClass = bundleStyle ? ` cart-page__item--bundle${bundleSingleClass}` : "";
       return `
         <div class="cart-page__item${bundleClass}">
-          <a class="cart-page__item__image-wrap" href="${productUrl}">
-            <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
-          </a>
           <div class="cart-page__item__copy">
             <div class="cart-page__item__details">
+              <a class="cart-page__item__image-mobile cart-page__item__image-mobile--top" href="${productUrl}">
+                <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
+              </a>
               <a class="cart-page__item__title" href="${productUrl}">${escapeHtml(meta.product.title)}</a>
               <strong class="cart-page__item__line-price">${formatDisplayAmount(lineTotal)}</strong>
             </div>
@@ -300,9 +323,9 @@
       const meta = variants.get(Number(item.id));
       const lineTotal = displayAmount(meta.variant.price) * item.qty;
       const productUrl = `/store/products/${meta.product.handle}`;
-      const bundleClass = isBundleVariant(meta.product, meta.variant) ? " cart-drawer__item--bundle" : "";
+      const drawerBundleClass = isBundleStyleLine(meta.product, meta.variant) ? " cart-drawer__item--bundle" : "";
       return `
-        <li class="cart-drawer__item${bundleClass}">
+        <li class="cart-drawer__item${drawerBundleClass}">
           <a class="cart-drawer__item__link" href="${productUrl}">
             <img class="cart-drawer__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
             <div class="cart-drawer__item__details">
@@ -335,13 +358,20 @@
     document.body.classList.toggle("drawer-is-open", active);
   }
 
+  function cartDrawerOpenRight() {
+    return window.matchMedia("(min-width: 1024px)").matches ? "8px" : "10px";
+  }
+
   function setCartDrawerVisibility(drawer, visible) {
     if (!drawer) return;
+    drawer.classList.toggle("is-open", visible);
     if (visible) {
-      drawer.style.setProperty("transform", "translateX(0)", "important");
+      drawer.style.setProperty("right", cartDrawerOpenRight(), "important");
+      drawer.style.setProperty("transform", "none", "important");
       drawer.style.setProperty("visibility", "visible", "important");
       return;
     }
+    drawer.style.removeProperty("right");
     drawer.style.removeProperty("transform");
     drawer.style.removeProperty("visibility");
   }

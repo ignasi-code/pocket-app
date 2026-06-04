@@ -743,11 +743,53 @@ class StoreTest(unittest.TestCase):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
         self.assertIn("isBundleVariant", source)
+        self.assertIn("isBundleStyleLine", source)
         self.assertIn("bundleIncludes", source)
         self.assertIn("cart-page__item--bundle", source)
         self.assertIn("cart-drawer__item--bundle", source)
-        self.assertIn("Includes:", source)
+        self.assertIn("includes:", source)
         self.assertIn("cartPageQuantityHtml(item, meta)", source)
+
+    def test_cart_javascript_renders_set_child_variants_like_live_bundle_lines(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("function isSetProduct(product)", source)
+        self.assertIn("function isBundleStyleLine(product, variant)", source)
+        self.assertIn("if (isBundleStyleLine(meta.product, meta.variant)) return \"\";", source)
+        self.assertIn("bundleIncludeItems(meta.product, meta.variant)", source)
+        self.assertIn("cart-page__item__image-mobile cart-page__item__image-mobile--top", source)
+        self.assertIn("bundle-options-label", source)
+        self.assertIn("bundle-child first", source)
+
+    def test_cart_drawer_uses_bundle_style_logic_for_set_child_variants(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("const drawerBundleClass = isBundleStyleLine(meta.product, meta.variant) ? \" cart-drawer__item--bundle\" : \"\";", source)
+        self.assertIn("drawerOptionsHtml(meta, item)", source)
+        self.assertIn("${includes.map(title => `<li>${escapeHtml(title)}</li>`).join(\"\")}", source)
+        self.assertIn("<li>quantity: ${item.qty}</li>", source)
+
+    def test_cart_drawer_css_keeps_live_checkout_visible_on_desktop(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".cart-drawer__header {\n      min-height: 55px;", source)
+        self.assertIn("height: 55px;\n      padding: 17px 23px;", source)
+        self.assertIn(".cart-drawer__items {\n      flex: 0 0 auto;\n      height: 219px;\n      max-height: 219px;", source)
+        self.assertIn("overflow: hidden;\n      padding: 0 23px;", source)
+        self.assertIn(".cart-drawer__item--bundle {\n      min-height: 160px;", source)
+        self.assertIn(".cart-drawer__upsell {\n      background: #fff;\n      border: 1px solid #e6e6e6;\n      border-radius: 5px;\n      box-sizing: border-box;\n      height: 298px;", source)
+        self.assertIn(".cart-drawer__summary {\n      display: grid;\n      gap: 8px;\n      height: 112px;", source)
+        self.assertIn(".cart-drawer__checkout {\n      height: 52px;\n      line-height: 52px;\n      min-height: 52px;", source)
+
+    def test_cart_css_matches_live_mobile_line_item_internals(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".cart-page__item__copy {\n      display: flex;\n      flex-direction: column;\n      min-height: 235px;\n      padding-left: 0;", source)
+        self.assertIn(".cart-page__item__details {\n      display: flex;\n      font-size: 1.125rem;\n      font-weight: 600;\n      justify-content: space-between;\n      line-height: 145%;\n      min-height: 101px;\n      padding-left: 101px;", source)
+        self.assertIn(".cart-page__item__image-mobile {\n      border: 1px solid #e6e6e6;\n      border-radius: 5px;\n      box-sizing: border-box;\n      height: 101px;\n      left: -15px;", source)
+        self.assertIn(".cart-page__item__line-price {\n      flex: 0 0 79px;", source)
+        self.assertIn(".cart-page__item__remove {\n      background: transparent;\n      border: 0;\n      color: #000;\n      cursor: pointer;\n      font-size: .875rem;\n      height: 47px;\n      padding: 0;\n      position: absolute;\n      right: 14px;\n      top: 86px;\n      width: 91px;", source)
+        self.assertIn(".cart-page__item--bundle-single {\n      min-height: 265px;", source)
 
     def test_cart_javascript_renders_live_gift_message_option(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -764,16 +806,26 @@ class StoreTest(unittest.TestCase):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
         self.assertIn("setCartDrawerVisibility", source)
-        self.assertIn('drawer.style.setProperty("transform", "translateX(0)", "important")', source)
+        self.assertIn("function cartDrawerOpenRight()", source)
+        self.assertIn('drawer.classList.toggle("is-open", visible)', source)
+        self.assertIn('drawer.style.setProperty("right", cartDrawerOpenRight(), "important")', source)
+        self.assertIn('drawer.style.setProperty("transform", "none", "important")', source)
         self.assertIn('drawer.style.setProperty("visibility", "visible", "important")', source)
+
+    def test_cart_open_state_has_body_scoped_transform_override(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".cart-drawer.is-open", source)
+        self.assertIn('.drawer-is-open .cart-drawer[aria-hidden="false"]', source)
+        self.assertIn("right: 10px !important", source)
+        self.assertIn("transform: none !important", source)
+        self.assertIn("right: 8px !important", source)
 
     def test_cart_css_supports_live_bundle_line_heights(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
-        self.assertIn(".cart-page__item--bundle", source)
-        self.assertIn("min-height: 399px", source)
-        self.assertIn(".cart-drawer__item--bundle", source)
-        self.assertIn("min-height: 204px", source)
+        self.assertIn(".cart-page__item--bundle {\n      min-height: 399px;", source)
+        self.assertIn(".cart-drawer__item--bundle {\n      min-height: 160px;", source)
 
     def test_store_javascript_toggles_search_and_collection_overlay(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -810,7 +862,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260604-quickshop", html)
+        self.assertIn("/store/assets/store.js?v=20260604-cart", html)
 
     def test_unknown_product_returns_404(self):
         response = self.client.get("/store/products/nope")
