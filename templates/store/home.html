@@ -1,27 +1,32 @@
 {% extends "store/base.html" %}
 {% block title %}Pocket Store - Roxanne Prototype{% endblock %}
 {% block body %}
-  <main class="wide">
+  <main role="main" id="main" class="content">
+    <div class="home" data-view="home">
     {% for section in homepage.sections %}
       {% if section.type == "hero" %}
-        <section class="hero">
-          <picture>
-            {% if section.image_desktop %}
-              <source media="(min-width: 1024px)" srcset="{{ section.image_desktop }}">
-            {% endif %}
-            <img src="{{ section.image_mobile or section.image or placeholder_image }}" alt="">
-          </picture>
-          <div class="hero-copy">
-            <a class="hero-cta" href="{{ section.href }}">{{ section.title }}</a>
-          </div>
+        <section class="shopify-section">
+          <a href="{{ section.href }}">
+            <div class="hero">
+              <div class="hero__image">
+                <picture>
+                  {% if section.image_desktop %}
+                    <source media="(min-width: 1024px)" srcset="{{ section.image_desktop }}">
+                  {% endif %}
+                  <img src="{{ section.image_mobile or section.image or placeholder_image }}" alt="">
+                </picture>
+              </div>
+              <div class="hero__cta">{{ section.title }}</div>
+            </div>
+          </a>
         </section>
       {% elif section.type == "product_module" %}
-        <section class="section product-module">
-          <div class="section-head">
-            <h2 class="section-title">{{ section.title }}</h2>
-            <a class="button inline-arrow" href="{{ section.href }}">{{ section.cta }}</a>
+        <section class="shopify-section product-module">
+          <div class="product-module__description">
+            <h2 class="product-module__title">{{ section.title }}</h2>
+            <a class="product-module__cta product-module__cta--desktop" href="{{ section.href }}">{{ section.cta }}</a>
           </div>
-          <div class="grid">
+          <div class="product-module__products">
             {% for handle in section.products %}
               {% set product = products_by_handle.get(handle) %}
               {% if product %}
@@ -29,34 +34,61 @@
               {% endif %}
             {% endfor %}
           </div>
+          <a class="product-module__cta product-module__cta--mobile" href="{{ section.href }}">{{ section.cta }}</a>
         </section>
       {% elif section.type == "split_banner" %}
-        <section class="split-banner">
+        <section class="shopify-section double-image-banner split-banner">
           {% for tile in section.tiles %}
-            <a class="split-tile" href="{{ tile.href }}">
-              <picture>
-                {% if tile.image_desktop %}
-                  <source media="(min-width: 1024px)" srcset="{{ tile.image_desktop }}">
+            <div class="double-image-banner__tile split-tile">
+              <a href="{{ tile.href }}">
+                <div class="double-image-banner__tile__image js-scroll">
+                  <picture>
+                    {% if tile.image_desktop %}
+                      <source media="(min-width: 1024px)" srcset="{{ tile.image_desktop }}">
+                    {% endif %}
+                    <img src="{{ tile.image_mobile or tile.image or placeholder_image }}" alt="">
+                  </picture>
+                </div>
+                {% if tile.title %}
+                  <span class="double-image-banner__tile__cta double-image-banner__tile__cta--black">{{ tile.title }}</span>
                 {% endif %}
-                <img src="{{ tile.image_mobile or tile.image or placeholder_image }}" alt="">
-              </picture>
-              <span>{{ tile.title or "" }}</span>
-            </a>
+              </a>
+            </div>
           {% endfor %}
         </section>
       {% elif section.type == "category_module" %}
-        <section class="category-module">
-          <h2 class="section-title">{{ section.title }}</h2>
-          <div class="category-list">
+        <section class="shopify-section category-module">
+          <div class="category-module__text">
+            <p>{{ section.title }}</p>
+            <p class="category-list">
             {% for item in section["items"] %}
-              <a class="button {{ item.class or '' }}" href="{{ item.href }}">{{ item.label }}</a>
+              {% set live_class = (item.class or '')|replace('is-', 'category-module__text--') %}
+              <a class="{{ live_class }}" href="{{ item.href }}">{{ item.label }}</a>
             {% endfor %}
+            </p>
           </div>
         </section>
       {% elif section.type == "info_module" %}
-        <section class="info-module" aria-label="{{ section.label }}">
-          <div class="info-module__content">
-            {% for char in section.text %}
+        <section class="shopify-section info-module" aria-label="{{ section.label }}">
+          <div class="info-module__content mobile-visible">
+            {% for char in section.text|lower %}
+              {% if loop.index == 17 %}<div class="invisible"></div>{% endif %}
+              {% if char == " " %}
+                <span class="info-module__span">&nbsp;</span>
+              {% else %}
+                <span class="info-module__span">{{ char }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <div class="info-module__content desktop-visible">
+            {% for char in section.text|lower %}
+              {% if loop.index == 18 %}
+                <span class="info-module__span info-module__span--heart" aria-hidden="true">
+                  <svg width="16" height="15" viewBox="0 0 16 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.76 14.91C9.51 13.85 15.5 8.62 15.5 4.3C15.5-.38 9.89-1.72 8.15 2.7C8.09 2.81 7.94 2.81 7.84 2.7C6.06-1.67.5-.38.5 4.3C.5 8.62 6.49 13.85 7.76 14.91Z" fill="#CF2027"/>
+                  </svg>
+                </span>
+              {% endif %}
               {% if char == " " %}
                 <span class="info-module__span">&nbsp;</span>
               {% else %}
@@ -67,5 +99,6 @@
         </section>
       {% endif %}
     {% endfor %}
+    </div>
   </main>
 {% endblock %}

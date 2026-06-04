@@ -454,6 +454,7 @@ def store_collection_definitions():
         "new-arrivals": {
             "title": "New Arrivals",
             "description": "Fresh pieces from the latest public catalog snapshot.",
+            **extracted.get("new-arrivals", {}),
             "matcher": lambda product: True,
         },
         "the-summer-capsule": {
@@ -477,6 +478,7 @@ def store_collection_definitions():
         "necklaces": {
             "title": "Necklaces",
             "description": "Necklaces filtered from product_type.",
+            **extracted.get("necklaces", {}),
             "matcher": lambda product: product.get("product_type") == "Necklaces",
         },
         "bracelets": {

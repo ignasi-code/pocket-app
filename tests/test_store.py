@@ -24,6 +24,46 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-store-add", html)
         self.assertIn("/store/cart", html)
 
+    def test_homepage_uses_live_theme_module_structure(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("product-module__description", html)
+        self.assertIn("product-module__title", html)
+        self.assertIn("product-module__products", html)
+        self.assertIn("product-module__cta product-module__cta--desktop", html)
+        self.assertIn("product-module__cta product-module__cta--mobile", html)
+        self.assertIn("double-image-banner", html)
+        self.assertIn("double-image-banner__tile__image", html)
+        self.assertIn("double-image-banner__tile__cta", html)
+        self.assertIn("category-module__text", html)
+        self.assertIn("category-module__text--pink", html)
+        self.assertIn("info-module__content mobile-visible", html)
+        self.assertIn("info-module__content desktop-visible", html)
+
+    def test_homepage_exposes_live_shells_and_product_tile_controls(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('role="main" id="main" class="content"', html)
+        self.assertIn('class="home" data-view="home"', html)
+        self.assertIn("shopify-section", html)
+        self.assertIn("hero__image", html)
+        self.assertIn("hero__cta", html)
+        self.assertIn("product-tile js-productTile", html)
+        self.assertIn("product-tile__top", html)
+        self.assertIn("product-tile__copy__wrapper", html)
+        self.assertIn("product-tile__add js-quickshopOpen", html)
+        self.assertIn("search-drawer js-searchDrawer", html)
+        self.assertIn("cart-notification js-cartNotificationDrawer", html)
+        self.assertIn("promo js-promo", html)
+        self.assertIn("quickshop__drawer js-quickshopDrawer", html)
+        self.assertIn("footer-newsletter__social", html)
+        self.assertIn("footer__bottom", html)
+        self.assertIn("Legal", html)
+
     def test_collection_page_renders_products(self):
         response = self.client.get("/store/collections/necklaces")
 
@@ -81,6 +121,16 @@ class StoreTest(unittest.TestCase):
         self.assertIn('aria-controls="cart-drawer"', html)
         self.assertIn("cart-drawer__overlay", html)
 
+    def test_store_base_exposes_live_search_drawer_controls(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('aria-controls="search-drawer"', html)
+        self.assertIn("data-search-open", html)
+        self.assertIn("data-search-close", html)
+        self.assertIn("search-drawer__form", html)
+
     def test_store_uses_live_theme_product_tile_structure(self):
         response = self.client.get("/store/collections/the-summer-capsule")
 
@@ -102,6 +152,39 @@ class StoreTest(unittest.TestCase):
         self.assertIn("collection-filter__drawer--sort", html)
         self.assertIn("data-filter-toggle", html)
         self.assertIn("data-sort-toggle", html)
+
+    def test_collection_page_uses_live_collection_grid_controls_and_pagination(self):
+        response = self.client.get("/store/collections/necklaces")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('class="collection" data-view="collection"', html)
+        self.assertIn("collection-items", html)
+        self.assertIn("data-results-count", html)
+        self.assertIn("collection-filter__bar__button", html)
+        self.assertIn("js-filterToggle", html)
+        self.assertIn("collection-filter__overlay js-filterOverlay js-filterClose", html)
+        self.assertIn('method="GET"', html)
+        self.assertIn("js-filterOption", html)
+        self.assertIn("filter.p.product_type", html)
+        self.assertIn("collection-filter__sort", html)
+        self.assertIn("?sort_by=created-descending", html)
+        self.assertIn("pagination", html)
+
+    def test_key_collection_pages_use_extracted_live_hero_assets(self):
+        cases = {
+            "necklaces": "Necklaces_367x374_crop_center",
+            "new-arrivals": "New-Arrivals_367x374_crop_center",
+        }
+
+        for handle, image_token in cases.items():
+            with self.subTest(handle=handle):
+                response = self.client.get(f"/store/collections/{handle}")
+
+                self.assertEqual(response.status_code, 200)
+                html = response.get_data(as_text=True)
+                self.assertIn("collection-hero", html)
+                self.assertIn(image_token, html)
 
     def test_store_base_renders_live_style_footer(self):
         response = self.client.get("/store")
@@ -222,6 +305,22 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-drawer__item__price", source)
         self.assertIn("cart-page__item", source)
         self.assertIn("cart-page__checkout", source)
+
+    def test_store_javascript_toggles_search_and_collection_overlay(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("openSearchDrawer", source)
+        self.assertIn("data-search-open", source)
+        self.assertIn("data-search-close", source)
+        self.assertIn("data-filter-overlay", source)
+        self.assertIn("setCollectionOverlay", source)
+
+    def test_store_base_uses_versioned_store_script_for_fresh_behavior(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("/store/assets/store.js?v=", html)
 
     def test_unknown_product_returns_404(self):
         response = self.client.get("/store/products/nope")

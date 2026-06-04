@@ -198,6 +198,26 @@
     document.body.classList.toggle("drawer-is-open", active);
   }
 
+  function closeSearchDrawer() {
+    const drawer = document.querySelector("[data-search-drawer], .js-searchDrawer");
+    const toggle = document.querySelector("[data-search-open]");
+    if (drawer) drawer.setAttribute("aria-hidden", "true");
+    if (toggle) toggle.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("search-is-open");
+  }
+
+  function openSearchDrawer() {
+    closeMenuDrawer();
+    closeCartDrawer();
+    closeCollectionDrawers();
+    const drawer = document.querySelector("[data-search-drawer], .js-searchDrawer");
+    const toggle = document.querySelector("[data-search-open]");
+    if (drawer) drawer.setAttribute("aria-hidden", "false");
+    if (toggle) toggle.setAttribute("aria-expanded", "true");
+    document.body.classList.add("search-is-open");
+    drawer?.querySelector("input[type='search']")?.focus();
+  }
+
   function closeMenuDrawer() {
     const drawer = document.querySelector("[data-menu-drawer]");
     const toggle = document.querySelector("[data-menu-toggle]");
@@ -242,6 +262,13 @@
     document.querySelector("[data-sort-drawer]")?.setAttribute("aria-hidden", "true");
     document.querySelector("[data-filter-toggle]")?.setAttribute("aria-expanded", "false");
     document.querySelector("[data-sort-toggle]")?.setAttribute("aria-expanded", "false");
+    setCollectionOverlay(false);
+  }
+
+  function setCollectionOverlay(active) {
+    const overlay = document.querySelector("[data-filter-overlay]");
+    overlay?.setAttribute("aria-expanded", active ? "true" : "false");
+    document.body.classList.toggle("collection-filter-is-open", active);
   }
 
   function closeOptionDrawers() {
@@ -269,6 +296,7 @@
     closeCollectionDrawers();
     if (drawer) drawer.setAttribute("aria-hidden", "false");
     if (toggle) toggle.setAttribute("aria-expanded", "true");
+    setCollectionOverlay(true);
   }
 
   function updatePdpGallery(select) {
@@ -395,6 +423,13 @@
 
     if (event.target.closest("[data-cart-close]")) closeCartDrawer();
 
+    if (event.target.closest("[data-search-open]")) {
+      event.preventDefault();
+      openSearchDrawer();
+    }
+
+    if (event.target.closest("[data-search-close]")) closeSearchDrawer();
+
     if (event.target.closest("[data-filter-toggle]")) openCollectionDrawer("filter");
     if (event.target.closest("[data-sort-toggle]")) openCollectionDrawer("sort");
     if (event.target.closest("[data-filter-close], [data-sort-close]")) closeCollectionDrawers();
@@ -455,6 +490,8 @@
 
   document.addEventListener("keydown", event => {
     if (event.key === "Escape") {
+      closeSearchDrawer();
+      closeCollectionDrawers();
       closeOptionDrawers();
       closeLightbox();
     }

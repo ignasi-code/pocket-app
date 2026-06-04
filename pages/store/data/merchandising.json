@@ -1,9 +1,21 @@
 {
   "source": "Live Roxanne Assoulin DOM/template inspection. These values are not reliably available in public products.json feeds.",
   "collections": {
+    "new-arrivals": {
+      "hero_title": "what's new",
+      "hero_image_mobile": "https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals_367x374_crop_center@2x.jpg?v=1779127477",
+      "hero_image_desktop": "https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals_638x_crop_center@2x.jpg?v=1779127477",
+      "filter_labels": ["Filter", "Sort"]
+    },
     "the-summer-capsule": {
       "hero_title": "the summer capsule",
       "hero_image_mobile": "https://cdn.shopify.com/s/files/1/0998/6780/collections/0526_CasualCapsule_Mobile.jpg?v=1779889222",
+      "filter_labels": ["Filter", "Sort"]
+    },
+    "necklaces": {
+      "hero_title": "the necklaces",
+      "hero_image_mobile": "https://roxanneassoulin.com/cdn/shop/collections/Necklaces_367x374_crop_center@2x.jpg?v=1779127386",
+      "hero_image_desktop": "https://roxanneassoulin.com/cdn/shop/collections/Necklaces_638x_crop_center@2x.jpg?v=1779127386",
       "filter_labels": ["Filter", "Sort"]
     }
   },
