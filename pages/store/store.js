@@ -449,9 +449,15 @@
     const triggerTitle = form?.querySelector("[data-option-selected-title]");
     const priceNode = form?.querySelector(".product-buy-options__price");
     const price = selected.dataset.price;
+    const detailImage = document.querySelector("[data-product-details-image]");
+    const imageSrc = selected.dataset.imageSrc;
 
     if (triggerTitle) triggerTitle.textContent = title;
     if (priceNode && price) priceNode.textContent = price;
+    if (detailImage && imageSrc) {
+      detailImage.src = imageSrc;
+      detailImage.closest("[data-lightbox-open]")?.setAttribute("data-lightbox-src", imageSrc);
+    }
     if (form && price) form.dataset.selectedPrice = price;
     if (scrollGallery) updatePdpGallery(select);
   }

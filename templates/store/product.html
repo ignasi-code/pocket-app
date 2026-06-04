@@ -35,21 +35,21 @@
 
       <aside class="buy-box product-details">
         <div class="product-details-top">
-          <p class="eyebrow">{{ product.product_type }}</p>
-          <h1 class="product-details-top__name">{{ product.title }}</h1>
-          <div class="price product-details-top__price">{{ price_label(product) }}</div>
+          <div class="product-details-top__images">
+            <button class="product-details-top__image" type="button" data-lightbox-open data-lightbox-src="{{ selected_option.image_src }}" data-lightbox-alt="{{ product.title }}">
+              <span>Zoom image</span>
+              <img src="{{ selected_option.image_src }}" alt="{{ product.title }}" loading="lazy" data-product-details-image>
+            </button>
+          </div>
+          <div class="js-productDetailsTop">
+            <h1 class="product-details-top__name">{{ product.title }}</h1>
+            <div class="price product-details-top__price">{{ price_label(product) }}</div>
+          </div>
         </div>
 
         <div class="product-details-bottom js-productDetailsContent">
           <div class="product-details-bottom__col product-details-bottom__col--info">
             {% set short_description = description_html(product) %}
-            {% if short_description %}
-              <div class="product-short-description" data-product-description>
-                <h2>Description</h2>
-                {{ short_description | safe }}
-              </div>
-            {% endif %}
-
             {% if product_merch.motto %}
               <div class="product-motto product-details-bottom__motto">
                 <div class="product-details-bottom__motto__text">{{ product_merch.motto }}</div>
@@ -57,18 +57,21 @@
             {% endif %}
 
             {% if product_merch.detail_rows %}
-              <table class="product-detail-table product-details-bottom__content">
+              <table class="product-detail-table product-short-description product-details-bottom__content" data-product-description>
                 <tbody>
                   {% for row in product_merch.detail_rows %}
-                    {% if not short_description or row.label != "Description" %}
-                      <tr>
-                        <th scope="row">{{ row.label }}</th>
-                        <td>{{ row.html | safe }}</td>
-                      </tr>
-                    {% endif %}
+                    <tr>
+                      <th scope="row">{{ row.label }}</th>
+                      <td>{{ row.html | safe }}</td>
+                    </tr>
                   {% endfor %}
                 </tbody>
               </table>
+            {% elif short_description %}
+              <div class="product-short-description" data-product-description>
+                <h2>Description</h2>
+                {{ short_description | safe }}
+              </div>
             {% endif %}
 
             {% set lines = description_lines(product) %}

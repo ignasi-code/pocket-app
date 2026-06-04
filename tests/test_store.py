@@ -475,6 +475,39 @@ class StoreTest(unittest.TestCase):
         self.assertIn("The Happy Pearl Necklace in Espresso", html)
         self.assertIn("The Salt &amp; Pepper Necklace Duo", html)
 
+    def test_product_page_renders_live_details_top_product_image(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        self.assertIn("product-details-top__image", html)
+        self.assertIn("data-product-details-image", html)
+        self.assertIn("CylinderCordNecklace_Cloud_1", html)
+        self.assertIn(".product-details-top__image", source)
+
+    def test_product_javascript_updates_details_top_image_for_variant_switch(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("[data-product-details-image]", source)
+        self.assertIn("selected.dataset.imageSrc", source)
+
+    def test_product_merchandising_uses_live_motto_then_description_table_order(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("<th scope=\"row\">Description</th>", html)
+        self.assertLess(html.index("Your no-sweat summer showpiece"), html.index("<th scope=\"row\">Description</th>"))
+        self.assertNotIn('class="product-short-description"', html)
+
+    def test_product_css_matches_live_mobile_buy_box_spacing(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".product-details-bottom__col--options {\n      border-bottom: 1px solid #e6e6e6;\n      order: 1;\n      padding-bottom: 0;\n      padding-top: 0;", source)
+        self.assertIn("padding: 10px 0 22px;", source)
+        self.assertIn("padding: 0 0 16px;", source)
+
     def test_product_page_gallery_starts_under_live_overlay_header(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
 
