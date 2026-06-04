@@ -681,6 +681,60 @@
 
     .cart-link .bag-label { display: none; }
 
+    .shipping-promo {
+      background: #cf3d2f;
+      border-radius: 5px;
+      box-sizing: border-box;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      font-size: .9375rem;
+      font-weight: 400;
+      left: 10px;
+      line-height: 135%;
+      min-height: 79px;
+      padding: 18px 64px 18px 20px;
+      position: fixed;
+      right: 10px;
+      top: 79px;
+      z-index: 39;
+    }
+
+    .shipping-promo.is-hidden {
+      display: none;
+    }
+
+    .shipping-promo__close {
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      height: 50px;
+      padding: 0;
+      position: absolute;
+      right: 8px;
+      top: 14px;
+      width: 50px;
+    }
+
+    .shipping-promo__close::before,
+    .shipping-promo__close::after {
+      background: #fff;
+      content: "";
+      height: 1px;
+      left: 12px;
+      position: absolute;
+      top: 25px;
+      width: 25px;
+    }
+
+    .shipping-promo__close::before {
+      transform: rotate(45deg);
+    }
+
+    .shipping-promo__close::after {
+      transform: rotate(-45deg);
+    }
+
     .wide {
       margin: 0 auto;
       width: min(1440px, 100%);
@@ -1294,18 +1348,18 @@
       border-radius: 5px;
       color: #000;
       display: flex;
-      font-size: .875rem;
-      font-weight: 700;
+      font-size: 1rem;
+      font-weight: 400;
       height: 74px;
       justify-content: space-between;
-      padding: 0 18px;
-      text-transform: lowercase;
+      padding: 0 20px;
+      text-transform: none;
       width: 100%;
     }
 
     .collection-filter-bar svg {
-      height: 15px;
-      width: 15px;
+      height: 18px;
+      width: 18px;
     }
 
     .collection-grid {
@@ -3401,6 +3455,12 @@
 
       .cart-link .bag-label { display: inline; }
 
+      .shipping-promo {
+        left: 8px;
+        right: 8px;
+        top: 72px;
+      }
+
       .cart-drawer {
         max-width: 430px;
         right: -430px;
@@ -4018,6 +4078,6 @@
     </div>
   </footer>
 
-  <script src="/store/assets/store.js?v=20260604-cart"></script>
+  <script src="/store/assets/store.js?v=20260604-home-collection"></script>
 </body>
 </html>

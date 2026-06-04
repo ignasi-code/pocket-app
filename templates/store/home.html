@@ -1,6 +1,10 @@
 {% extends "store/base.html" %}
 {% block title %}Pocket Store - Roxanne Prototype{% endblock %}
 {% block body %}
+  <div class="shipping-promo js-shippingPromo" data-shipping-promo>
+    <span>Enjoy complimentary ground shipping on US orders $250+</span>
+    <button class="shipping-promo__close" type="button" aria-label="Close shipping message" data-shipping-promo-close></button>
+  </div>
   <main role="main" id="main" class="content">
     <div class="home" data-view="home">
     {% for section in homepage.sections %}

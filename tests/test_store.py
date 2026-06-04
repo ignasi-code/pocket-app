@@ -50,6 +50,31 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("info-module__span--heart mobile-heart", html)
 
+    def test_home_and_collection_render_live_shipping_promo_bar(self):
+        for path in ("/store", "/store/collections/new-arrivals"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+
+                self.assertEqual(response.status_code, 200)
+                html = response.get_data(as_text=True)
+                self.assertIn('class="shipping-promo js-shippingPromo"', html)
+                self.assertIn("Enjoy complimentary ground shipping on US orders $250+", html)
+                self.assertIn("data-shipping-promo-close", html)
+
+    def test_product_page_keeps_shipping_promo_out_of_pdp_first_view(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertNotIn("shipping-promo js-shippingPromo", html)
+
+    def test_shipping_promo_css_matches_live_mobile_bar(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".shipping-promo {\n      background: #cf3d2f;", source)
+        self.assertIn("position: fixed;\n      right: 10px;\n      top: 79px;", source)
+        self.assertIn(".shipping-promo.is-hidden {\n      display: none;", source)
+
     def test_homepage_product_module_title_uses_live_regular_weight(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
@@ -317,6 +342,19 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".collection-hero {\n      position: relative;\n      padding: 0;", source)
         self.assertIn(".collection-filter-bar button", source)
         self.assertIn("height: 74px", source)
+        self.assertIn("font-size: 1rem", source)
+        self.assertIn("font-weight: 400", source)
+        self.assertIn("text-transform: none", source)
+
+    def test_collection_controls_use_live_label_casing_and_icons(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("Filter", html)
+        self.assertIn("Sort", html)
+        self.assertIn("M4 2v10", html)
+        self.assertIn("M7 2v10", html)
 
     def test_collection_desktop_hero_flows_inside_live_product_grid(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
@@ -835,6 +873,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-search-close", source)
         self.assertIn("data-filter-overlay", source)
         self.assertIn("setCollectionOverlay", source)
+        self.assertIn("data-shipping-promo-close", source)
 
     def test_collection_javascript_sets_drawer_inline_visibility(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -862,7 +901,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260604-cart", html)
+        self.assertIn("/store/assets/store.js?v=20260604-home-collection", html)
 
     def test_unknown_product_returns_404(self):
         response = self.client.get("/store/products/nope")

@@ -706,6 +706,11 @@
 
     if (event.target.closest("[data-search-close]")) closeSearchDrawer();
 
+    const shippingPromoClose = event.target.closest("[data-shipping-promo-close]");
+    if (shippingPromoClose) {
+      shippingPromoClose.closest("[data-shipping-promo]")?.classList.add("is-hidden");
+    }
+
     if (event.target.closest("[data-filter-toggle]")) openCollectionDrawer("filter");
     if (event.target.closest("[data-sort-toggle]")) openCollectionDrawer("sort");
     if (event.target.closest("[data-filter-close], [data-sort-close]")) closeCollectionDrawers();

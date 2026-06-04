@@ -1,6 +1,10 @@
 {% extends "store/base.html" %}
 {% block title %}{{ collection.title }} - Pocket Store{% endblock %}
 {% block body %}
+  <div class="shipping-promo js-shippingPromo" data-shipping-promo>
+    <span>Enjoy complimentary ground shipping on US orders $250+</span>
+    <button class="shipping-promo__close" type="button" aria-label="Close shipping message" data-shipping-promo-close></button>
+  </div>
   <main role="main" id="main" class="content">
     <div class="collection" data-view="collection">
       <section class="shopify-section">
@@ -40,13 +44,13 @@
             <div class="collection-filter__bar__button">
               <button id="collection-filter-toggle" class="js-filterToggle" type="button" data-filter-toggle aria-controls="collection-filter-drawer" aria-expanded="false">
                 {{ labels[0] }}
-                <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M4 7h6M6 10h2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2v10M7 2v10M10 2v10M3 5h2M6 9h2M9 4h2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1"/></svg>
               </button>
             </div>
             <div class="collection-filter__bar__button">
               <button id="collection-sort-toggle" class="js-sortToggle" type="button" data-sort-toggle aria-controls="collection-sort-drawer" aria-expanded="false">
                 {{ labels[1] }}
-                <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2v10M3.5 8.5 7 12l3.5-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/></svg>
               </button>
             </div>
           </section>
