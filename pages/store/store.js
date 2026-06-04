@@ -247,14 +247,24 @@
   async function renderCartPage() {
     const root = document.querySelector("[data-cart-page]");
     if (!root) return;
-    await loadCatalog();
-    const cart = loadCart().filter(item => variants.has(Number(item.id)));
-    saveCart(cart);
-
+    const rawCart = loadCart().filter(item => Number(item.qty || 0) > 0);
     const lines = document.querySelector("[data-cart-lines]");
     const subtotal = document.querySelector("[data-cart-subtotal]");
     const total = document.querySelector("[data-cart-total]");
     const checkoutButton = root.querySelector(".cart-page__checkout");
+
+    if (!rawCart.length) {
+      if (subtotal) subtotal.textContent = formatDisplayAmount(0);
+      if (total) total.textContent = formatDisplayAmount(0);
+      if (checkoutButton) checkoutButton.toggleAttribute("disabled", true);
+      if (lines) lines.innerHTML = '<div class="empty-state cart-page__empty"><p>Your bag is empty.</p><p><a class="button" href="/store/collections/shop">continue shopping</a></p></div>';
+      return;
+    }
+
+    await loadCatalog();
+    const cart = rawCart.filter(item => variants.has(Number(item.id)));
+    saveCart(cart);
+
     const subtotalLabel = formatDisplayAmount(cartSubtotal(cart));
     if (subtotal) subtotal.textContent = subtotalLabel;
     if (total) total.textContent = subtotalLabel;
@@ -299,13 +309,24 @@
   async function renderCartDrawer() {
     const root = document.querySelector("[data-cart-drawer]");
     if (!root) return;
-    await loadCatalog();
-    const cart = loadCart().filter(item => variants.has(Number(item.id)));
+    const rawCart = loadCart().filter(item => Number(item.qty || 0) > 0);
     const lines = root.querySelector("[data-cart-drawer-lines]");
     const subtotal = root.querySelector("[data-cart-drawer-subtotal]");
     const title = root.querySelector("[data-cart-drawer-title]");
     const content = root.querySelector(".js-cartContent");
     const checkoutButton = root.querySelector(".cart-drawer__checkout");
+
+    if (!rawCart.length) {
+      if (subtotal) subtotal.textContent = formatDisplayAmount(0);
+      if (title) title.textContent = "Bag (0 items)";
+      if (content) content.dataset.itemCount = "0";
+      if (checkoutButton) checkoutButton.toggleAttribute("disabled", true);
+      if (lines) lines.innerHTML = '<div class="empty-state"><p>Your shopping bag is empty</p><p><a class="button" href="/store/collections/shop">start shopping</a></p></div>';
+      return;
+    }
+
+    await loadCatalog();
+    const cart = rawCart.filter(item => variants.has(Number(item.id)));
     const count = cart.reduce((total, item) => total + Number(item.qty || 0), 0);
 
     if (subtotal) subtotal.textContent = formatDisplayAmount(cartSubtotal(cart));

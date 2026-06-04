@@ -13,11 +13,12 @@
           <a href="{{ section.href }}">
             <div class="hero">
               <div class="hero__image">
+                {% set hero_is_lcp = loop.first %}
                 <picture>
                   {% if section.image_desktop %}
                     <source media="(min-width: 1024px)" srcset="{{ section.image_desktop }}">
                   {% endif %}
-                  <img src="{{ section.image_mobile or section.image or placeholder_image }}" alt="">
+                  <img src="{{ section.image_mobile or section.image or placeholder_image }}" alt="" width="760" height="760" decoding="async"{% if hero_is_lcp %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %}>
                 </picture>
               </div>
               <div class="hero__cta">{{ section.title }}</div>
@@ -50,7 +51,7 @@
                     {% if tile.image_desktop %}
                       <source media="(min-width: 1024px)" srcset="{{ tile.image_desktop }}">
                     {% endif %}
-                    <img src="{{ tile.image_mobile or tile.image or placeholder_image }}" alt="">
+                    <img src="{{ tile.image_mobile or tile.image or placeholder_image }}" alt="" width="760" height="760" loading="lazy" decoding="async">
                   </picture>
                 </div>
                 {% if tile.title %}

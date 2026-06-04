@@ -130,6 +130,17 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".hero {\n        padding: 2px;", source)
         self.assertIn(".hero__image,\n      .hero img {\n        height: calc(100vh - 4px);", source)
 
+    def test_homepage_marks_first_hero_as_lcp_image(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('fetchpriority="high"', html)
+        self.assertIn('loading="eager"', html)
+        self.assertIn('decoding="async"', html)
+        self.assertIn('width="760"', html)
+        self.assertIn('height="760"', html)
+
     def test_homepage_uses_live_desktop_split_assets_and_custom_category_link(self):
         response = self.client.get("/store")
 
@@ -1040,7 +1051,29 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260604-checkout-direct", html)
+        self.assertIn("/store/assets/store.js?v=20260605-perf-lcp", html)
+
+    def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+        drawer_source = source[
+            source.index("async function renderCartDrawer()"):
+            source.index("function toggleGiftMessage")
+        ]
+
+        self.assertIn("const rawCart = loadCart().filter(item => Number(item.qty || 0) > 0);", drawer_source)
+        self.assertIn("if (!rawCart.length) {", drawer_source)
+        self.assertLess(
+            drawer_source.index("if (!rawCart.length) {"),
+            drawer_source.index("await loadCatalog();"),
+        )
+
+    def test_store_assets_are_cacheable_for_lighthouse(self):
+        response = self.client.get("/store/assets/store.js?v=20260605-perf-lcp")
+        self.addCleanup(response.close)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("public", response.headers.get("Cache-Control", ""))
+        self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
 
     def test_unknown_product_returns_404(self):
         response = self.client.get("/store/products/nope")

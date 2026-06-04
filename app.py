@@ -1970,12 +1970,20 @@ def store_cart_page():
 
 @app.route("/store/assets/store.js")
 def store_asset_js():
-    return send_file(BASE_DIR / "pages" / "store" / "store.js", mimetype="text/javascript")
+    response = send_file(
+        BASE_DIR / "pages" / "store" / "store.js",
+        mimetype="text/javascript",
+        max_age=31536000,
+    )
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
 
 
 @app.route("/store/catalog.json")
 def store_catalog():
-    return send_file(STORE_CATALOG_PATH, mimetype="application/json")
+    response = send_file(STORE_CATALOG_PATH, mimetype="application/json", max_age=3600)
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 @app.route("/store/api/checkout", methods=["POST"])
