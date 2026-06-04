@@ -3542,29 +3542,32 @@
       }
 
       .cart-page {
-        display: block;
-        padding: 0;
-        position: relative;
+        display: flex;
+        padding: 0 10px;
+        position: static;
       }
 
       .cart-page__items {
-        width: 100%;
+        width: 846px;
       }
 
       .cart-page__item {
-        margin: -1px 0 0 10px;
-        min-height: 313px;
+        background: transparent;
+        display: flex;
+        margin: -1px 0 0;
+        min-height: 292px;
+        padding: 0;
         width: 846px;
       }
 
       .cart-page__item--bundle {
-        min-height: 313px;
+        min-height: 292px;
       }
 
       .cart-page__gift-message__wrap {
-        margin: -1px 0 0 10px;
+        margin: -1px 0 0;
         min-height: 58px;
-        width: calc(100% - 20px);
+        width: calc(100vw - 20px);
       }
 
       .cart-page__gift-toggle {
@@ -3578,11 +3581,9 @@
 
       .cart-page__summary {
         border: 0;
-        margin: 0;
+        margin: 147px 55px 0 auto;
         padding: 0;
-        position: absolute;
-        right: 65px;
-        top: 184px;
+        position: static;
         width: 305px;
       }
 
@@ -3594,7 +3595,9 @@
       }
 
       .cart-page__checkout {
-        margin: 0;
+        display: block;
+        margin: 20px 0;
+        padding: 0;
         width: 305px;
       }
 

@@ -818,10 +818,13 @@ class StoreTest(unittest.TestCase):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
         self.assertIn(".cart {\n        box-sizing: border-box;\n        min-height: 1016px;\n        padding: 63px 0 10px;", source)
-        self.assertIn(".cart-page__item {\n        margin: -1px 0 0 10px;\n        min-height: 313px;\n        width: 846px;", source)
-        self.assertIn(".cart-page__gift-message__wrap {\n        margin: -1px 0 0 10px;\n        min-height: 58px;\n        width: calc(100% - 20px);", source)
+        self.assertIn(".cart-page {\n        display: flex;\n        padding: 0 10px;\n        position: static;", source)
+        self.assertIn(".cart-page__items {\n        width: 846px;", source)
+        self.assertIn(".cart-page__item {\n        background: transparent;\n        display: flex;\n        margin: -1px 0 0;\n        min-height: 292px;\n        padding: 0;\n        width: 846px;", source)
+        self.assertIn(".cart-page__gift-message__wrap {\n        margin: -1px 0 0;\n        min-height: 58px;\n        width: calc(100vw - 20px);", source)
         self.assertIn(".cart-page__gift-message__wrap label {\n        line-height: 56px;", source)
-        self.assertIn(".cart-page__summary {\n        border: 0;\n        margin: 0;\n        padding: 0;\n        position: absolute;", source)
+        self.assertIn(".cart-page__summary {\n        border: 0;\n        margin: 147px 55px 0 auto;\n        padding: 0;\n        position: static;", source)
+        self.assertIn(".cart-page__checkout {\n        display: block;\n        margin: 20px 0;\n        padding: 0;\n        width: 305px;", source)
         self.assertIn(".cart-upsell {\n        display: none;", source)
 
     def test_cart_drawer_uses_live_checkout_and_item_classes(self):
