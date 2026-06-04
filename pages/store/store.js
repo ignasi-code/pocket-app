@@ -230,7 +230,7 @@
     }
 
     if (!lines) return;
-    lines.innerHTML = cart.map(item => {
+    const cartLinesHtml = cart.map(item => {
       const meta = variants.get(Number(item.id));
       const lineTotal = displayAmount(meta.variant.price) * item.qty;
       const productUrl = `/store/products/${meta.product.handle}`;
@@ -252,6 +252,13 @@
         </div>
       `;
     }).join("");
+    lines.innerHTML = `
+      ${cartLinesHtml}
+      <label class="cart-gift-option">
+        <input type="checkbox" name="gift" value="1">
+        <span>this is a gift</span>
+      </label>
+    `;
   }
 
   async function renderCartDrawer() {

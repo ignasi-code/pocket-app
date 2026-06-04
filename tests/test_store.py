@@ -529,6 +529,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn("Includes:", source)
         self.assertIn("cartPageQuantityHtml(item, meta)", source)
 
+    def test_cart_javascript_renders_live_gift_option_without_old_layout_class(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("cart-gift-option", source)
+        self.assertIn("this is a gift", source)
+        self.assertNotIn("cart-page__gift", source)
+
     def test_cart_css_supports_live_bundle_line_heights(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
