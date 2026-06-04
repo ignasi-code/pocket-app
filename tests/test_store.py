@@ -315,6 +315,14 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-filter-overlay", source)
         self.assertIn("setCollectionOverlay", source)
 
+    def test_collection_filter_drawer_uses_live_mobile_bottom_sheet_motion(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".collection-filter__drawer", source)
+        self.assertIn("bottom: 0", source)
+        self.assertIn("transform: translateY(100%)", source)
+        self.assertIn('.collection-filter__drawer[aria-hidden="false"]', source)
+
     def test_store_base_uses_versioned_store_script_for_fresh_behavior(self):
         response = self.client.get("/store")
 

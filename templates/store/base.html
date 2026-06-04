@@ -2583,26 +2583,34 @@
     .collection-filter__drawer {
       background: #fff;
       border: 1px solid #e6e6e6;
-      border-radius: 5px;
+      border-radius: 5px 5px 0 0;
+      bottom: 0;
       box-sizing: border-box;
-      left: 4px;
-      max-height: calc(100vh - 90px);
+      left: 0;
+      max-height: 82vh;
       opacity: 1;
       overflow-y: auto;
       position: fixed;
-      right: 4px;
-      top: 76px;
-      transform: translateY(-12px);
+      right: 0;
+      top: auto;
+      transform: translateY(0);
       transition: opacity .25s, transform .25s, visibility 0s .25s;
       visibility: visible;
-      z-index: 30;
+      z-index: 31;
     }
 
     .collection-filter__drawer[aria-hidden="true"] {
       opacity: 0;
       pointer-events: none;
-      transform: translateY(-20px);
+      transform: translateY(100%);
       visibility: hidden;
+    }
+
+    .collection-filter__drawer[aria-hidden="false"] {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+      visibility: visible;
     }
 
     .collection-filter__drawer-inner {
@@ -3014,10 +3022,16 @@
       }
 
       .collection-filter__drawer {
+        border-radius: 5px;
+        bottom: auto;
         left: auto;
         max-width: 390px;
         right: 8px;
         top: 72px;
+      }
+
+      .collection-filter__drawer[aria-hidden="true"] {
+        transform: translateY(-20px);
       }
 
       .footer {
