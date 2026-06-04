@@ -73,6 +73,11 @@
     return catalog;
   }
 
+  async function productByHandle(handle) {
+    const data = await loadCatalog();
+    return (data.products || []).find(product => product.handle === handle);
+  }
+
   function productImage(product, variant) {
     return variant?.featured_image?.src || product?.images?.[0]?.src || "https://placehold.co/360x450";
   }
@@ -393,8 +398,72 @@
     }
   }
 
+  function setQuickshopVisibility(visible) {
+    const drawer = document.querySelector(".js-quickshopDrawer");
+    const overlay = document.querySelector(".js-quickshopClose.quickshop__overlay");
+    if (drawer) drawer.setAttribute("aria-hidden", visible ? "false" : "true");
+    if (overlay) overlay.setAttribute("aria-expanded", visible ? "true" : "false");
+    document.body.classList.toggle("quickshop-is-open", visible);
+  }
+
+  function closeQuickshopDrawer() {
+    setQuickshopVisibility(false);
+  }
+
+  function quickshopOptionHtml(product, selectedVariant) {
+    return (product.variants || []).map(variant => `
+      <option value="${variant.id}" data-price="${formatDisplayPrice(variant.price)}" data-image-src="${productImage(product, variant)}" ${Number(variant.id) === Number(selectedVariant.id) ? "selected" : ""} ${variant.available === false ? "disabled" : ""}>
+        ${escapeHtml(variant.title)} - ${formatDisplayPrice(variant.price)}${variant.available === false ? " - sold out" : ""}
+      </option>
+    `).join("");
+  }
+
+  async function renderQuickshop(handle) {
+    const drawer = document.querySelector(".js-quickshopDrawer");
+    if (!drawer) return null;
+    const product = await productByHandle(handle);
+    if (!product) return null;
+    const selectedVariant = (product.variants || []).find(variant => variant.available !== false) || product.variants?.[0];
+    if (!selectedVariant) return null;
+
+    const top = drawer.querySelector("[data-quickshop-top]");
+    const image = drawer.querySelector("[data-quickshop-image]");
+    const details = drawer.querySelector("[data-quickshop-details]");
+    if (top) {
+      top.innerHTML = `
+        <p class="quickshop__title">${escapeHtml(product.title)}</p>
+        <p class="quickshop__price" data-quickshop-price>${formatDisplayPrice(selectedVariant.price)}</p>
+      `;
+    }
+    if (image) {
+      image.innerHTML = `<img src="${productImage(product, selectedVariant)}" alt="${escapeHtml(product.title)}" data-quickshop-image-current>`;
+    }
+    if (details) {
+      details.innerHTML = `
+        <form class="quickshop__form" data-quickshop-form>
+          <select aria-label="Variant for ${escapeHtml(product.title)}" data-quickshop-select>
+            ${quickshopOptionHtml(product, selectedVariant)}
+          </select>
+          <button class="quickshop__add button button--blue" type="button" data-quickshop-add>Add to Bag</button>
+        </form>
+      `;
+    }
+    return product;
+  }
+
+  async function openQuickshopDrawer(handle) {
+    closeMenuDrawer();
+    closeCartDrawer();
+    closeSearchDrawer();
+    closeCollectionDrawers();
+    const product = await renderQuickshop(handle);
+    if (!product) return;
+    setQuickshopVisibility(true);
+  }
+
   async function openCartDrawer() {
     closeMenuDrawer();
+    closeQuickshopDrawer();
     await renderCartDrawer();
     const drawer = document.querySelector("[data-cart-drawer]");
     const toggle = document.querySelector("[data-cart-open]");
@@ -619,6 +688,26 @@
     const optionChoice = event.target.closest("[data-option-choice]");
     if (optionChoice) selectPdpOption(optionChoice);
 
+    const quickshopOpen = event.target.closest("[data-quickshop-open]");
+    if (quickshopOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      openQuickshopDrawer(quickshopOpen.dataset.handle);
+      return;
+    }
+
+    if (event.target.closest("[data-quickshop-close]")) closeQuickshopDrawer();
+
+    const quickshopAdd = event.target.closest("[data-quickshop-add]");
+    if (quickshopAdd) {
+      const form = quickshopAdd.closest("[data-quickshop-form]");
+      const select = form?.querySelector("[data-quickshop-select]");
+      addVariant(select?.value || quickshopAdd.dataset.variantId);
+      closeQuickshopDrawer();
+      openCartDrawer();
+      return;
+    }
+
     const add = event.target.closest("[data-store-add]");
     if (add) {
       const row = add.closest(".quick-row");
@@ -669,6 +758,16 @@
 
     const giftToggle = event.target.closest("[data-gift-toggle]");
     if (giftToggle) toggleGiftMessage(giftToggle);
+
+    const quickshopSelect = event.target.closest("[data-quickshop-select]");
+    if (quickshopSelect) {
+      const selected = quickshopSelect.selectedOptions?.[0];
+      const drawer = quickshopSelect.closest(".js-quickshopDrawer");
+      const priceNode = drawer?.querySelector("[data-quickshop-price]");
+      const imageNode = drawer?.querySelector("[data-quickshop-image-current]");
+      if (priceNode && selected?.dataset.price) priceNode.textContent = selected.dataset.price;
+      if (imageNode && selected?.dataset.imageSrc) imageNode.src = selected.dataset.imageSrc;
+    }
   });
 
   document.addEventListener("keydown", event => {
@@ -677,6 +776,7 @@
       closeCollectionDrawers();
       closeOptionDrawers();
       closeLightbox();
+      closeQuickshopDrawer();
     }
   });
 

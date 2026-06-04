@@ -967,7 +967,7 @@
       display: none;
       gap: 0;
       grid-template-columns: 1fr;
-      padding: 0 10px 12px;
+      padding: 0;
     }
 
     .quick-row select { display: none; }
@@ -2886,19 +2886,119 @@
       z-index: 118;
     }
 
+    .quickshop__overlay[aria-expanded="true"] {
+      height: 100%;
+      opacity: 1;
+      visibility: visible;
+      width: 100%;
+    }
+
     .quickshop__drawer {
       background: #fff;
       border-radius: 5px 5px 0 0;
       bottom: 0;
       box-sizing: border-box;
-      min-height: 260px;
+      min-height: 420px;
       overflow: hidden;
-      padding: 20px;
+      padding: 0;
       position: fixed;
       transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.165,.84,.44,1), visibility 0s .35s;
       visibility: hidden;
       width: 100%;
       z-index: 121;
+    }
+
+    .quickshop__drawer[aria-hidden="false"] {
+      transform: translateY(0);
+      transition: transform .35s cubic-bezier(.165,.84,.44,1);
+      visibility: visible;
+    }
+
+    .quickshop-is-open .quickshop__drawer[aria-hidden="false"] {
+      transform: translateY(0) !important;
+      visibility: visible !important;
+    }
+
+    .quickshop__content {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      padding: 24px 20px 22px;
+      row-gap: 16px;
+    }
+
+    .quickshop__content__top {
+      grid-column: 2;
+      padding-right: 52px;
+    }
+
+    .quickshop__content__image {
+      align-items: center;
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      display: flex;
+      height: 112px;
+      justify-content: center;
+      overflow: hidden;
+      width: 92px;
+    }
+
+    .quickshop__content__image img {
+      height: 92px;
+      object-fit: contain;
+      width: 72px;
+    }
+
+    .quickshop__content__details {
+      grid-column: 1 / -1;
+    }
+
+    .quickshop__title,
+    .quickshop__price {
+      font-size: .875rem;
+      line-height: 135%;
+      margin: 0;
+      text-transform: lowercase;
+    }
+
+    .quickshop__title {
+      font-weight: 700;
+    }
+
+    .quickshop__price {
+      margin-top: 8px;
+    }
+
+    .quickshop__form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .quickshop__form select {
+      appearance: none;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      color: #000;
+      font-size: 1rem;
+      font-weight: 700;
+      height: 60px;
+      padding: 0 16px;
+      text-transform: lowercase;
+      width: 100%;
+    }
+
+    .quickshop__add {
+      background: var(--blue);
+      border: 0;
+      border-radius: 5px;
+      color: #000;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      height: 60px;
+      text-transform: none;
+      width: 100%;
     }
 
     .quickshop__close {
@@ -3451,6 +3551,51 @@
         padding-top: 0;
       }
 
+      .product-tile__copy__wrapper {
+        left: 3px;
+        right: 3px;
+        bottom: 2px;
+        grid-template-columns: minmax(0, 1fr) 76px;
+        display: grid;
+        min-height: 76px;
+        position: absolute;
+        z-index: 3;
+      }
+
+      .product-tile__copy {
+        padding: 17px 20px;
+      }
+
+      .product-tile__title {
+        font-size: .875rem;
+        line-height: 135%;
+        padding: 0 0 4px;
+      }
+
+      .product-tile__price {
+        font-size: .875rem;
+        line-height: 135%;
+        padding: 0;
+      }
+
+      .product-tile__add {
+        border-radius: 0;
+        height: auto;
+        min-height: 76px;
+        width: 76px;
+        align-items: center;
+        background: #fff;
+        border: 0;
+        border-left: 1px solid #e6e6e6;
+        justify-content: center;
+        padding: 0;
+      }
+
+      .product-tile__add svg {
+        height: 24px;
+        width: 24px;
+      }
+
       .pagination {
         font-size: 1.125rem;
         margin: 75px 0;
@@ -3687,10 +3832,18 @@
     <span>get 10% off</span>
   </div>
 
-  <button class="quickshop__overlay js-quickshopClose" type="button" aria-expanded="false" aria-controls="quickshop-drawer" aria-label="Close quick shop"></button>
+  <button class="quickshop__overlay js-quickshopClose" type="button" aria-expanded="false" aria-controls="quickshop-drawer" aria-label="Close quick shop" data-quickshop-close>
+    <span class="visually-hidden">Close</span>
+  </button>
   <aside id="quickshop-drawer" class="quickshop__drawer js-quickshopDrawer" aria-hidden="true" aria-label="Quick shop">
-    <button class="quickshop__close js-quickshopClose" type="button" aria-label="Close quick shop"></button>
-    <p>quick shop</p>
+    <div class="quickshop__content" aria-live="polite">
+      <div class="quickshop__content__top js-productDetailsTop" data-quickshop-top></div>
+      <div class="quickshop__content__image js-productDetailsImage" data-quickshop-image></div>
+      <div class="quickshop__content__details js-productDetailsContent" data-quickshop-details></div>
+    </div>
+    <button class="quickshop__close js-quickshopClose" type="button" aria-label="Close quick shop" aria-controls="quickshop-drawer" aria-expanded="false" data-quickshop-close>
+      <span class="visually-hidden">Close</span>
+    </button>
   </aside>
 
   <aside id="store-menu" class="menu-drawer" data-menu-drawer aria-hidden="true">
@@ -3812,6 +3965,6 @@
     </div>
   </footer>
 
-  <script src="/store/assets/store.js?v=20260604-search-filter"></script>
+  <script src="/store/assets/store.js?v=20260604-quickshop"></script>
 </body>
 </html>

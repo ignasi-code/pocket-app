@@ -14,14 +14,12 @@
     </div>
     {% set variant = first_variant(product) %}
     <div class="quick-row">
-      <select aria-label="Variant for {{ product.title }}" data-variant-select>
-        {% for item in product.variants %}
-          <option value="{{ item.id }}" {% if item.available is sameas false %}disabled{% endif %}>
-            {{ item.title }}{% if item.available is sameas false %} - sold out{% endif %}
-          </option>
-        {% endfor %}
-      </select>
-      <button class="product-tile__add js-quickshopOpen" type="button" data-store-add data-handle="{{ product.handle }}" data-variant-id="{{ variant.id }}" aria-label="Add {{ product.title }}">Add</button>
+      <button class="product-tile__add js-quickshopOpen" type="button" name="add" data-quickshop-open data-handle="{{ product.handle }}" data-variant-id="{{ variant.id }}">
+        <span class="visually-hidden">open quick shop</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12.4699 12.4697H23.4688V11.4697H12.4699V0.471011H11.4699V11.4697H0.468749V12.4697H11.4699V23.471H12.4699V12.4697Z" fill="black"></path>
+        </svg>
+      </button>
     </div>
   </div>
 </article>

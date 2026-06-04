@@ -189,6 +189,55 @@ class StoreTest(unittest.TestCase):
         self.assertIn("product-tile__title", html)
         self.assertIn("product-tile__add", html)
 
+    def test_product_tiles_use_live_quickshop_button_not_inline_variant_select(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('class="product-tile__add js-quickshopOpen"', html)
+        self.assertIn('<span class="visually-hidden">open quick shop</span>', html)
+        self.assertIn('viewBox="0 0 24 24"', html)
+        self.assertIn('data-quickshop-open', html)
+        self.assertNotIn('data-variant-select', html)
+        self.assertNotIn('class="product-tile__add js-quickshopOpen" type="button" data-store-add', html)
+
+    def test_product_tile_desktop_copy_band_matches_live_overlay_geometry(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".product-tile__copy__wrapper {\n        left: 3px;\n        right: 3px;\n        bottom: 2px;\n        grid-template-columns: minmax(0, 1fr) 76px;", source)
+        self.assertIn(".product-tile__add {\n        border-radius: 0;\n        height: auto;\n        min-height: 76px;\n        width: 76px;", source)
+
+    def test_product_tile_desktop_copy_typography_matches_live_band(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn("left: 3px;\n        right: 3px;\n        bottom: 2px;", source)
+        self.assertIn(".product-tile__copy {\n        padding: 17px 20px;", source)
+        self.assertIn(".product-tile__title {\n        font-size: .875rem;\n        line-height: 135%;\n        padding: 0 0 4px;", source)
+        self.assertIn(".product-tile__price {\n        font-size: .875rem;\n        line-height: 135%;\n        padding: 0;", source)
+
+    def test_quickshop_drawer_has_live_content_shell_and_script_hooks(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+        self.assertIn("quickshop__content", html)
+        self.assertIn("quickshop__content__top js-productDetailsTop", html)
+        self.assertIn("quickshop__content__image js-productDetailsImage", html)
+        self.assertIn("quickshop__content__details js-productDetailsContent", html)
+        self.assertIn("data-quickshop-close", html)
+        self.assertIn("openQuickshopDrawer", source)
+        self.assertIn("renderQuickshop", source)
+        self.assertIn("[data-quickshop-open]", source)
+        self.assertIn("[data-quickshop-add]", source)
+        self.assertIn("quickshop-is-open", source)
+
+    def test_quickshop_open_state_has_body_scoped_transform_override(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn('.quickshop-is-open .quickshop__drawer[aria-hidden="false"]', source)
+        self.assertIn("transform: translateY(0) !important", source)
+
     def test_store_price_labels_match_live_euro_market(self):
         product = pocket.store_product_by_handle("the-cylinder-cord-necklace-cloud-blue")
         variant = pocket.store_first_available_variant(product)
@@ -761,7 +810,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=", html)
+        self.assertIn("/store/assets/store.js?v=20260604-quickshop", html)
 
     def test_unknown_product_returns_404(self):
         response = self.client.get("/store/products/nope")
