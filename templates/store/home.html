@@ -79,6 +79,11 @@
                 <span class="info-module__span">{{ char }}</span>
               {% endif %}
             {% endfor %}
+            <span class="info-module__span info-module__span--heart mobile-heart" aria-hidden="true">
+              <svg width="16" height="15" viewBox="0 0 16 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7.76 14.91C9.51 13.85 15.5 8.62 15.5 4.3C15.5-.38 9.89-1.72 8.15 2.7C8.09 2.81 7.94 2.81 7.84 2.7C6.06-1.67.5-.38.5 4.3C.5 8.62 6.49 13.85 7.76 14.91Z" fill="#CF2027"/>
+              </svg>
+            </span>
           </div>
           <div class="info-module__content desktop-visible">
             {% for char in section.text|lower %}

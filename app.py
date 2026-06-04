@@ -289,6 +289,12 @@ def format_price(cents):
     return f"{cents / 100:.2f}"
 
 
+def format_display_price(cents):
+    if cents % 100 == 0:
+        return str(cents // 100)
+    return format_price(cents)
+
+
 def load_store_catalog():
     return json.loads(STORE_CATALOG_PATH.read_text(encoding="utf-8"))
 
@@ -333,16 +339,16 @@ def store_price_label(product):
         if parse_price_cents(variant.get("price")) > 0
     ]
     if not prices:
-        return "$0.00"
+        return "$0"
     low = min(prices)
     high = max(prices)
     if low == high:
-        return f"${format_price(low)}"
-    return f"${format_price(low)} - ${format_price(high)}"
+        return f"${format_display_price(low)}"
+    return f"${format_display_price(low)} - ${format_display_price(high)}"
 
 
 def store_variant_price_label(variant):
-    return f"${format_price(parse_price_cents(variant.get('price')))}"
+    return f"${format_display_price(parse_price_cents(variant.get('price')))}"
 
 
 def store_primary_option_name(product):

@@ -42,6 +42,28 @@ class StoreTest(unittest.TestCase):
         self.assertIn("info-module__content mobile-visible", html)
         self.assertIn("info-module__content desktop-visible", html)
 
+    def test_homepage_mobile_shipping_grid_includes_heart_tile(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("info-module__span--heart mobile-heart", html)
+
+    def test_homepage_product_module_title_uses_live_regular_weight(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".product-module__title", source)
+        self.assertIn("font-weight: 400", source)
+
+    def test_homepage_split_banner_uses_live_mobile_cta_treatment(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".double-image-banner__tile a", source)
+        self.assertIn("bottom: 5%", source)
+        self.assertIn("font-size: 1rem", source)
+        self.assertIn(".double-image-banner__tile__cta--black", source)
+        self.assertNotIn(".split-tile::before", source)
+
     def test_homepage_exposes_live_shells_and_product_tile_controls(self):
         response = self.client.get("/store")
 
@@ -141,6 +163,22 @@ class StoreTest(unittest.TestCase):
         self.assertIn("product-tile__image__hover", html)
         self.assertIn("product-tile__title", html)
         self.assertIn("product-tile__add", html)
+
+    def test_store_price_labels_drop_trailing_zero_cents_like_live_theme(self):
+        product = pocket.store_product_by_handle("the-cylinder-cord-necklace-cloud-blue")
+        variant = pocket.store_first_available_variant(product)
+
+        self.assertEqual(pocket.store_variant_price_label(variant), "$125")
+        self.assertNotIn(".00", pocket.store_price_label(product))
+
+    def test_product_tiles_hide_quick_add_on_mobile_like_live_theme(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".product-tile__add", source)
+        self.assertIn("display: none", source)
+        self.assertIn("@media (min-width: 1024px)", source)
+        self.assertIn("display: inline-flex", source)
+        self.assertNotIn("min-height: 96px", source)
 
     def test_collection_page_exposes_filter_and_sort_drawers(self):
         response = self.client.get("/store/collections/the-summer-capsule")
@@ -315,6 +353,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-filter-overlay", source)
         self.assertIn("setCollectionOverlay", source)
 
+    def test_collection_javascript_sets_drawer_inline_visibility(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("setCollectionDrawerVisibility", source)
+        self.assertIn('drawer.style.setProperty("transform", "translateY(0)", "important")', source)
+        self.assertIn('drawer.style.setProperty("visibility", "visible", "important")', source)
+
     def test_collection_filter_drawer_uses_live_mobile_bottom_sheet_motion(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
@@ -322,6 +367,12 @@ class StoreTest(unittest.TestCase):
         self.assertIn("bottom: 0", source)
         self.assertIn("transform: translateY(100%)", source)
         self.assertIn('.collection-filter__drawer[aria-hidden="false"]', source)
+
+    def test_collection_filter_open_state_has_body_scoped_override(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn('.collection-filter-is-open .collection-filter__drawer[aria-hidden="false"]', source)
+        self.assertIn("transform: translateY(0) !important", source)
 
     def test_store_base_uses_versioned_store_script_for_fresh_behavior(self):
         response = self.client.get("/store")

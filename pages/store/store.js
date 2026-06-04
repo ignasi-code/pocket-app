@@ -257,9 +257,28 @@
     setOverlay(true);
   }
 
+  function setCollectionDrawerVisibility(drawer, visible) {
+    if (!drawer) return;
+    if (visible) {
+      drawer.style.setProperty("opacity", "1", "important");
+      drawer.style.setProperty("pointer-events", "auto", "important");
+      drawer.style.setProperty("transform", "translateY(0)", "important");
+      drawer.style.setProperty("visibility", "visible", "important");
+      return;
+    }
+    drawer.style.removeProperty("opacity");
+    drawer.style.removeProperty("pointer-events");
+    drawer.style.removeProperty("transform");
+    drawer.style.removeProperty("visibility");
+  }
+
   function closeCollectionDrawers() {
-    document.querySelector("[data-filter-drawer]")?.setAttribute("aria-hidden", "true");
-    document.querySelector("[data-sort-drawer]")?.setAttribute("aria-hidden", "true");
+    const filterDrawer = document.querySelector("[data-filter-drawer]");
+    const sortDrawer = document.querySelector("[data-sort-drawer]");
+    filterDrawer?.setAttribute("aria-hidden", "true");
+    sortDrawer?.setAttribute("aria-hidden", "true");
+    setCollectionDrawerVisibility(filterDrawer, false);
+    setCollectionDrawerVisibility(sortDrawer, false);
     document.querySelector("[data-filter-toggle]")?.setAttribute("aria-expanded", "false");
     document.querySelector("[data-sort-toggle]")?.setAttribute("aria-expanded", "false");
     setCollectionOverlay(false);
@@ -294,7 +313,10 @@
     const drawer = document.querySelector(kind === "sort" ? "[data-sort-drawer]" : "[data-filter-drawer]");
     const toggle = document.querySelector(kind === "sort" ? "[data-sort-toggle]" : "[data-filter-toggle]");
     closeCollectionDrawers();
-    if (drawer) drawer.setAttribute("aria-hidden", "false");
+    if (drawer) {
+      drawer.setAttribute("aria-hidden", "false");
+      setCollectionDrawerVisibility(drawer, true);
+    }
     if (toggle) toggle.setAttribute("aria-expanded", "true");
     setCollectionOverlay(true);
   }
