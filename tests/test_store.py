@@ -417,6 +417,7 @@ class StoreTest(unittest.TestCase):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
         self.assertIn(".collection-filter-bar {\n        background: transparent;\n        display: flex;", source)
+        self.assertIn("top: 72px;\n        z-index: 12;", source)
         self.assertIn(".collection-filter__bar__button {\n        flex: 0 0 calc(50% - 4px);\n        height: 75px;\n        margin-left: 0;", source)
         self.assertIn("margin-left: 0;\n        margin-top: 1px;", source)
         self.assertIn(".collection-filter__bar__button:first-child {\n        margin-left: 9px;", source)
