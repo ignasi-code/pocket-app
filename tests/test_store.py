@@ -56,6 +56,11 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".product-module__title", source)
         self.assertIn("font-weight: 400", source)
 
+    def test_homepage_desktop_category_module_matches_live_height(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".category-module {\n        height: 460px;\n        padding: 0;", source)
+
     def test_homepage_split_banner_uses_live_mobile_cta_treatment(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
@@ -263,6 +268,15 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".collection-hero {\n      position: relative;\n      padding: 0;", source)
         self.assertIn(".collection-filter-bar button", source)
         self.assertIn("height: 74px", source)
+
+    def test_collection_desktop_hero_flows_inside_live_product_grid(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".collection-items {\n        display: grid;\n        grid-template-columns: repeat(4, minmax(0, 1fr));\n        padding-top: 72px;", source)
+        self.assertIn(".collection-filter-bar {\n        grid-column: 1 / -1;\n        height: 76px;", source)
+        self.assertIn(".collection-grid {\n        display: contents;", source)
+        self.assertIn(".collection-hero {\n        grid-column: 1 / span 2;\n        grid-row: span 2;\n        height: 765px;", source)
+        self.assertIn(".product-tile {\n        height: 384px;", source)
 
     def test_collection_filter_drawer_uses_live_inner_structure(self):
         response = self.client.get("/store/collections/necklaces")
