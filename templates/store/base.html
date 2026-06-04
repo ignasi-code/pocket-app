@@ -514,6 +514,26 @@
       overflow: hidden;
     }
 
+    .visually-hidden {
+      border: 0;
+      clip: rect(0 0 0 0);
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      padding: 0;
+      position: absolute;
+      white-space: nowrap;
+      width: 1px;
+    }
+
+    .desktop-visible {
+      display: none !important;
+    }
+
+    .mobile-visible {
+      display: flex !important;
+    }
+
     .announcement { display: none; }
 
     .site-header {
@@ -634,11 +654,13 @@
     }
 
     .cart-link {
+      appearance: none;
       background: var(--bag-blue);
       border: 1px solid rgba(0, 0, 0, .1);
       border-radius: 5px;
       box-sizing: border-box;
       color: #000;
+      cursor: pointer;
       display: flex;
       font-size: .75rem;
       font-weight: 700;
@@ -745,10 +767,19 @@
       border: 1px solid #767676;
       border-radius: 5px;
       color: #000;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       font-size: 1rem;
       font-weight: 700;
       min-height: 60px;
+      padding: 0 20px;
       text-transform: lowercase;
+    }
+
+    .button--blue {
+      background: var(--blue);
+      border: 0;
     }
 
     .section.product-module {
@@ -1579,40 +1610,239 @@
     .product-lightbox__close::before { transform: rotate(45deg); }
     .product-lightbox__close::after { transform: rotate(-45deg); }
 
-    .cart-layout {
+    .cart {
+      padding: 88px 10px 50px;
+    }
+
+    .cart-page {
       display: block;
     }
 
-    .cart-panel {
+    .cart-page__gift,
+    .cart-page__summary {
+      background: #fff;
       border: 1px solid #e6e6e6;
       border-radius: 5px;
-      box-shadow: none;
-      margin-bottom: 4px;
+      box-sizing: border-box;
+      margin-top: -1px;
+      overflow: hidden;
       padding: 23px;
+      width: 100%;
     }
 
-    .cart-line {
-      border-top: 1px solid #e6e6e6;
-      display: grid;
-      grid-template-columns: 118px 1fr;
-      gap: 17px;
-      min-height: 160px;
-      padding: 8px 0;
+    .cart-page__items {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      margin: 0;
+      overflow: visible;
+      padding: 0;
+      width: 100%;
     }
 
-    .cart-line img {
+    .cart-page__item {
+      background: #fff;
       border: 1px solid #e6e6e6;
       border-radius: 5px;
-      height: 143px;
-      object-fit: cover;
-      width: 118px;
+      box-sizing: border-box;
+      margin: 10px 0;
+      min-height: 190px;
+      padding: 14px;
+      position: relative;
     }
 
-    .cart-line strong {
+    .cart-page__item + .cart-page__item {
+      margin-top: -1px;
+    }
+
+    .cart-page__item__image-wrap {
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      box-sizing: border-box;
+      height: 101px;
+      left: 14px;
+      overflow: hidden;
+      position: absolute;
+      top: 14px;
+      width: 83px;
+    }
+
+    .cart-page__item__image {
+      height: 81px;
+      left: 10px;
+      object-fit: cover;
+      position: absolute;
+      top: 10px;
+      width: 63px;
+    }
+
+    .cart-page__item__copy {
+      display: flex;
+      flex-direction: column;
+      min-height: 162px;
+      padding-left: 101px;
+    }
+
+    .cart-page__item__details {
+      display: flex;
+      font-size: 1.125rem;
+      font-weight: 600;
+      justify-content: space-between;
+      line-height: 145%;
+      min-height: 101px;
+      text-transform: lowercase;
+    }
+
+    .cart-page__item__title {
+      display: block;
+      padding-right: 14px;
+      text-transform: lowercase;
+    }
+
+    .cart-page__item__options,
+    .cart-page__item__line-price,
+    .cart-page__item__remove {
       font-size: .875rem;
       font-weight: 400;
       line-height: 135%;
       text-transform: lowercase;
+    }
+
+    .cart-page__item__options {
+      margin: 14px 0;
+    }
+
+    .cart-page__item__line-price {
+      flex: 0 0 auto;
+      font-size: 1.125rem;
+      font-weight: 600;
+      line-height: 145%;
+    }
+
+    .cart-page__item__remove {
+      background: transparent;
+      border: 0;
+      bottom: 0;
+      color: transparent;
+      cursor: pointer;
+      font-size: 0;
+      height: 50px;
+      padding: 0;
+      position: absolute;
+      right: 0;
+      width: 50px;
+    }
+
+    .cart-page__item__remove::before,
+    .cart-page__item__remove::after {
+      background: #000;
+      content: "";
+      height: 1px;
+      position: absolute;
+      right: 14px;
+      top: 25px;
+      width: 23px;
+    }
+
+    .cart-page__item__remove::before {
+      transform: rotate(45deg);
+    }
+
+    .cart-page__item__remove::after {
+      transform: rotate(135deg);
+    }
+
+    .cart-page__quantity {
+      align-items: center;
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      box-sizing: border-box;
+      display: flex;
+      font-size: .875rem;
+      font-weight: 400;
+      height: 60px;
+      line-height: 135%;
+      margin: 14px 50px 0 0;
+      padding: 20px 0 20px 20px;
+      text-transform: lowercase;
+    }
+
+    .cart-page__quantity > span:first-child {
+      margin-right: auto;
+    }
+
+    .cart-page__quantity button,
+    .cart-drawer__quantity button {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      color: #000;
+      font-size: 1.25rem;
+      height: auto;
+      line-height: 1;
+      min-height: 0;
+      padding: 0;
+      position: relative;
+      width: 50px;
+    }
+
+    .cart-page__gift {
+      color: #000;
+      font-size: .875rem;
+      line-height: 135%;
+    }
+
+    .cart-page__gift label {
+      align-items: center;
+      display: flex;
+      gap: 10px;
+      font-weight: 700;
+      text-transform: lowercase;
+    }
+
+    .cart-page__gift input {
+      accent-color: var(--blue);
+      height: 18px;
+      width: 18px;
+    }
+
+    .cart-page__gift p,
+    .cart-page__shipping {
+      color: #000;
+      font-size: .875rem;
+      line-height: 135%;
+      margin: 14px 0 0;
+    }
+
+    .cart-page__summary-title {
+      font-size: .875rem;
+      font-weight: 700;
+      line-height: 135%;
+      margin: 0 0 25px;
+      text-transform: lowercase;
+    }
+
+    .cart-page__total {
+      display: flex;
+      font-size: .875rem;
+      justify-content: space-between;
+      line-height: 135%;
+      margin-top: 12px;
+      text-transform: lowercase;
+    }
+
+    .cart-page__total--grand {
+      border-top: 1px solid #e6e6e6;
+      font-weight: 700;
+      margin-top: 18px;
+      padding-top: 18px;
+    }
+
+    .cart-page__checkout {
+      height: 60px;
+      line-height: 60px;
+      margin-top: 22px;
+      width: 100%;
     }
 
     .drawer-overlay {
@@ -1745,18 +1975,34 @@
       padding-bottom: 8px;
     }
 
-    .cart-drawer__line {
-      box-sizing: border-box;
-      min-height: 160px;
-      padding: 8px 0 8px 135px;
+    .cart-drawer__header {
+      min-height: 72px;
       position: relative;
     }
 
-    .cart-drawer__line + .cart-drawer__line {
-      border-top: 1px solid #e6e6e6;
+    .cart-drawer__header p {
+      font-size: .875rem;
+      font-weight: 700;
+      line-height: 135%;
+      margin: 0;
+      padding-right: 52px;
+      text-transform: lowercase;
     }
 
-    .cart-drawer__line img {
+    .cart-drawer__item {
+      box-sizing: border-box;
+      min-height: 160px;
+      padding: 8px 0 8px 115px;
+      position: relative;
+    }
+
+    .cart-drawer__item + .cart-drawer__item {
+      border-top: 1px solid #e6e6e6;
+      margin-top: 15px;
+      padding-top: 23px;
+    }
+
+    .cart-drawer__item__image {
       border: 1px solid #e6e6e6;
       border-radius: 5px;
       height: 143px;
@@ -1764,21 +2010,29 @@
       object-fit: cover;
       position: absolute;
       top: 8px;
-      width: 118px;
+      width: 100px;
     }
 
-    .cart-drawer__line-title {
+    .cart-drawer__item + .cart-drawer__item .cart-drawer__item__image {
+      top: 23px;
+    }
+
+    .cart-drawer__item__details {
       font-size: .875rem;
       line-height: 135%;
       text-transform: lowercase;
     }
 
-    .cart-drawer__line-meta,
-    .cart-drawer__line-price {
+    .cart-drawer__item__options,
+    .cart-drawer__item__price {
       font-size: .75rem;
       line-height: 150%;
-      margin-top: 12px;
+      margin-top: 6px;
       text-transform: lowercase;
+    }
+
+    .cart-drawer__quantity {
+      margin-top: 16px;
     }
 
     .cart-drawer__summary {
@@ -1789,19 +2043,26 @@
     .cart-drawer__total {
       display: flex;
       font-size: .875rem;
+      font-weight: 700;
       justify-content: space-between;
       line-height: 135%;
     }
 
-    .cart-drawer__actions {
-      display: grid;
-      gap: 10px;
-      margin-top: 5px;
+    .cart-drawer__checkout,
+    .cart-drawer__view-cart {
+      height: 60px;
+      line-height: 60px;
+      width: 100%;
     }
 
-    .cart-drawer__actions .button,
-    .cart-drawer__actions .plain-button {
-      width: 100%;
+    .cart-drawer__checkout {
+      margin-top: 15px;
+    }
+
+    .cart-drawer__view-cart {
+      background: #fff;
+      border: 1px solid #767676;
+      margin-top: 10px;
     }
 
     .product-tile {
@@ -2075,6 +2336,14 @@
     }
 
     @media (min-width: 1024px) {
+      .desktop-visible {
+        display: flex !important;
+      }
+
+      .mobile-visible {
+        display: none !important;
+      }
+
       .site-header {
         background: #fff;
         border: 1px solid rgba(0,0,0,.1);
@@ -2112,6 +2381,30 @@
       }
 
       .cart-link .bag-label { display: inline; }
+
+      .cart-drawer {
+        max-width: 430px;
+        right: 8px;
+      }
+
+      .cart {
+        padding: 72px 8px 60px;
+      }
+
+      .cart-page {
+        display: grid;
+        gap: 4px;
+        grid-template-columns: minmax(0, 1fr) 390px;
+      }
+
+      .cart-page__items {
+        grid-row: span 3;
+      }
+
+      .cart-page__gift,
+      .cart-page__summary {
+        margin-top: 0;
+      }
 
       .hero {
         padding-left: 2px;
@@ -2300,10 +2593,11 @@
       <img src="https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" alt="Roxanne Assoulin">
     </a>
     <a class="store-search header__search-toggle" href="/store/collections/shop"><span>Toggle Search</span></a>
-    <a class="cart-link header__cart" href="/store/cart" data-cart-open><span class="bag-label">Bag </span><span data-cart-count>0</span></a>
+    <button class="cart-link header__cart header__cart--drawer desktop-visible" type="button" aria-expanded="false" aria-controls="cart-drawer" data-cart-open><span class="bag-label">Bag </span><span data-cart-count>0</span></button>
+    <a class="cart-link header__cart header__cart--page mobile-visible" href="/store/cart" aria-label="Open bag"><span data-cart-count>0</span></a>
   </header>
 
-  <button class="drawer-overlay" type="button" aria-label="Close drawer" data-drawer-overlay></button>
+  <button class="drawer-overlay cart-drawer__overlay" type="button" aria-label="Close drawer" aria-expanded="false" aria-controls="cart-drawer" data-drawer-overlay></button>
 
   <aside id="store-menu" class="menu-drawer" data-menu-drawer aria-hidden="true">
     <button class="menu-drawer__close" type="button" aria-label="Close menu" data-menu-close></button>
@@ -2318,22 +2612,22 @@
     </nav>
   </aside>
 
-  <aside class="cart-drawer" data-cart-drawer data-checkout-endpoint="/store/api/checkout" aria-hidden="true">
-    <div class="cart-drawer__content">
-      <div>
+  <aside id="cart-drawer" class="cart-drawer js-cartDrawer" data-cart-drawer data-checkout-endpoint="/store/api/checkout" aria-hidden="true" aria-label="Shopping bag">
+    <div class="cart-drawer__content js-cartContent" data-item-count="0">
+      <div class="cart-drawer__header">
         <button class="cart-drawer__close" type="button" aria-label="Close bag" data-cart-close></button>
-        <p>Shopping bag</p>
+        <p data-cart-drawer-title>Bag (0 items)</p>
       </div>
-      <div class="cart-drawer__items" data-cart-drawer-lines></div>
+      <div class="cart-drawer__items">
+        <div class="cart-drawer__items__container" data-cart-drawer-lines></div>
+      </div>
       <div class="cart-drawer__summary">
         <div class="cart-drawer__total">
-          <span>Subtotal</span>
+          <span>subtotal</span>
           <strong data-cart-drawer-subtotal>$0.00</strong>
         </div>
-        <div class="cart-drawer__actions">
-          <button class="plain-button" type="button" data-checkout>checkout</button>
-          <a class="button" href="/store/cart">view bag</a>
-        </div>
+        <button class="cart-drawer__checkout button button--blue" type="button" data-checkout>Checkout</button>
+        <a class="cart-drawer__view-cart button" href="/store/cart">view bag</a>
         <div class="notice" data-checkout-output></div>
       </div>
     </div>

@@ -51,6 +51,13 @@
     renderCartPage();
   }
 
+  function removeVariant(id) {
+    const variantId = Number(id);
+    const cart = loadCart().filter(item => item.id !== variantId);
+    saveCart(cart);
+    renderCartPage();
+  }
+
   async function loadCatalog() {
     if (catalog) return catalog;
     const response = await fetch("/store/catalog.json");
@@ -98,28 +105,42 @@
 
     const lines = document.querySelector("[data-cart-lines]");
     const subtotal = document.querySelector("[data-cart-subtotal]");
-    if (subtotal) subtotal.textContent = money.format(cartSubtotal(cart));
+    const total = document.querySelector("[data-cart-total]");
+    const checkoutButton = root.querySelector(".cart-page__checkout");
+    const subtotalLabel = money.format(cartSubtotal(cart));
+    if (subtotal) subtotal.textContent = subtotalLabel;
+    if (total) total.textContent = subtotalLabel;
+    if (checkoutButton) checkoutButton.toggleAttribute("disabled", !cart.length);
 
     if (!cart.length) {
-      lines.innerHTML = '<div class="empty-state"><p>Your bag is empty.</p></div>';
+      if (lines) lines.innerHTML = '<div class="empty-state cart-page__empty"><p>Your bag is empty.</p><p><a class="button" href="/store/collections/shop">continue shopping</a></p></div>';
       return;
     }
 
+    if (!lines) return;
     lines.innerHTML = cart.map(item => {
       const meta = variants.get(Number(item.id));
+      const lineTotal = Number.parseFloat(meta.variant.price || "0") * item.qty;
+      const productUrl = `/store/products/${meta.product.handle}`;
       return `
-        <div class="cart-line">
-          <img src="${productImage(meta.product, meta.variant)}" alt="">
-          <div>
-            <strong>${meta.product.title}</strong>
-            <div class="notice">${meta.variant.title} - ${price(meta.variant.price)}</div>
-            <div class="qty-controls">
-              <button type="button" data-cart-dec="${item.id}">-</button>
-              <span>${item.qty}</span>
-              <button type="button" data-cart-inc="${item.id}">+</button>
+        <div class="cart-page__item">
+          <a class="cart-page__item__image-wrap" href="${productUrl}">
+            <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
+          </a>
+          <div class="cart-page__item__copy">
+            <div class="cart-page__item__details">
+              <a class="cart-page__item__title" href="${productUrl}">${escapeHtml(meta.product.title)}</a>
+              <strong class="cart-page__item__line-price">${money.format(lineTotal)}</strong>
             </div>
+            <div class="cart-page__item__options">${escapeHtml(meta.variant.title)}<br>${price(meta.variant.price)}</div>
+            <div class="cart-page__item__quantity qty-controls cart-page__quantity">
+              <span>quantity</span>
+              <button class="cart-page__item__button cart-page__item__button--minus" type="button" data-cart-dec="${item.id}" aria-label="Decrease quantity">-</button>
+              <span>${item.qty}</span>
+              <button class="cart-page__item__button cart-page__item__button--plus" type="button" data-cart-inc="${item.id}" aria-label="Increase quantity">+</button>
+            </div>
+            <button class="cart-page__item__remove" type="button" data-cart-remove="${item.id}">remove</button>
           </div>
-          <strong>${money.format(Number.parseFloat(meta.variant.price || "0") * item.qty)}</strong>
         </div>
       `;
     }).join("");
@@ -132,8 +153,15 @@
     const cart = loadCart().filter(item => variants.has(Number(item.id)));
     const lines = root.querySelector("[data-cart-drawer-lines]");
     const subtotal = root.querySelector("[data-cart-drawer-subtotal]");
+    const title = root.querySelector("[data-cart-drawer-title]");
+    const content = root.querySelector(".js-cartContent");
+    const checkoutButton = root.querySelector(".cart-drawer__checkout");
+    const count = cart.reduce((total, item) => total + Number(item.qty || 0), 0);
 
     if (subtotal) subtotal.textContent = money.format(cartSubtotal(cart));
+    if (title) title.textContent = count === 1 ? "Bag (1 item)" : `Bag (${count} items)`;
+    if (content) content.dataset.itemCount = String(count);
+    if (checkoutButton) checkoutButton.toggleAttribute("disabled", !cart.length);
     if (!lines) return;
 
     if (!cart.length) {
@@ -144,24 +172,29 @@
     lines.innerHTML = cart.map(item => {
       const meta = variants.get(Number(item.id));
       const lineTotal = Number.parseFloat(meta.variant.price || "0") * item.qty;
+      const productUrl = `/store/products/${meta.product.handle}`;
       return `
-        <div class="cart-drawer__line">
-          <img src="${productImage(meta.product, meta.variant)}" alt="">
-          <div class="cart-drawer__line-title">${escapeHtml(meta.product.title)}</div>
-          <div class="cart-drawer__line-meta">${escapeHtml(meta.variant.title)}<br>qty ${item.qty}</div>
-          <div class="qty-controls">
+        <div class="cart-drawer__item">
+          <img class="cart-drawer__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
+          <div class="cart-drawer__item__details">
+            <a href="${productUrl}">${escapeHtml(meta.product.title)}</a>
+            <div class="cart-drawer__item__options">${escapeHtml(meta.variant.title)}</div>
+          </div>
+          <div class="qty-controls cart-drawer__quantity">
             <button type="button" data-cart-dec="${item.id}">-</button>
             <span>${item.qty}</span>
             <button type="button" data-cart-inc="${item.id}">+</button>
           </div>
-          <div class="cart-drawer__line-price">${money.format(lineTotal)}</div>
+          <div class="cart-drawer__item__price">${money.format(lineTotal)}</div>
         </div>
       `;
     }).join("");
   }
 
   function setOverlay(active) {
-    document.querySelector("[data-drawer-overlay]")?.classList.toggle("is-active", active);
+    const overlay = document.querySelector("[data-drawer-overlay]");
+    overlay?.classList.toggle("is-active", active);
+    overlay?.setAttribute("aria-expanded", active ? "true" : "false");
     document.body.classList.toggle("drawer-is-open", active);
   }
 
@@ -186,7 +219,9 @@
 
   function closeCartDrawer() {
     const drawer = document.querySelector("[data-cart-drawer]");
+    const toggle = document.querySelector("[data-cart-open]");
     if (drawer) drawer.setAttribute("aria-hidden", "true");
+    if (toggle) toggle.setAttribute("aria-expanded", "false");
     if (document.querySelector("[data-menu-drawer]")?.getAttribute("aria-hidden") !== "false") {
       setOverlay(false);
     }
@@ -196,7 +231,9 @@
     closeMenuDrawer();
     await renderCartDrawer();
     const drawer = document.querySelector("[data-cart-drawer]");
+    const toggle = document.querySelector("[data-cart-open]");
     if (drawer) drawer.setAttribute("aria-hidden", "false");
+    if (toggle) toggle.setAttribute("aria-expanded", "true");
     setOverlay(true);
   }
 
@@ -385,6 +422,9 @@
 
     const dec = event.target.closest("[data-cart-dec]");
     if (dec) changeQty(dec.dataset.cartDec, -1);
+
+    const remove = event.target.closest("[data-cart-remove]");
+    if (remove) removeVariant(remove.dataset.cartRemove);
 
     const qtyInc = event.target.closest("[data-qty-inc]");
     if (qtyInc) changeProductQty(qtyInc, 1);

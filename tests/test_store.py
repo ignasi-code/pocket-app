@@ -70,6 +70,17 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-cart-open", html)
         self.assertIn("data-cart-drawer-lines", html)
 
+    def test_store_base_splits_mobile_cart_page_and_desktop_drawer_controls(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("header__cart--drawer", html)
+        self.assertIn("header__cart--page", html)
+        self.assertIn('href="/store/cart"', html)
+        self.assertIn('aria-controls="cart-drawer"', html)
+        self.assertIn("cart-drawer__overlay", html)
+
     def test_store_uses_live_theme_product_tile_structure(self):
         response = self.client.get("/store/collections/the-summer-capsule")
 
@@ -177,6 +188,40 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("data-cart-page", html)
         self.assertIn("/store/api/checkout", html)
+
+    def test_cart_page_uses_live_cart_structure(self):
+        response = self.client.get("/store/cart")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("class=\"cart\" data-view=\"cart\"", html)
+        self.assertIn("cart-page", html)
+        self.assertIn("cart-page__items", html)
+        self.assertIn("cart-page__summary", html)
+        self.assertIn("cart-page__checkout button button--blue", html)
+        self.assertIn("cart-page__gift", html)
+
+    def test_cart_drawer_uses_live_checkout_and_item_classes(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("cart-drawer__content js-cartContent", html)
+        self.assertIn("data-cart-drawer-title", html)
+        self.assertIn("cart-drawer__items__container", html)
+        self.assertIn("cart-drawer__checkout button button--blue", html)
+        self.assertIn("cart-drawer__view-cart button", html)
+
+    def test_cart_javascript_renders_live_line_item_classes(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("cart-drawer__item", source)
+        self.assertIn("cart-drawer__item__image", source)
+        self.assertIn("cart-drawer__item__details", source)
+        self.assertIn("cart-drawer__item__options", source)
+        self.assertIn("cart-drawer__item__price", source)
+        self.assertIn("cart-page__item", source)
+        self.assertIn("cart-page__checkout", source)
 
     def test_unknown_product_returns_404(self):
         response = self.client.get("/store/products/nope")
