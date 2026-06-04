@@ -4,7 +4,7 @@
   <main role="main" id="main" class="content">
     <div class="collection" data-view="collection">
       <section class="shopify-section">
-        {% set active_filtering = active_filters.categories or active_filters.colors %}
+        {% set active_filtering = active_filters.categories or active_filters.colors or search_query %}
         {% set results_count = products|length if active_filtering else collection.results_count or products|length %}
         {% set page_count = 1 if active_filtering else collection.page_count or 1 %}
         <div class="collection-items" data-results-count="{{ results_count }}">
@@ -57,6 +57,9 @@
             <div class="collection-filter__drawer-inner">
               {% if current_sort %}
                 <input type="hidden" name="sort_by" value="{{ current_sort }}">
+              {% endif %}
+              {% if search_query %}
+                <input type="hidden" name="q" value="{{ search_query }}">
               {% endif %}
               <div class="collection-filter__drawer__head">
                 <h2>filter</h2>

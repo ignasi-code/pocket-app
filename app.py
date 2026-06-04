@@ -583,6 +583,22 @@ def store_product_matches_color(product, color):
     return any(needle in haystack for needle in needles)
 
 
+def store_normalized_search_query(query):
+    return " ".join(str(query or "").strip().lower().split())
+
+
+def store_apply_search_filter(products, query):
+    normalized_query = store_normalized_search_query(query)
+    if not normalized_query:
+        return list(products), ""
+    terms = normalized_query.split()
+    filtered = [
+        product for product in products
+        if all(term in store_product_search_text(product) for term in terms)
+    ]
+    return filtered, normalized_query
+
+
 def store_apply_collection_filters(products, args):
     categories = [value for value in args.getlist("filter.p.product_type[]") if value]
     colors = [value for value in args.getlist("filter.p.m.roxanne-assoulin.filter_color[]") if value]
@@ -611,6 +627,7 @@ def store_template_context(**kwargs):
         "pdp_variant_options": store_pdp_variant_options,
         "product_merchandising": lambda handle: merchandising.get("product_pages", {}).get(handle, {}),
         "placeholder_image": STORE_PLACEHOLDER_IMAGE,
+        "search_query": request.args.get("q", "").strip(),
     }
     context.update(kwargs)
     return context
@@ -1837,6 +1854,7 @@ def store_collection_page(handle):
     collection, products = store_collection_products(handle)
     if not collection:
         abort(404)
+    products, search_query = store_apply_search_filter(products, request.args.get("q", ""))
     products, active_filters = store_apply_collection_filters(products, request.args)
     products = store_sort_collection_products(products, request.args.get("sort_by"))
     return render_template(
@@ -1847,6 +1865,7 @@ def store_collection_page(handle):
             products=products,
             active_filters=active_filters,
             current_sort=request.args.get("sort_by", ""),
+            search_query=search_query,
         ),
     )
 

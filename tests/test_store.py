@@ -306,6 +306,18 @@ class StoreTest(unittest.TestCase):
         self.assertIn('name="filter.p.product_type[]" value="Bracelets" checked', html)
         self.assertIn("type=\"submit\"", html)
 
+    def test_shop_collection_search_query_filters_products_and_preserves_input(self):
+        response = self.client.get("/store/collections/shop?q=paprika")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('data-results-count="3"', html)
+        self.assertIn('value="paprika"', html)
+        self.assertIn('data-product-handle="the-paprika-necklace-duo"', html)
+        self.assertIn('data-product-handle="the-paprika-bracelet-duo"', html)
+        self.assertNotIn('data-product-handle="the-salt-pepper-cylinder-necklace-set"', html)
+        self.assertNotIn("pagination__next", html)
+
     def test_store_base_renders_live_style_footer(self):
         response = self.client.get("/store")
 
