@@ -4,11 +4,7 @@
     <img class="product-card__image product-tile__image__primary" src="{{ product_image(product) }}" alt="{{ product.title }}" loading="lazy">
     <img class="product-tile__image__hover" src="{{ hover_image }}" alt="" loading="lazy">
   </a>
-  <div class="product-tile__top">
-    {% if "badge_new" in product.tags %}
-      <span class="product-tile__badge">new</span>
-    {% endif %}
-  </div>
+  <div class="product-tile__top"></div>
   <div class="product-card__body product-tile__details product-tile__copy__wrapper">
     <div class="product-tile__copy">
       <h3 class="product-card__title product-tile__title">

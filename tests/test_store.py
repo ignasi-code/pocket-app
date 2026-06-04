@@ -199,6 +199,14 @@ class StoreTest(unittest.TestCase):
         self.assertIn("display: inline-flex", source)
         self.assertNotIn("min-height: 96px", source)
 
+    def test_product_tiles_do_not_render_catalog_badge_tags_like_live_theme(self):
+        response = self.client.get("/store/collections/necklaces")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertNotIn("product-tile__badge", html)
+        self.assertNotIn(">new<", html)
+
     def test_collection_page_exposes_filter_and_sort_drawers(self):
         response = self.client.get("/store/collections/the-summer-capsule")
 
