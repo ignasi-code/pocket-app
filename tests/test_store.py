@@ -1,3 +1,4 @@
+import html as html_lib
 import unittest
 
 import app as pocket
@@ -119,7 +120,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn(product["title"], html)
+        self.assertIn(html_lib.escape(product["title"]), html)
         self.assertIn(str(variant["id"]), html)
         self.assertIn("data-product-form", html)
 
@@ -306,9 +307,25 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        first = html.index('data-product-handle="the-salt-pepper-cylinder-necklace-set"')
-        second = html.index('data-product-handle="the-cylinder-cord-necklace-lemon-yellow"')
-        self.assertLess(first, second)
+        collection, products = pocket.store_collection_products("new-arrivals")
+        handles = [product["handle"] for product in products]
+
+        self.assertEqual(collection["results_count"], 48)
+        self.assertEqual(len(products), 48)
+        self.assertEqual(
+            handles[:5],
+            [
+                "the-salt-pepper-cylinder-necklace-set",
+                "the-cylinder-cord-bracelet-sienna-orange",
+                "the-cylinder-cord-necklace-cloud-blue",
+                "the-salt-pepper-cylinder-bracelet-stack",
+                "the-cylinder-cord-necklace-lemon-yellow",
+            ],
+        )
+        self.assertLess(
+            html.index('data-product-handle="the-cylinder-cord-bracelet-sienna-orange"'),
+            html.index('data-product-handle="the-cylinder-cord-necklace-lemon-yellow"'),
+        )
 
     def test_collection_price_sort_reorders_products(self):
         response = self.client.get("/store/collections/necklaces?sort_by=price-ascending")
@@ -324,9 +341,11 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('data-results-count="2"', html)
+        self.assertIn('data-results-count="4"', html)
         self.assertIn('data-product-handle="the-salt-pepper-cylinder-necklace-set"', html)
         self.assertIn('data-product-handle="the-cylinder-cord-necklace-lemon-yellow"', html)
+        self.assertIn('data-product-handle="the-itsy-bitsy-puffy-heart-charms"', html)
+        self.assertIn('data-product-handle="tiny-treasure-charms"', html)
         self.assertNotIn('data-product-handle="the-cylinder-cord-necklace-cloud-blue"', html)
         self.assertIn('name="filter.p.m.roxanne-assoulin.filter_color[]" value="yellow" checked', html)
         self.assertNotIn("pagination__next", html)
@@ -346,10 +365,12 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('data-results-count="3"', html)
+        self.assertIn('data-results-count="4"', html)
         self.assertIn('value="paprika"', html)
         self.assertIn('data-product-handle="the-paprika-necklace-duo"', html)
+        self.assertIn('data-product-handle="the-netted-stone-pendant"', html)
         self.assertIn('data-product-handle="the-paprika-bracelet-duo"', html)
+        self.assertIn('data-product-handle="the-crimp-bracelet"', html)
         self.assertNotIn('data-product-handle="the-salt-pepper-cylinder-necklace-set"', html)
         self.assertNotIn("pagination__next", html)
 
