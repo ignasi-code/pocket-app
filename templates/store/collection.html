@@ -4,7 +4,9 @@
   <main role="main" id="main" class="content">
     <div class="collection" data-view="collection">
       <section class="shopify-section">
-        <div class="collection-items" data-results-count="{{ products|length }}">
+        {% set results_count = collection.results_count or products|length %}
+        {% set page_count = collection.page_count or 1 %}
+        <div class="collection-items" data-results-count="{{ results_count }}">
           {% if collection.hero_image_mobile %}
             <section class="collection-hero">
               <div class="collection-hero__image">
@@ -52,36 +54,54 @@
 
           <form id="collection-filter-drawer" class="collection-filter__drawer collection-filter__drawer--filter js-filterDrawer" method="GET" action="" data-filter-drawer aria-hidden="true">
             <div class="collection-filter__drawer-inner">
-              <button class="collection-filter__close js-filterClose" type="button" data-filter-close aria-label="Close filters"></button>
-              <h2>filter</h2>
-              <fieldset>
-                <legend>category</legend>
-                {% for label in merchandising.filters.categories %}
-                  <label><input class="js-filterOption" type="checkbox" name="filter.p.product_type[]" value="{{ label }}"> {{ label }}</label>
-                {% endfor %}
-              </fieldset>
-              <fieldset>
-                <legend>color</legend>
-                {% for label in ["black", "blue", "green", "pink", "yellow", "white"] %}
-                  <label><input class="js-filterOption" type="checkbox" name="filter.p.m.roxanne-assoulin.filter_color[]" value="{{ label }}"> {{ label }}</label>
-                {% endfor %}
-              </fieldset>
-              <button class="button" type="button" data-filter-close>view products</button>
+              <div class="collection-filter__drawer__head">
+                <h2>filter</h2>
+                <button class="collection-filter__close js-filterClose" type="button" data-filter-close aria-label="Close filters"></button>
+              </div>
+              <div class="collection-filter__drawer__scroll">
+                <fieldset class="collection-filter__options">
+                  <legend>category</legend>
+                  {% for label in merchandising.filters.categories %}
+                    <label class="collection-filter__option">
+                      <input class="js-filterOption" type="checkbox" name="filter.p.product_type[]" value="{{ label }}">
+                      <span class="collection-filter__checkbox" aria-hidden="true"></span>
+                      <span>{{ label }}</span>
+                    </label>
+                  {% endfor %}
+                </fieldset>
+                <fieldset class="collection-filter__options">
+                  <legend>color</legend>
+                  {% for label in ["black", "blue", "green", "pink", "yellow", "white"] %}
+                    <label class="collection-filter__option">
+                      <input class="js-filterOption" type="checkbox" name="filter.p.m.roxanne-assoulin.filter_color[]" value="{{ label }}">
+                      <span class="collection-filter__checkbox" aria-hidden="true"></span>
+                      <span>{{ label }}</span>
+                    </label>
+                  {% endfor %}
+                </fieldset>
+              </div>
+              <div class="collection-filter__buttons">
+                <button class="button button--blue" type="button" data-filter-close>Apply</button>
+              </div>
             </div>
           </form>
 
           <section id="collection-sort-drawer" class="collection-filter__drawer collection-filter__drawer--sort" data-sort-drawer aria-hidden="true">
             <div class="collection-filter__drawer-inner">
-              <button class="collection-filter__close" type="button" data-sort-close aria-label="Close sort"></button>
-              <h2>sort by</h2>
-              <nav class="collection-filter__sort" aria-label="Sort collection">
-                <ul>
-                  <li><a href="?sort_by=created-descending">Newest</a></li>
-                  <li><a href="?sort_by=best-selling">Best selling</a></li>
-                  <li><a href="?sort_by=price-ascending">Price low to high</a></li>
-                  <li><a href="?sort_by=price-descending">Price high to low</a></li>
-                </ul>
-              </nav>
+              <div class="collection-filter__drawer__head">
+                <h2>sort by</h2>
+                <button class="collection-filter__close" type="button" data-sort-close aria-label="Close sort"></button>
+              </div>
+              <div class="collection-filter__drawer__scroll">
+                <nav class="collection-filter__sort" aria-label="Sort collection">
+                  <ul>
+                    <li><a href="?sort_by=created-descending">Newest</a></li>
+                    <li><a href="?sort_by=best-selling">Best selling</a></li>
+                    <li><a href="?sort_by=price-ascending">Price low to high</a></li>
+                    <li><a href="?sort_by=price-descending">Price high to low</a></li>
+                  </ul>
+                </nav>
+              </div>
             </div>
           </section>
 
@@ -91,11 +111,13 @@
                 {% include "store/_product_card.html" %}
               {% endfor %}
             </section>
-            <nav class="pagination" aria-label="Collection pagination">
-              <a class="pagination__prev" href="?page=1">Previous</a>
-              <span class="pagination__count">1 of 2</span>
-              <a class="pagination__next" href="?page=2">Next</a>
-            </nav>
+            {% if page_count > 1 %}
+              <nav class="pagination" aria-label="Collection pagination">
+                <span class="pagination__prev is-disabled" aria-disabled="true">Previous</span>
+                <span class="pagination__count">1 of {{ page_count }}</span>
+                <a class="pagination__next" href="?page=2">Next</a>
+              </nav>
+            {% endif %}
           {% else %}
             <section class="empty-state">
               <p>No products in this prototype bucket yet.</p>

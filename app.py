@@ -524,6 +524,10 @@ def store_collection_products(handle):
         selected = [product for product in products if product.get("handle") in definition["handles"]]
     else:
         selected = [product for product in products if definition["matcher"](product)]
+    ordered_handles = definition.get("ordered_handles") or []
+    if ordered_handles:
+        rank = {product_handle: index for index, product_handle in enumerate(ordered_handles)}
+        selected.sort(key=lambda product: (rank.get(product.get("handle"), len(rank)), product.get("title", "")))
     return definition, selected
 
 

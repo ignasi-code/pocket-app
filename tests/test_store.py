@@ -209,6 +209,19 @@ class StoreTest(unittest.TestCase):
         self.assertIn("?sort_by=created-descending", html)
         self.assertIn("pagination", html)
 
+    def test_collection_filter_drawer_uses_live_inner_structure(self):
+        response = self.client.get("/store/collections/necklaces")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("collection-filter__drawer__head", html)
+        self.assertIn("collection-filter__drawer__scroll", html)
+        self.assertIn("collection-filter__options", html)
+        self.assertIn("collection-filter__option", html)
+        self.assertIn("collection-filter__checkbox", html)
+        self.assertIn("collection-filter__buttons", html)
+        self.assertIn(">Apply<", html)
+
     def test_key_collection_pages_use_extracted_live_hero_assets(self):
         cases = {
             "necklaces": "Necklaces_367x374_crop_center",
@@ -223,6 +236,25 @@ class StoreTest(unittest.TestCase):
                 html = response.get_data(as_text=True)
                 self.assertIn("collection-hero", html)
                 self.assertIn(image_token, html)
+
+    def test_collection_pages_use_live_merchandising_counts_and_pagination(self):
+        necklaces = self.client.get("/store/collections/necklaces").get_data(as_text=True)
+        new_arrivals = self.client.get("/store/collections/new-arrivals").get_data(as_text=True)
+
+        self.assertIn('data-results-count="173"', necklaces)
+        self.assertIn("1 of 4", necklaces)
+        self.assertIn("pagination__next", necklaces)
+        self.assertIn('data-results-count="48"', new_arrivals)
+        self.assertNotIn("pagination__next", new_arrivals)
+
+    def test_new_arrivals_collection_uses_live_ordered_first_product(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        first = html.index('data-product-handle="the-salt-pepper-cylinder-necklace-set"')
+        second = html.index('data-product-handle="the-cylinder-cord-necklace-lemon-yellow"')
+        self.assertLess(first, second)
 
     def test_store_base_renders_live_style_footer(self):
         response = self.client.get("/store")
