@@ -117,6 +117,12 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".product-module__cta--desktop {\n        display: block;", source)
         self.assertIn(".product-module__cta--mobile {\n        display: none;", source)
 
+    def test_homepage_desktop_hero_matches_live_viewport_contract(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".hero {\n        padding: 2px;", source)
+        self.assertIn(".hero__image,\n      .hero img {\n        height: calc(100vh - 4px);", source)
+
     def test_homepage_uses_live_desktop_split_assets_and_custom_category_link(self):
         response = self.client.get("/store")
 
