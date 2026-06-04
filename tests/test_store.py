@@ -318,6 +318,22 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn('data-product-handle="the-salt-pepper-cylinder-necklace-set"', html)
         self.assertNotIn("pagination__next", html)
 
+    def test_collection_sort_links_preserve_search_and_filter_state(self):
+        response = self.client.get(
+            "/store/collections/necklaces?q=lemon&filter.p.m.roxanne-assoulin.filter_color%5B%5D=yellow"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn(
+            'href="?q=lemon&amp;filter.p.m.roxanne-assoulin.filter_color%5B%5D=yellow&amp;sort_by=price-ascending"',
+            html,
+        )
+        self.assertIn(
+            'href="?q=lemon&amp;filter.p.m.roxanne-assoulin.filter_color%5B%5D=yellow&amp;sort_by=price-descending"',
+            html,
+        )
+
     def test_store_base_renders_live_style_footer(self):
         response = self.client.get("/store")
 

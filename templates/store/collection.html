@@ -102,10 +102,10 @@
               <div class="collection-filter__drawer__scroll">
                 <nav class="collection-filter__sort" aria-label="Sort collection">
                   <ul>
-                    <li><a href="?sort_by=created-descending">Newest</a></li>
-                    <li><a href="?sort_by=best-selling">Best selling</a></li>
-                    <li><a href="?sort_by=price-ascending">Price low to high</a></li>
-                    <li><a href="?sort_by=price-descending">Price high to low</a></li>
+                    <li><a href="{{ store_query_url(sort_by='created-descending') }}">Newest</a></li>
+                    <li><a href="{{ store_query_url(sort_by='best-selling') }}">Best selling</a></li>
+                    <li><a href="{{ store_query_url(sort_by='price-ascending') }}">Price low to high</a></li>
+                    <li><a href="{{ store_query_url(sort_by='price-descending') }}">Price high to low</a></li>
                   </ul>
                 </nav>
               </div>

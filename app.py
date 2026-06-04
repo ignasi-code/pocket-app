@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 from pathlib import Path
+from urllib.parse import urlencode
 
 from flask import Flask, Response, abort, jsonify, render_template, render_template_string, request, send_file
 
@@ -611,6 +612,23 @@ def store_apply_collection_filters(products, args):
     return filtered, {"categories": categories, "colors": colors}
 
 
+def store_query_url(**updates):
+    params = request.args.to_dict(flat=False)
+    for key, value in updates.items():
+        if value is None or value == "":
+            params.pop(key, None)
+        elif isinstance(value, (list, tuple)):
+            params[key] = [str(item) for item in value]
+        else:
+            params[key] = [str(value)]
+
+    pairs = []
+    for key, values in params.items():
+        pairs.extend((key, value) for value in values)
+    query = urlencode(pairs)
+    return f"?{query}" if query else "?"
+
+
 def store_template_context(**kwargs):
     merchandising = load_store_merchandising()
     context = {
@@ -628,6 +646,7 @@ def store_template_context(**kwargs):
         "product_merchandising": lambda handle: merchandising.get("product_pages", {}).get(handle, {}),
         "placeholder_image": STORE_PLACEHOLDER_IMAGE,
         "search_query": request.args.get("q", "").strip(),
+        "store_query_url": store_query_url,
     }
     context.update(kwargs)
     return context
