@@ -1,7 +1,7 @@
 {% extends "store/base.html" %}
 {% block title %}{{ product.title }} - Pocket Store{% endblock %}
 {% block body %}
-  <main class="page">
+  <main class="page product-page">
     {% set product_merch = product_merchandising(product.handle) %}
     {% set gallery_images = pdp_gallery_images(product) %}
     {% set variant_options = pdp_variant_options(product) %}
@@ -125,12 +125,12 @@
                 <button class="product-buy-options__qty__plus" type="button" data-qty-inc aria-label="Increase quantity">+</button>
               </div>
               <div class="product-buy-options__add-wrapper">
-                <button class="plain-button button button--blue js-addToBag js-addToBag2" type="submit">Add to bag</button>
+                <button class="plain-button button button--blue js-addToBag js-addToBag2" type="submit">Add to Bag</button>
                 <div class="product-buy-options__price">{{ selected_option.price_label }}</div>
               </div>
             </form>
 
-            <p class="notice">Prototype checkout verifies this variant against the local catalog, then generates a Shopify cart permalink.</p>
+            <p class="notice product-buy-options__shipping">Enjoy complimentary ground shipping on US orders $250+</p>
           </div>
         </div>
       </aside>
@@ -142,9 +142,9 @@
     </div>
 
     {% if related %}
-      <section class="section">
+      <section class="section product-related-section">
         <div class="section-head">
-          <h2 class="section-title">you may also like</h2>
+          <h2 class="section-title">THE MORE THE BETTER</h2>
         </div>
         <div class="grid">
           {% for product in related %}

@@ -465,6 +465,45 @@ class StoreTest(unittest.TestCase):
         flat_index = html.index("CylinderCordNecklace_Cloud_1")
         self.assertLess(lifestyle_index, flat_index)
 
+    def test_cloud_blue_product_uses_live_merchandising_copy(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("Your no-sweat summer showpiece", html)
+        self.assertIn('Approximately 15" necklace', html)
+        self.assertIn("The Happy Pearl Necklace in Espresso", html)
+        self.assertIn("The Salt &amp; Pepper Necklace Duo", html)
+
+    def test_product_page_gallery_starts_under_live_overlay_header(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        self.assertIn('class="page product-page"', html)
+        self.assertIn(".product-page {\n      padding-top: 5px;", source)
+
+    def test_product_page_uses_live_add_to_bag_and_shipping_copy(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+        self.assertIn(">Add to Bag<", html)
+        self.assertIn("Enjoy complimentary ground shipping on US orders $250+", html)
+        self.assertIn("text-transform: none;", source)
+        self.assertNotIn("Prototype checkout verifies", html)
+
+    def test_product_page_uses_live_related_heading(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("THE MORE THE BETTER", html)
+        self.assertIn("product-related-section", html)
+        self.assertNotIn("you may also like", html)
+
     def test_cart_page_renders_checkout_hooks(self):
         response = self.client.get("/store/cart")
 

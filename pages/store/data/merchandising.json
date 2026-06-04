@@ -59,6 +59,69 @@
           "html": "<a href=\"/store/products/the-salt-pepper-cylinder-bracelet-stack\">The Salt &amp; Pepper Cylinder Bracelet Stack</a>, <a href=\"/store/products/the-pearl-branch-bracelet\">The Pearl Branch Bracelet</a>"
         }
       ]
+    },
+    "the-cylinder-cord-necklace-cloud-blue": {
+      "motto": "Your no-sweat summer showpiece",
+      "detail_rows": [
+        {
+          "label": "Description",
+          "html": "- Acrylic cylinder sliders<br>- Cubic zirconia detail<br>- Cord base<br>- Gold details<br>- Lobster clasp closure"
+        },
+        {
+          "label": "Size",
+          "html": "Approximately 15\" necklace"
+        },
+        {
+          "label": "Care",
+          "html": "View <button type=\"button\">product care guide</button>"
+        },
+        {
+          "label": "Styled with",
+          "html": "<a href=\"/store/products/the-happy-pearl-necklace-in-espresso\">The Happy Pearl Necklace in Espresso</a>, <a href=\"/store/products/the-salt-pepper-necklace-duo\">The Salt &amp; Pepper Necklace Duo</a>"
+        }
+      ]
+    },
+    "the-cylinder-cord-necklace-lemon-yellow": {
+      "motto": "Your no-sweat summer showpiece",
+      "detail_rows": [
+        {
+          "label": "Description",
+          "html": "- Acrylic cylinder sliders<br>- Cubic zirconia detail<br>- Cord base<br>- Gold details<br>- Lobster clasp closure"
+        },
+        {
+          "label": "Size",
+          "html": "Approximately 15\" necklace"
+        },
+        {
+          "label": "Care",
+          "html": "View <button type=\"button\">product care guide</button>"
+        },
+        {
+          "label": "Styled with",
+          "html": "<a href=\"/store/products/the-happy-pearl-necklace-in-espresso\">The Happy Pearl Necklace in Espresso</a>, <a href=\"/store/products/the-salt-pepper-necklace-duo\">The Salt &amp; Pepper Necklace Duo</a>"
+        }
+      ]
+    },
+    "the-cylinder-cord-necklace-sienna-orange": {
+      "motto": "Your no-sweat summer showpiece",
+      "detail_rows": [
+        {
+          "label": "Description",
+          "html": "- Acrylic cylinder sliders<br>- Cubic zirconia detail<br>- Cord base<br>- Gold details<br>- Lobster clasp closure"
+        },
+        {
+          "label": "Size",
+          "html": "Approximately 15\" necklace"
+        },
+        {
+          "label": "Care",
+          "html": "View <button type=\"button\">product care guide</button>"
+        },
+        {
+          "label": "Styled with",
+          "html": "<a href=\"/store/products/the-happy-pearl-necklace-in-espresso\">The Happy Pearl Necklace in Espresso</a>, <a href=\"/store/products/the-salt-pepper-necklace-duo\">The Salt &amp; Pepper Necklace Duo</a>"
+        }
+      ]
     }
   },
   "cart": {
