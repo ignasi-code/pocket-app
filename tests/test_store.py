@@ -474,6 +474,18 @@ class StoreTest(unittest.TestCase):
         self.assertIn('class="cart-page__checkout"', html)
         self.assertNotIn("cart-page__gift", html)
 
+    def test_cart_page_renders_live_selected_for_u_upsells(self):
+        response = self.client.get("/store/cart")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("cart-upsell", html)
+        self.assertIn("selected for u", html)
+        self.assertIn('data-product-handle="the-salt-pepper-cylinder-bracelet-stack"', html)
+        self.assertIn('data-product-handle="the-pearl-branch-bracelet"', html)
+        self.assertIn('data-product-handle="the-paprika-necklace-duo"', html)
+        self.assertIn('data-product-handle="the-netted-stone-pendant"', html)
+
     def test_cart_page_mobile_summary_spacing_matches_live_checkout_width(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 

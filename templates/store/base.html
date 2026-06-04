@@ -2116,6 +2116,37 @@
       width: 100%;
     }
 
+    .cart-upsell {
+      box-sizing: border-box;
+      margin: 10px -10px 0;
+      overflow: hidden;
+      padding: 28px 0 36px;
+      position: relative;
+    }
+
+    .cart-upsell__title {
+      align-items: center;
+      display: flex;
+      font-family: RelativeMono, monospace;
+      font-size: 1.125rem;
+      font-weight: 400;
+      justify-content: center;
+      line-height: 100%;
+      margin: 0 auto 24px;
+      min-height: 150px;
+      text-transform: uppercase;
+      writing-mode: vertical-rl;
+    }
+
+    .cart-upsell__title span {
+      display: block;
+    }
+
+    .cart-upsell__products {
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+
     .drawer-overlay {
       background: rgba(0, 0, 0, .5);
       height: 0;
@@ -2980,6 +3011,17 @@
 
       .cart-page__summary {
         margin-top: 0;
+      }
+
+      .cart-upsell {
+        grid-column: 1 / -1;
+        margin-left: -8px;
+        margin-right: -8px;
+      }
+
+      .cart-upsell__title {
+        min-height: 0;
+        writing-mode: horizontal-tb;
       }
 
       .hero {

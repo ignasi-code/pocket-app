@@ -76,6 +76,12 @@ STORE_BASE_URL = os.environ.get("POCKET_STORE_BASE_URL", "https://roxanneassouli
 STORE_CURRENCY = os.environ.get("POCKET_STORE_CURRENCY", "usd").lower()
 STORE_DISPLAY_CURRENCY = os.environ.get("POCKET_STORE_DISPLAY_CURRENCY", "eur").lower()
 STORE_DISPLAY_EUR_RATE = float(os.environ.get("POCKET_STORE_DISPLAY_EUR_RATE", "0.875"))
+STORE_CART_UPSELL_HANDLES = [
+    "the-salt-pepper-cylinder-bracelet-stack",
+    "the-pearl-branch-bracelet",
+    "the-paprika-necklace-duo",
+    "the-netted-stone-pendant",
+]
 STORE_SWATCH_COLORS = {
     "cloud": "#8ED1D1",
     "lemon": "#E3D43C",
@@ -337,6 +343,15 @@ def store_products():
 
 def store_product_by_handle(handle):
     return next((product for product in store_products() if product.get("handle") == handle), None)
+
+
+def store_cart_upsell_products():
+    products_by_handle = {product.get("handle"): product for product in store_products()}
+    return [
+        products_by_handle[handle]
+        for handle in STORE_CART_UPSELL_HANDLES
+        if handle in products_by_handle
+    ]
 
 
 def store_first_available_variant(product):
@@ -1934,7 +1949,7 @@ def store_product_page(handle):
 def store_cart_page():
     return render_template(
         "store/cart.html",
-        **store_template_context(),
+        **store_template_context(cart_upsells=store_cart_upsell_products()),
     )
 
 
