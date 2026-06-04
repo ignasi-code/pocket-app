@@ -75,6 +75,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn("position: fixed;\n      right: 10px;\n      top: 79px;", source)
         self.assertIn(".shipping-promo.is-hidden {\n      display: none;", source)
 
+    def test_shipping_promo_css_matches_live_desktop_compact_box(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".shipping-promo {\n        background: #c5402c;\n        display: block;\n        height: 81px;\n        left: auto;", source)
+        self.assertIn("padding: 20px 60px 20px 19px;\n        right: 10px;\n        top: 79px;\n        width: 320px;", source)
+        self.assertIn(".shipping-promo__close {\n        height: 48px;\n        margin-top: 16px;\n        right: 8px;\n        top: 0;\n        width: 48px;", source)
+
     def test_homepage_product_module_title_uses_live_regular_weight(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 

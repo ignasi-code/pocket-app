@@ -3518,9 +3518,31 @@
       .cart-link .bag-label { display: inline; }
 
       .shipping-promo {
-        left: 8px;
+        background: #c5402c;
+        display: block;
+        height: 81px;
+        left: auto;
+        line-height: 1.45;
+        min-height: 0;
+        padding: 20px 60px 20px 19px;
+        right: 10px;
+        top: 79px;
+        width: 320px;
+        z-index: 10;
+      }
+
+      .shipping-promo__close {
+        height: 48px;
+        margin-top: 16px;
         right: 8px;
-        top: 72px;
+        top: 0;
+        width: 48px;
+      }
+
+      .shipping-promo__close::before,
+      .shipping-promo__close::after {
+        top: 24px;
+        width: 24px;
       }
 
       .cart-drawer {
