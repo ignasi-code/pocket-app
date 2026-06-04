@@ -554,8 +554,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-page", html)
         self.assertIn("cart-page__items", html)
         self.assertIn("cart-page__summary", html)
-        self.assertIn('class="cart-page__checkout"', html)
-        self.assertNotIn("cart-page__gift", html)
+        self.assertIn('<a class="cart-page__checkout" href="/checkout" data-checkout>Checkout</a>', html)
+        self.assertNotIn("<button class=\"cart-page__checkout\"", html)
 
     def test_cart_page_renders_live_selected_for_u_upsells(self):
         response = self.client.get("/store/cart")
@@ -575,6 +575,14 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".cart-page__summary", source)
         self.assertIn("padding: 14px;", source)
 
+    def test_cart_css_matches_live_mobile_item_and_page_spacing(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".cart {\n      padding: 79px 0 50px;", source)
+        self.assertIn(".cart-page {\n      display: block;\n      padding: 0 10px;", source)
+        self.assertIn("min-height: 266px;", source)
+        self.assertIn("margin: 20px 0;", source)
+
     def test_cart_drawer_uses_live_checkout_and_item_classes(self):
         response = self.client.get("/store")
 
@@ -583,8 +591,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-drawer__content js-cartContent", html)
         self.assertIn("data-cart-drawer-title", html)
         self.assertIn("cart-drawer__items__container", html)
-        self.assertIn("cart-drawer__checkout button button--blue", html)
-        self.assertIn("cart-drawer__view-cart button", html)
+        self.assertIn('<a class="cart-drawer__checkout button button--blue" href="/store/cart">Checkout</a>', html)
+        self.assertNotIn("cart-drawer__view-cart", html)
 
     def test_cart_javascript_renders_live_line_item_classes(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -596,6 +604,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-drawer__item__price", source)
         self.assertIn("cart-page__item", source)
         self.assertIn("cart-page__checkout", source)
+        self.assertIn("quantity: ${item.qty}", source)
+        self.assertNotIn("cart-drawer__quantity", source)
 
     def test_cart_page_item_options_do_not_duplicate_unit_price(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -612,12 +622,23 @@ class StoreTest(unittest.TestCase):
         self.assertIn("Includes:", source)
         self.assertIn("cartPageQuantityHtml(item, meta)", source)
 
-    def test_cart_javascript_renders_live_gift_option_without_old_layout_class(self):
+    def test_cart_javascript_renders_live_gift_message_option(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
-        self.assertIn("cart-gift-option", source)
+        self.assertIn("cart-page__gift-message__wrap", source)
+        self.assertIn("cart-page__gift-toggle", source)
+        self.assertIn("cart-page__gift-message", source)
+        self.assertIn("js-cartGiftMessage", source)
+        self.assertIn("maxlength=\"100\"", source)
         self.assertIn("this is a gift", source)
-        self.assertNotIn("cart-page__gift", source)
+        self.assertIn("toggleGiftMessage", source)
+
+    def test_cart_javascript_forces_drawer_visible_inline_when_opened(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("setCartDrawerVisibility", source)
+        self.assertIn('drawer.style.setProperty("transform", "translateX(0)", "important")', source)
+        self.assertIn('drawer.style.setProperty("visibility", "visible", "important")', source)
 
     def test_cart_css_supports_live_bundle_line_heights(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")

@@ -160,19 +160,23 @@
     `;
   }
 
-  function drawerOptionsHtml(meta) {
+  function drawerOptionsHtml(meta, item) {
     const includes = bundleIncludes(meta.product, meta.variant);
     if (!includes.length) {
-      return `<div class="cart-drawer__item__options">${escapeHtml(meta.variant.title)}</div>`;
+      return `
+        <ul class="cart-drawer__item__options">
+          <li>${escapeHtml(meta.variant.title)}</li>
+          <li>quantity: ${item.qty}</li>
+        </ul>
+      `;
     }
 
     return `
-      <div class="cart-drawer__item__options cart-drawer__item__options--includes">
-        <span>${escapeHtml(meta.variant.title)}</span>
-        <ul>
-          ${includes.map(title => `<li>${escapeHtml(title)}</li>`).join("")}
-        </ul>
-      </div>
+      <ul class="cart-drawer__item__options cart-drawer__item__options--includes">
+        <li>${escapeHtml(meta.variant.title)}</li>
+        ${includes.map(title => `<li>${escapeHtml(title)}</li>`).join("")}
+        <li>quantity: ${item.qty}</li>
+      </ul>
     `;
   }
 
@@ -189,14 +193,20 @@
     `;
   }
 
-  function drawerQuantityHtml(item, meta) {
-    if (isBundleVariant(meta.product, meta.variant)) return "";
-
+  function cartGiftMessageHtml() {
     return `
-      <div class="qty-controls cart-drawer__quantity">
-        <button type="button" data-cart-dec="${item.id}">-</button>
-        <span>${item.qty}</span>
-        <button type="button" data-cart-inc="${item.id}">+</button>
+      <div class="cart-page__gift-message__wrap">
+        <input aria-controls="gift-message" class="js-cartGiftToggle cart-page__gift-toggle" id="cart-gift" name="gift" type="checkbox" data-gift-toggle>
+        <label for="cart-gift"><span>this is a gift</span></label>
+        <div class="cart-page__gift-message" id="gift-message" aria-labelledby="gift-message-label" aria-hidden="true" data-gift-message style="height: 0">
+          <div>
+            <div class="cart-page__gift-message__head" id="gift-message-label">
+              <span>add a gift message (up to 100 characters)</span>
+            </div>
+            <textarea placeholder="type your message" class="js-cartGiftMessage" maxlength="100" disabled data-gift-textarea></textarea>
+            <button class="button button--cart-message-save js-cartGiftMessageSave" type="button" aria-live="polite">Save</button>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -254,10 +264,7 @@
     }).join("");
     lines.innerHTML = `
       ${cartLinesHtml}
-      <label class="cart-gift-option">
-        <input type="checkbox" name="gift" value="1">
-        <span>this is a gift</span>
-      </label>
+      ${cartGiftMessageHtml()}
     `;
   }
 
@@ -290,17 +297,30 @@
       const productUrl = `/store/products/${meta.product.handle}`;
       const bundleClass = isBundleVariant(meta.product, meta.variant) ? " cart-drawer__item--bundle" : "";
       return `
-        <div class="cart-drawer__item${bundleClass}">
-          <img class="cart-drawer__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
-          <div class="cart-drawer__item__details">
-            <a href="${productUrl}">${escapeHtml(meta.product.title)}</a>
-            ${drawerOptionsHtml(meta)}
-          </div>
-          ${drawerQuantityHtml(item, meta)}
-          <div class="cart-drawer__item__price">${formatDisplayAmount(lineTotal)}</div>
-        </div>
+        <li class="cart-drawer__item${bundleClass}">
+          <a class="cart-drawer__item__link" href="${productUrl}">
+            <img class="cart-drawer__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
+            <div class="cart-drawer__item__details">
+              <span>${escapeHtml(meta.product.title)}</span>
+              <span class="cart-drawer__item__price">${formatDisplayAmount(lineTotal)}</span>
+            </div>
+            ${drawerOptionsHtml(meta, item)}
+          </a>
+        </li>
       `;
     }).join("");
+  }
+
+  function toggleGiftMessage(input) {
+    const wrap = input.closest(".cart-page__gift-message__wrap");
+    const panel = wrap?.querySelector("[data-gift-message]");
+    const textarea = wrap?.querySelector(".js-cartGiftMessage");
+    const active = input.checked;
+    if (panel) {
+      panel.setAttribute("aria-hidden", active ? "false" : "true");
+      panel.style.height = active ? `${panel.scrollHeight}px` : "0";
+    }
+    if (textarea) textarea.disabled = !active;
   }
 
   function setOverlay(active) {
@@ -308,6 +328,17 @@
     overlay?.classList.toggle("is-active", active);
     overlay?.setAttribute("aria-expanded", active ? "true" : "false");
     document.body.classList.toggle("drawer-is-open", active);
+  }
+
+  function setCartDrawerVisibility(drawer, visible) {
+    if (!drawer) return;
+    if (visible) {
+      drawer.style.setProperty("transform", "translateX(0)", "important");
+      drawer.style.setProperty("visibility", "visible", "important");
+      return;
+    }
+    drawer.style.removeProperty("transform");
+    drawer.style.removeProperty("visibility");
   }
 
   function closeSearchDrawer() {
@@ -352,7 +383,10 @@
   function closeCartDrawer() {
     const drawer = document.querySelector("[data-cart-drawer]");
     const toggle = document.querySelector("[data-cart-open]");
-    if (drawer) drawer.setAttribute("aria-hidden", "true");
+    if (drawer) {
+      drawer.setAttribute("aria-hidden", "true");
+      setCartDrawerVisibility(drawer, false);
+    }
     if (toggle) toggle.setAttribute("aria-expanded", "false");
     if (document.querySelector("[data-menu-drawer]")?.getAttribute("aria-hidden") !== "false") {
       setOverlay(false);
@@ -364,7 +398,10 @@
     await renderCartDrawer();
     const drawer = document.querySelector("[data-cart-drawer]");
     const toggle = document.querySelector("[data-cart-open]");
-    if (drawer) drawer.setAttribute("aria-hidden", "false");
+    if (drawer) {
+      drawer.setAttribute("aria-hidden", "false");
+      setCartDrawerVisibility(drawer, true);
+    }
     if (toggle) toggle.setAttribute("aria-expanded", "true");
     setOverlay(true);
   }
@@ -620,12 +657,18 @@
     if (event.target.closest("[data-lightbox-close]")) closeLightbox();
 
     const checkoutButton = event.target.closest("[data-checkout]");
-    if (checkoutButton) checkout(checkoutButton.closest("[data-cart-page], [data-cart-drawer]") || document);
+    if (checkoutButton) {
+      event.preventDefault();
+      checkout(checkoutButton.closest("[data-cart-page], [data-cart-drawer]") || document);
+    }
   });
 
   document.addEventListener("change", event => {
     const select = event.target.closest("[data-pdp-variant-select]");
     if (select) updatePdpSelection(select);
+
+    const giftToggle = event.target.closest("[data-gift-toggle]");
+    if (giftToggle) toggleGiftMessage(giftToggle);
   });
 
   document.addEventListener("keydown", event => {

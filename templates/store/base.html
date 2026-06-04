@@ -1930,11 +1930,12 @@
     .product-lightbox__close::after { transform: rotate(-45deg); }
 
     .cart {
-      padding: 88px 10px 50px;
+      padding: 79px 0 50px;
     }
 
     .cart-page {
       display: block;
+      padding: 0 10px;
     }
 
     .cart-page__summary {
@@ -1964,7 +1965,7 @@
       border-radius: 5px;
       box-sizing: border-box;
       margin: 10px 0;
-      min-height: 190px;
+      min-height: 266px;
       padding: 14px;
       position: relative;
     }
@@ -2108,27 +2109,112 @@
       margin-right: auto;
     }
 
-    .cart-gift-option {
-      align-items: center;
+    .cart-page__gift-message__wrap {
+      align-items: flex-start;
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 5px;
+      box-sizing: border-box;
       display: flex;
-      font-size: .875rem;
-      font-weight: 400;
-      gap: 10px;
-      line-height: 135%;
-      margin: 14px 0;
-      min-height: 19px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+      min-height: 78px;
+      padding: 0 14px;
       text-transform: lowercase;
+      width: 100%;
     }
 
-    .cart-gift-option input {
-      accent-color: #000;
-      height: 16px;
-      margin: 0;
+    .cart-page__gift-toggle {
+      appearance: none;
+      background: #fff;
+      border: 1px solid #000;
+      border-radius: 0;
+      box-sizing: border-box;
+      cursor: pointer;
+      height: 36px;
+      margin: 20px 14px 20px 0;
+      position: relative;
+      width: 36px;
+    }
+
+    .cart-page__gift-toggle:checked::before,
+    .cart-page__gift-toggle:checked::after {
+      background: #000;
+      content: "";
+      height: 1px;
+      position: absolute;
+      top: 17px;
+    }
+
+    .cart-page__gift-toggle:checked::before {
+      left: 8px;
+      transform: rotate(45deg);
+      width: 9px;
+    }
+
+    .cart-page__gift-toggle:checked::after {
+      left: 14px;
+      transform: rotate(-45deg);
       width: 16px;
     }
 
-    .cart-page__quantity button,
-    .cart-drawer__quantity button {
+    .cart-page__gift-message__wrap label {
+      cursor: pointer;
+      flex: 1 1 auto;
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 78px;
+    }
+
+    .cart-page__gift-message {
+      flex: 0 0 100%;
+      height: 0;
+      overflow: hidden;
+      transition: height .25s ease;
+    }
+
+    .cart-page__gift-message[aria-hidden="false"] {
+      height: auto;
+      padding-bottom: 14px;
+    }
+
+    .cart-page__gift-message__head {
+      align-items: center;
+      display: flex;
+      font-size: .875rem;
+      gap: 8px;
+      line-height: 135%;
+      margin-bottom: 10px;
+    }
+
+    .cart-page__gift-message__head::before {
+      content: "\\2709";
+      font-size: 1.125rem;
+      line-height: 1;
+    }
+
+    .cart-page__gift-message textarea {
+      border: 1px solid #767676;
+      border-radius: 5px;
+      box-sizing: border-box;
+      display: block;
+      font-size: 1rem;
+      height: 96px;
+      padding: 12px;
+      resize: vertical;
+      width: 100%;
+    }
+
+    .button--cart-message-save {
+      background: var(--blue);
+      border: 0;
+      height: 48px;
+      line-height: 48px;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .cart-page__quantity button {
       background: transparent;
       border: 0;
       border-radius: 0;
@@ -2188,8 +2274,9 @@
       height: 60px;
       justify-content: center;
       line-height: 60px;
-      margin-top: 22px;
+      margin: 20px 0;
       padding: 0 20px;
+      text-decoration: none;
       width: 100%;
     }
 
@@ -2354,6 +2441,12 @@
       padding-bottom: 8px;
     }
 
+    .cart-drawer__items__container {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
     .cart-drawer__header {
       min-height: 72px;
       position: relative;
@@ -2406,6 +2499,12 @@
       text-transform: lowercase;
     }
 
+    .cart-drawer__item__link {
+      display: block;
+      min-height: inherit;
+      text-decoration: none;
+    }
+
     .cart-drawer__item__options,
     .cart-drawer__item__price {
       font-size: .75rem;
@@ -2418,10 +2517,6 @@
       list-style: none;
       margin: 0;
       padding: 0;
-    }
-
-    .cart-drawer__quantity {
-      margin-top: 16px;
     }
 
     .cart-drawer__summary {
@@ -2437,21 +2532,12 @@
       line-height: 135%;
     }
 
-    .cart-drawer__checkout,
-    .cart-drawer__view-cart {
+    .cart-drawer__checkout {
       height: 60px;
       line-height: 60px;
-      width: 100%;
-    }
-
-    .cart-drawer__checkout {
       margin-top: 15px;
-    }
-
-    .cart-drawer__view-cart {
-      background: #fff;
-      border: 1px solid #767676;
-      margin-top: 10px;
+      text-decoration: none;
+      width: 100%;
     }
 
     .product-tile {
@@ -3389,15 +3475,14 @@
         <p data-cart-drawer-title>Bag (0 items)</p>
       </div>
       <div class="cart-drawer__items">
-        <div class="cart-drawer__items__container" data-cart-drawer-lines></div>
+        <ul class="cart-drawer__items__container" data-cart-drawer-lines></ul>
       </div>
       <div class="cart-drawer__summary">
         <div class="cart-drawer__total">
           <span>subtotal</span>
           <strong data-cart-drawer-subtotal>$0.00</strong>
         </div>
-        <button class="cart-drawer__checkout button button--blue" type="button" data-checkout>Checkout</button>
-        <a class="cart-drawer__view-cart button" href="/store/cart">view bag</a>
+        <a class="cart-drawer__checkout button button--blue" href="/store/cart">Checkout</a>
         <div class="notice" data-checkout-output></div>
       </div>
     </div>
