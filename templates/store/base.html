@@ -2460,6 +2460,13 @@
       visibility: visible;
     }
 
+    .drawer-is-open .menu-drawer[aria-hidden="false"] {
+      opacity: 1 !important;
+      pointer-events: auto;
+      transform: translateX(0) !important;
+      visibility: visible !important;
+    }
+
     .menu-drawer__close,
     .cart-drawer__close {
       cursor: pointer;

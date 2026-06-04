@@ -376,6 +376,20 @@
     drawer.style.removeProperty("visibility");
   }
 
+  function setMenuDrawerVisibility(drawer, visible) {
+    if (!drawer) return;
+    drawer.classList.toggle("is-open", visible);
+    if (visible) {
+      drawer.style.setProperty("transition", "none", "important");
+      drawer.style.setProperty("transform", "translateX(0)", "important");
+      drawer.style.setProperty("visibility", "visible", "important");
+      return;
+    }
+    drawer.style.removeProperty("transition");
+    drawer.style.removeProperty("transform");
+    drawer.style.removeProperty("visibility");
+  }
+
   function closeSearchDrawer() {
     const drawer = document.querySelector("[data-search-drawer], .js-searchDrawer");
     const toggle = document.querySelector("[data-search-open]");
@@ -399,7 +413,10 @@
   function closeMenuDrawer() {
     const drawer = document.querySelector("[data-menu-drawer]");
     const toggle = document.querySelector("[data-menu-toggle]");
-    if (drawer) drawer.setAttribute("aria-hidden", "true");
+    if (drawer) {
+      drawer.setAttribute("aria-hidden", "true");
+      setMenuDrawerVisibility(drawer, false);
+    }
     if (toggle) toggle.setAttribute("aria-expanded", "false");
     if (document.querySelector("[data-cart-drawer]")?.getAttribute("aria-hidden") !== "false") {
       setOverlay(false);
@@ -410,7 +427,10 @@
     closeCartDrawer();
     const drawer = document.querySelector("[data-menu-drawer]");
     const toggle = document.querySelector("[data-menu-toggle]");
-    if (drawer) drawer.setAttribute("aria-hidden", "false");
+    if (drawer) {
+      drawer.setAttribute("aria-hidden", "false");
+      setMenuDrawerVisibility(drawer, true);
+    }
     if (toggle) toggle.setAttribute("aria-expanded", "true");
     setOverlay(true);
   }

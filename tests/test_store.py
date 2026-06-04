@@ -217,6 +217,21 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-cart-open", html)
         self.assertIn("data-cart-drawer-lines", html)
 
+    def test_menu_open_state_has_body_scoped_visibility_override(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn('.drawer-is-open .menu-drawer[aria-hidden="false"]', source)
+        self.assertIn("transform: translateX(0) !important", source)
+        self.assertIn("visibility: visible !important", source)
+
+    def test_menu_drawer_uses_runtime_transform_visibility_guard(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("function setMenuDrawerVisibility", source)
+        self.assertIn('drawer.style.setProperty("transition", "none", "important")', source)
+        self.assertIn('drawer.style.setProperty("transform", "translateX(0)", "important")', source)
+        self.assertIn("setMenuDrawerVisibility(drawer, false)", source)
+
     def test_store_base_splits_mobile_cart_page_and_desktop_drawer_controls(self):
         response = self.client.get("/store")
 
