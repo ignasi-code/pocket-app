@@ -2,6 +2,7 @@ import json
 import html as html_lib
 import os
 import platform
+import re
 import shlex
 import shutil
 import subprocess
@@ -88,6 +89,10 @@ STORE_SWATCH_COLORS = {
     "sienna": "#C75530",
     "salt & pepper": "#1f1f1f",
 }
+SHOPIFY_LEGACY_IMAGE_SIZE_RE = re.compile(
+    r"_(?:\d+x\d*|\d*x\d+|x\d+)(?:_crop_[^./@]+)?(?:@2x)?(?=\.(?:jpe?g|png|webp)$)",
+    re.IGNORECASE,
+)
 RESTART_LOG_PATH = BASE_DIR / "pocket-restart.log"
 
 app = Flask(__name__)
@@ -379,6 +384,7 @@ def store_image_url(src, width=None, height=None, crop=None):
         return text
 
     parts = urlsplit(text)
+    path = SHOPIFY_LEGACY_IMAGE_SIZE_RE.sub("", parts.path)
     query = [
         (key, value)
         for key, value in parse_qsl(parts.query, keep_blank_values=True)
@@ -390,7 +396,7 @@ def store_image_url(src, width=None, height=None, crop=None):
         query.append(("height", str(int(height))))
     if crop:
         query.append(("crop", str(crop)))
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+    return urlunsplit((parts.scheme, parts.netloc, path, urlencode(query), parts.fragment))
 
 
 def store_image_widths(widths):
@@ -2037,6 +2043,22 @@ def store_asset_css():
         mimetype="text/css",
         max_age=31536000,
     )
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
+def minify_store_css(css):
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    css = re.sub(r"\s+", " ", css)
+    css = re.sub(r"\s*([{}:;,>+~])\s*", r"\1", css)
+    css = css.replace(";}", "}")
+    return css.strip()
+
+
+@app.route("/store/assets/store.min.css")
+def store_asset_min_css():
+    css = (BASE_DIR / "pages" / "store" / "store.css").read_text(encoding="utf-8")
+    response = Response(minify_store_css(css), mimetype="text/css")
     response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     return response
 

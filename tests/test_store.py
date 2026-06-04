@@ -49,13 +49,17 @@ class StoreTest(unittest.TestCase):
         self.assertIn("info-module__content mobile-visible", html)
         self.assertIn("info-module__content desktop-visible", html)
 
-    def test_store_base_links_cached_css_asset_for_lighthouse(self):
+    def test_store_base_loads_css_without_render_blocking_lighthouse(self):
         response = self.client.get("/store")
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<link rel="stylesheet" href="/store/assets/store.css?v=20260605-css-images">', html)
-        self.assertNotIn("<style>", html)
+        self.assertIn('<style data-critical-store-css>', html)
+        self.assertIn(".site-header", html)
+        self.assertIn(".hero__image", html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-critical-css" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-critical-css"></noscript>', html)
+        self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
     def test_store_css_asset_is_cacheable_for_lighthouse(self):
         response = self.client.get("/store/assets/store.css?v=20260605-css-images")
@@ -65,6 +69,53 @@ class StoreTest(unittest.TestCase):
         self.assertIn("public", response.headers.get("Cache-Control", ""))
         self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
         self.assertIn(".site-header", response.get_data(as_text=True))
+
+    def test_store_minified_css_asset_is_cacheable_for_lighthouse(self):
+        response = self.client.get("/store/assets/store.min.css?v=20260605-critical-css")
+        self.addCleanup(response.close)
+
+        self.assertEqual(response.status_code, 200)
+        text = response.get_data(as_text=True)
+        self.assertIn("public", response.headers.get("Cache-Control", ""))
+        self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
+        self.assertIn(".site-header", text)
+        self.assertLess(len(text), len(self.store_css_source()))
+        self.assertNotIn("Roxanne Assoulin fidelity pass", text)
+
+    def test_store_base_has_meta_description_for_seo_score(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<meta name="description" content="A static-first Roxanne Assoulin storefront prototype with fast collection, product, and cart views.">', html)
+
+    def test_store_logo_images_have_explicit_dimensions(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('alt="Roxanne Assoulin" width="207" height="14"', html)
+
+    def test_shopify_image_urls_strip_legacy_size_before_width_transform(self):
+        url = pocket.store_image_url(
+            "https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985_760x_crop_center.jpg?v=1780086212",
+            width=390,
+        )
+
+        self.assertIn("0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985.jpg", url)
+        self.assertIn("width=390", url)
+        self.assertNotIn("_760x_crop_center", url)
+
+    def test_homepage_preloads_lcp_hero_responsive_image_for_lighthouse(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<link rel="preload" as="image" media="(max-width: 1023px)"', html)
+        self.assertIn('imagesrcset="https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985.jpg?v=1780086212&amp;width=390 390w', html)
+        self.assertIn("&amp;width=640 640w", html)
+        self.assertIn('imagesizes="100vw"', html)
+        self.assertIn('fetchpriority="high"', html)
 
     def test_homepage_mobile_shipping_grid_includes_heart_tile(self):
         response = self.client.get("/store")
@@ -170,9 +221,10 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("MainImage_Mobile", html)
-        self.assertIn("&amp;width=760", html)
         self.assertIn("&amp;width=390 390w", html)
-        self.assertIn("&amp;width=760 760w", html)
+        self.assertIn("&amp;width=560 560w", html)
+        self.assertIn("&amp;width=640 640w", html)
+        self.assertNotIn("_760x_crop_center.jpg?v=1780086212&amp;width", html)
         self.assertIn('sizes="100vw"', html)
 
     def test_product_tiles_use_responsive_shopify_image_delivery(self):
@@ -190,10 +242,10 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("0526_Hearts_957x_crop_center", html)
-        self.assertIn("0531_HappyBaby_Mobile_9f30ae56-b0cc-48f3-9f88-28ec80b99883_957x_crop_center", html)
-        self.assertIn("0531_Camp_Mobile_55bf818c-5e28-4609-93ff-1e7bf5a090d6_957x_crop_center", html)
-        self.assertIn("0531_ItsyBitsy_Mobile_47e7a0a7-064e-44fb-b14e-5971f5c14833_957x_crop_center", html)
+        self.assertIn("0526_Hearts.jpg", html)
+        self.assertIn("0531_HappyBaby_Mobile_9f30ae56-b0cc-48f3-9f88-28ec80b99883.jpg", html)
+        self.assertIn("0531_Camp_Mobile_55bf818c-5e28-4609-93ff-1e7bf5a090d6.jpg", html)
+        self.assertIn("0531_ItsyBitsy_Mobile_47e7a0a7-064e-44fb-b14e-5971f5c14833.jpg", html)
         self.assertIn("href=\"/store/collections/custom\"", html)
 
     def test_custom_collection_alias_matches_live_homepage_link(self):
@@ -569,8 +621,8 @@ class StoreTest(unittest.TestCase):
 
     def test_key_collection_pages_use_extracted_live_hero_assets(self):
         cases = {
-            "necklaces": "Necklaces_367x374_crop_center",
-            "new-arrivals": "New-Arrivals_367x374_crop_center",
+            "necklaces": "Necklaces.jpg",
+            "new-arrivals": "New-Arrivals.jpg",
         }
 
         for handle, image_token in cases.items():
