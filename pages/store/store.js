@@ -1,5 +1,6 @@
 (function () {
   const CART_KEY = "pocket_store_cart";
+  const SHIPPING_PROMO_DISMISSED_KEY = "pocket_store_shipping_promo_dismissed";
   const displayCurrency = document.body?.dataset.storeDisplayCurrency || "eur";
   const displayEurRate = Number.parseFloat(document.body?.dataset.storeDisplayEurRate || "0.875");
   const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -19,6 +20,32 @@
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
     updateCount();
     renderCartDrawer();
+  }
+
+  function shippingPromoDismissed() {
+    try {
+      return localStorage.getItem(SHIPPING_PROMO_DISMISSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function hideDismissedShippingPromos() {
+    if (!shippingPromoDismissed()) return;
+    document.documentElement.classList.add("shipping-promo-dismissed");
+    document.querySelectorAll("[data-shipping-promo]").forEach(promo => {
+      promo.classList.add("is-hidden");
+    });
+  }
+
+  function persistShippingPromoDismissal() {
+    try {
+      localStorage.setItem(SHIPPING_PROMO_DISMISSED_KEY, "1");
+    } catch {}
+    document.documentElement.classList.add("shipping-promo-dismissed");
+    document.querySelectorAll("[data-shipping-promo]").forEach(promo => {
+      promo.classList.add("is-hidden");
+    });
   }
 
   function updateCount() {
@@ -766,6 +793,7 @@
     const shippingPromoClose = event.target.closest("[data-shipping-promo-close]");
     if (shippingPromoClose) {
       shippingPromoClose.closest("[data-shipping-promo]")?.classList.add("is-hidden");
+      persistShippingPromoDismissal();
     }
 
     if (event.target.closest("[data-filter-toggle]")) openCollectionDrawer("filter");
@@ -882,6 +910,7 @@
   });
 
   updateCount();
+  hideDismissedShippingPromos();
   document.querySelectorAll("[data-pdp-variant-select]").forEach(select => updatePdpSelection(select, false));
   renderCartDrawer();
   renderCartPage();

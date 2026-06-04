@@ -701,6 +701,10 @@
       display: none;
     }
 
+    .shipping-promo-dismissed .shipping-promo {
+      display: none;
+    }
+
     .shipping-promo__close {
       background: transparent;
       border: 0;

@@ -135,6 +135,24 @@ class StoreTest(unittest.TestCase):
                 self.assertIn("Enjoy complimentary ground shipping on US orders $250+", html)
                 self.assertIn("data-shipping-promo-close", html)
 
+    def test_shipping_promo_installs_no_flash_persistence_gate(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<script data-shipping-promo-gate>', html)
+        self.assertIn('pocket_store_shipping_promo_dismissed', html)
+        self.assertIn('document.documentElement.classList.add("shipping-promo-dismissed")', html)
+        self.assertIn(".shipping-promo-dismissed .shipping-promo", html)
+
+    def test_store_javascript_persists_shipping_promo_dismissal(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn('const SHIPPING_PROMO_DISMISSED_KEY = "pocket_store_shipping_promo_dismissed";', source)
+        self.assertIn('localStorage.setItem(SHIPPING_PROMO_DISMISSED_KEY, "1");', source)
+        self.assertIn('document.documentElement.classList.add("shipping-promo-dismissed");', source)
+        self.assertIn("hideDismissedShippingPromos();", source)
+
     def test_product_page_keeps_shipping_promo_out_of_pdp_first_view(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
 
@@ -1169,7 +1187,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-images", html)
+        self.assertIn("/store/assets/store.js?v=20260605-promo-dismissal", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1186,7 +1204,7 @@ class StoreTest(unittest.TestCase):
         )
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-images")
+        response = self.client.get("/store/assets/store.js?v=20260605-promo-dismissal")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
