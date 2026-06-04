@@ -1000,6 +1000,12 @@ class StoreTest(unittest.TestCase):
         self.assertIn('.collection-filter-is-open .collection-filter__drawer[aria-hidden="false"]', source)
         self.assertIn("transform: translateY(0) !important", source)
 
+    def test_collection_desktop_filter_drawer_uses_live_panel_width(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".collection-filter__drawer {\n        border-radius: 5px;\n        bottom: auto;\n        left: auto;\n        max-width: 390px;\n        right: 8px;\n        top: 72px;\n        width: 390px;", source)
+        self.assertIn(".collection-filter__drawer__head svg {\n        height: 15px;\n        width: 15px;", source)
+
     def test_store_base_uses_versioned_store_script_for_fresh_behavior(self):
         response = self.client.get("/store")
 
