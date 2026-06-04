@@ -109,6 +109,14 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".product-module__cta {\n        font-size: 1.125rem;\n        padding-right: 92px;", source)
         self.assertIn(".product-module__products {\n        flex-wrap: wrap;\n        padding: 0 2px 1px;", source)
 
+    def test_homepage_desktop_product_module_matches_live_height_contract(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".product-module {\n        padding: 40px 0 50px;", source)
+        self.assertIn("max-width: 559px;\n        padding-bottom: 30px;", source)
+        self.assertIn(".product-module__cta--desktop {\n        display: block;", source)
+        self.assertIn(".product-module__cta--mobile {\n        display: none;", source)
+
     def test_homepage_uses_live_desktop_split_assets_and_custom_category_link(self):
         response = self.client.get("/store")
 
