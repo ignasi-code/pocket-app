@@ -238,6 +238,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-search-close", html)
         self.assertIn("search-drawer__form", html)
 
+    def test_search_open_state_has_body_scoped_visibility_override(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn('.search-is-open .search-drawer[aria-hidden="false"]', source)
+        self.assertIn("opacity: 1 !important", source)
+        self.assertIn("visibility: visible !important", source)
+
     def test_desktop_header_renders_live_search_login_about_cluster(self):
         response = self.client.get("/store")
 

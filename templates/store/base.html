@@ -2870,6 +2870,14 @@
       visibility: hidden;
     }
 
+    .search-drawer[aria-hidden="false"],
+    .search-is-open .search-drawer[aria-hidden="false"] {
+      height: 100%;
+      opacity: 1 !important;
+      pointer-events: auto;
+      visibility: visible !important;
+    }
+
     .search-drawer__wrap {
       padding: 80px 26px;
     }
