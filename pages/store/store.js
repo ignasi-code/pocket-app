@@ -1,5 +1,7 @@
 (function () {
   const CART_KEY = "pocket_store_cart";
+  const displayCurrency = document.body?.dataset.storeDisplayCurrency || "eur";
+  const displayEurRate = Number.parseFloat(document.body?.dataset.storeDisplayEurRate || "0.875");
   const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
   let catalog = null;
   let variants = new Map();
@@ -84,15 +86,34 @@
       .replaceAll("'", "&#039;");
   }
 
-  function price(value) {
+  function displayAmount(value) {
     const number = Number.parseFloat(String(value || "0"));
-    return money.format(Number.isFinite(number) ? number : 0);
+    if (!Number.isFinite(number) || number <= 0) return 0;
+    if (displayCurrency !== "eur") return number;
+    const convertedWholeUnits = Math.floor(number * displayEurRate);
+    return convertedWholeUnits + 0.95;
+  }
+
+  function formatDisplayAmount(amount) {
+    if (displayCurrency === "eur") {
+      const [whole, cents] = Number(amount || 0).toFixed(2).split(".");
+      return `\u20ac${whole},${cents}`;
+    }
+    return money.format(Number.isFinite(amount) ? amount : 0);
+  }
+
+  function formatDisplayPrice(value) {
+    return formatDisplayAmount(displayAmount(value));
+  }
+
+  function price(value) {
+    return formatDisplayPrice(value);
   }
 
   function cartSubtotal(cart) {
     return cart.reduce((total, item) => {
       const meta = variants.get(Number(item.id));
-      return total + (meta ? Number.parseFloat(meta.variant.price || "0") * item.qty : 0);
+      return total + (meta ? displayAmount(meta.variant.price) * item.qty : 0);
     }, 0);
   }
 
@@ -107,7 +128,7 @@
     const subtotal = document.querySelector("[data-cart-subtotal]");
     const total = document.querySelector("[data-cart-total]");
     const checkoutButton = root.querySelector(".cart-page__checkout");
-    const subtotalLabel = money.format(cartSubtotal(cart));
+    const subtotalLabel = formatDisplayAmount(cartSubtotal(cart));
     if (subtotal) subtotal.textContent = subtotalLabel;
     if (total) total.textContent = subtotalLabel;
     if (checkoutButton) checkoutButton.toggleAttribute("disabled", !cart.length);
@@ -120,7 +141,7 @@
     if (!lines) return;
     lines.innerHTML = cart.map(item => {
       const meta = variants.get(Number(item.id));
-      const lineTotal = Number.parseFloat(meta.variant.price || "0") * item.qty;
+      const lineTotal = displayAmount(meta.variant.price) * item.qty;
       const productUrl = `/store/products/${meta.product.handle}`;
       return `
         <div class="cart-page__item">
@@ -130,7 +151,7 @@
           <div class="cart-page__item__copy">
             <div class="cart-page__item__details">
               <a class="cart-page__item__title" href="${productUrl}">${escapeHtml(meta.product.title)}</a>
-              <strong class="cart-page__item__line-price">${money.format(lineTotal)}</strong>
+              <strong class="cart-page__item__line-price">${formatDisplayAmount(lineTotal)}</strong>
             </div>
             <div class="cart-page__item__options">${escapeHtml(meta.variant.title)}<br>${price(meta.variant.price)}</div>
             <div class="cart-page__item__quantity qty-controls cart-page__quantity">
@@ -158,7 +179,7 @@
     const checkoutButton = root.querySelector(".cart-drawer__checkout");
     const count = cart.reduce((total, item) => total + Number(item.qty || 0), 0);
 
-    if (subtotal) subtotal.textContent = money.format(cartSubtotal(cart));
+    if (subtotal) subtotal.textContent = formatDisplayAmount(cartSubtotal(cart));
     if (title) title.textContent = count === 1 ? "Bag (1 item)" : `Bag (${count} items)`;
     if (content) content.dataset.itemCount = String(count);
     if (checkoutButton) checkoutButton.toggleAttribute("disabled", !cart.length);
@@ -171,7 +192,7 @@
 
     lines.innerHTML = cart.map(item => {
       const meta = variants.get(Number(item.id));
-      const lineTotal = Number.parseFloat(meta.variant.price || "0") * item.qty;
+      const lineTotal = displayAmount(meta.variant.price) * item.qty;
       const productUrl = `/store/products/${meta.product.handle}`;
       return `
         <div class="cart-drawer__item">
@@ -185,7 +206,7 @@
             <span>${item.qty}</span>
             <button type="button" data-cart-inc="${item.id}">+</button>
           </div>
-          <div class="cart-drawer__item__price">${money.format(lineTotal)}</div>
+          <div class="cart-drawer__item__price">${formatDisplayAmount(lineTotal)}</div>
         </div>
       `;
     }).join("");
@@ -411,7 +432,7 @@
     }
     if (output) {
       output.innerHTML = `
-        <p><strong>Verified:</strong> ${data.item_count} items, ${money.format(data.subtotal_cents / 100)}</p>
+        <p><strong>Verified:</strong> ${data.item_count} items, ${formatDisplayPrice(data.subtotal_cents / 100)}</p>
         <p><a class="button" href="${data.shopify_cart_url}">Open Shopify cart</a></p>
       `;
     }

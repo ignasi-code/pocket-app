@@ -183,12 +183,32 @@ class StoreTest(unittest.TestCase):
         self.assertIn("product-tile__title", html)
         self.assertIn("product-tile__add", html)
 
-    def test_store_price_labels_drop_trailing_zero_cents_like_live_theme(self):
+    def test_store_price_labels_match_live_euro_market(self):
         product = pocket.store_product_by_handle("the-cylinder-cord-necklace-cloud-blue")
         variant = pocket.store_first_available_variant(product)
 
-        self.assertEqual(pocket.store_variant_price_label(variant), "$125")
-        self.assertNotIn(".00", pocket.store_price_label(product))
+        self.assertEqual(pocket.store_variant_price_label(variant), "\u20ac109,95")
+        self.assertNotIn("$125", pocket.store_price_label(product))
+
+    def test_store_price_ranges_use_live_market_dash_and_conversion(self):
+        product = pocket.store_product_by_handle("the-salt-pepper-cylinder-necklace-set")
+
+        self.assertEqual(pocket.store_price_label(product), "\u20ac109,95 \u2013 \u20ac393,95")
+
+    def test_store_frontend_exposes_live_market_price_settings(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('data-store-display-currency="eur"', html)
+        self.assertIn('data-store-display-eur-rate="0.875"', html)
+
+    def test_store_frontend_script_uses_live_market_price_formatting(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("formatDisplayPrice", source)
+        self.assertIn("displayCurrency", source)
+        self.assertIn("convertedWholeUnits", source)
 
     def test_product_tiles_hide_quick_add_on_mobile_like_live_theme(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")

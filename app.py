@@ -74,6 +74,8 @@ STORE_DATA_DIR = BASE_DIR / "pages" / "store" / "data"
 STORE_PLACEHOLDER_IMAGE = "https://placehold.co/900x1100/f8dd5f/1f1a15?text=Roxanne"
 STORE_BASE_URL = os.environ.get("POCKET_STORE_BASE_URL", "https://roxanneassoulin.com").rstrip("/")
 STORE_CURRENCY = os.environ.get("POCKET_STORE_CURRENCY", "usd").lower()
+STORE_DISPLAY_CURRENCY = os.environ.get("POCKET_STORE_DISPLAY_CURRENCY", "eur").lower()
+STORE_DISPLAY_EUR_RATE = float(os.environ.get("POCKET_STORE_DISPLAY_EUR_RATE", "0.875"))
 STORE_SWATCH_COLORS = {
     "cloud": "#8ED1D1",
     "lemon": "#E3D43C",
@@ -296,6 +298,24 @@ def format_display_price(cents):
     return format_price(cents)
 
 
+def store_display_price_cents(cents):
+    if STORE_DISPLAY_CURRENCY != "eur":
+        return cents
+    if cents <= 0:
+        return 0
+    converted_whole_units = int((cents / 100) * STORE_DISPLAY_EUR_RATE)
+    return converted_whole_units * 100 + 95
+
+
+def store_money_label(cents):
+    display_cents = store_display_price_cents(cents)
+    if STORE_DISPLAY_CURRENCY == "eur":
+        whole = display_cents // 100
+        remainder = display_cents % 100
+        return f"\u20ac{whole},{remainder:02d}"
+    return f"${format_display_price(display_cents)}"
+
+
 def load_store_catalog():
     return json.loads(STORE_CATALOG_PATH.read_text(encoding="utf-8"))
 
@@ -344,12 +364,13 @@ def store_price_label(product):
     low = min(prices)
     high = max(prices)
     if low == high:
-        return f"${format_display_price(low)}"
-    return f"${format_display_price(low)} - ${format_display_price(high)}"
+        return store_money_label(low)
+    separator = " \u2013 " if STORE_DISPLAY_CURRENCY == "eur" else " - "
+    return f"{store_money_label(low)}{separator}{store_money_label(high)}"
 
 
 def store_variant_price_label(variant):
-    return f"${format_display_price(parse_price_cents(variant.get('price')))}"
+    return store_money_label(parse_price_cents(variant.get("price")))
 
 
 def store_primary_option_name(product):
@@ -647,6 +668,8 @@ def store_template_context(**kwargs):
         "placeholder_image": STORE_PLACEHOLDER_IMAGE,
         "search_query": request.args.get("q", "").strip(),
         "store_query_url": store_query_url,
+        "store_display_currency": STORE_DISPLAY_CURRENCY,
+        "store_display_eur_rate": STORE_DISPLAY_EUR_RATE,
     }
     context.update(kwargs)
     return context
