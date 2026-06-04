@@ -386,6 +386,17 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".footer-nav__panel {\n        display: block;", source)
         self.assertIn("min-height: 638px", source)
 
+    def test_store_footer_uses_live_mobile_newsletter_copy(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn(">Subscribe<", html)
+        self.assertIn("Already a friend?", html)
+        self.assertIn("Login", html)
+        self.assertIn("\u00a9 Roxanne Assoulin 2026. All rights reserved", html)
+        self.assertNotIn("Prototype storefront", html)
+
     def test_product_page_exposes_gallery_variant_and_quantity_hooks(self):
         product, variant = self.first_available_variant()
         response = self.client.get(f"/store/products/{product['handle']}")

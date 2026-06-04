@@ -2926,7 +2926,7 @@
     }
 
     .footer-newsletter__social {
-      display: flex;
+      display: none;
       flex-wrap: wrap;
       gap: 12px;
       font-size: .875rem;
@@ -2934,6 +2934,13 @@
       line-height: 135%;
       padding-top: 18px;
       text-transform: lowercase;
+    }
+
+    .footer-newsletter__login {
+      font-size: .875rem;
+      font-weight: 400;
+      line-height: 135%;
+      padding-top: 14px;
     }
 
     .footer__bottom {
@@ -2944,7 +2951,6 @@
       font-weight: 400;
       line-height: 135%;
       padding-top: 28px;
-      text-transform: lowercase;
       width: 100%;
     }
 
@@ -3384,10 +3390,11 @@
         <form class="footer-newsletter__form" action="#" method="post">
           <div class="footer-newsletter__form__fields">
             <input type="email" name="EMAIL" aria-label="enter your email" placeholder="enter your email">
-            <button type="submit">sign up</button>
+            <button type="submit">Subscribe</button>
           </div>
         </form>
         <div class="footer-newsletter__success" aria-hidden="true">thanks for signing up</div>
+        <div class="footer-newsletter__login">Already a friend? <a href="/store">Login</a></div>
         <div class="footer-newsletter__social" aria-label="Social links">
           <a href="/store">instagram</a>
           <a href="/store">tiktok</a>
@@ -3395,8 +3402,7 @@
         </div>
       </div>
       <div class="footer__bottom">
-        <span>Roxanne Assoulin</span>
-        <span>Prototype storefront</span>
+        <span>© Roxanne Assoulin 2026. All rights reserved</span>
       </div>
     </div>
   </footer>
