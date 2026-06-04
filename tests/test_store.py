@@ -507,6 +507,24 @@ class StoreTest(unittest.TestCase):
 
         self.assertNotIn('cart-page__item__options">${escapeHtml(meta.variant.title)}<br>${price(meta.variant.price)}', source)
 
+    def test_cart_javascript_renders_live_bundle_includes(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("isBundleVariant", source)
+        self.assertIn("bundleIncludes", source)
+        self.assertIn("cart-page__item--bundle", source)
+        self.assertIn("cart-drawer__item--bundle", source)
+        self.assertIn("Includes:", source)
+        self.assertIn("cartPageQuantityHtml(item, meta)", source)
+
+    def test_cart_css_supports_live_bundle_line_heights(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".cart-page__item--bundle", source)
+        self.assertIn("min-height: 399px", source)
+        self.assertIn(".cart-drawer__item--bundle", source)
+        self.assertIn("min-height: 204px", source)
+
     def test_store_javascript_toggles_search_and_collection_overlay(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 

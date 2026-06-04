@@ -110,6 +110,97 @@
     return formatDisplayPrice(value);
   }
 
+  function isBundleVariant(product, variant) {
+    const title = `${product?.title || ""} ${variant?.title || ""}`;
+    return Number(variant?.position || 0) === 1
+      && Array.isArray(product?.variants)
+      && product.variants.length > 1
+      && /\b(set|stack)\b/i.test(title);
+  }
+
+  function bundleIncludeTitle(product, variant) {
+    const title = String(variant?.title || "");
+    const productTitle = String(product?.title || "");
+    const family = productTitle.includes("Bracelet") ? "Bracelet" : "Necklace";
+
+    if (/Cylinder Cord/i.test(title)) {
+      return title.replace(/\s+in\s+/i, " - ");
+    }
+
+    if (/Bone & Black Coconut/i.test(title) || /Striped Moss Agate/i.test(title)) {
+      return `The Salt & Pepper ${family} Duo - ${title}`;
+    }
+
+    return title;
+  }
+
+  function bundleIncludes(product, variant) {
+    if (!isBundleVariant(product, variant)) return [];
+    return product.variants
+      .filter(child => Number(child.id) !== Number(variant.id))
+      .slice()
+      .reverse()
+      .map(child => bundleIncludeTitle(product, child));
+  }
+
+  function cartPageOptionsHtml(meta) {
+    const includes = bundleIncludes(meta.product, meta.variant);
+    if (!includes.length) {
+      return `<div class="cart-page__item__options">${escapeHtml(meta.variant.title)}</div>`;
+    }
+
+    return `
+      <div class="cart-page__item__options cart-page__item__options--includes">
+        <span>${escapeHtml(meta.variant.title)}</span>
+        <span>Includes:</span>
+        <ul>
+          ${includes.map(title => `<li>${escapeHtml(title)}</li>`).join("")}
+        </ul>
+      </div>
+    `;
+  }
+
+  function drawerOptionsHtml(meta) {
+    const includes = bundleIncludes(meta.product, meta.variant);
+    if (!includes.length) {
+      return `<div class="cart-drawer__item__options">${escapeHtml(meta.variant.title)}</div>`;
+    }
+
+    return `
+      <div class="cart-drawer__item__options cart-drawer__item__options--includes">
+        <span>${escapeHtml(meta.variant.title)}</span>
+        <ul>
+          ${includes.map(title => `<li>${escapeHtml(title)}</li>`).join("")}
+        </ul>
+      </div>
+    `;
+  }
+
+  function cartPageQuantityHtml(item, meta) {
+    if (isBundleVariant(meta.product, meta.variant)) return "";
+
+    return `
+      <div class="cart-page__item__quantity qty-controls cart-page__quantity">
+        <span>quantity</span>
+        <button class="cart-page__item__button cart-page__item__button--minus" type="button" data-cart-dec="${item.id}" aria-label="Decrease quantity">-</button>
+        <span>${item.qty}</span>
+        <button class="cart-page__item__button cart-page__item__button--plus" type="button" data-cart-inc="${item.id}" aria-label="Increase quantity">+</button>
+      </div>
+    `;
+  }
+
+  function drawerQuantityHtml(item, meta) {
+    if (isBundleVariant(meta.product, meta.variant)) return "";
+
+    return `
+      <div class="qty-controls cart-drawer__quantity">
+        <button type="button" data-cart-dec="${item.id}">-</button>
+        <span>${item.qty}</span>
+        <button type="button" data-cart-inc="${item.id}">+</button>
+      </div>
+    `;
+  }
+
   function cartSubtotal(cart) {
     return cart.reduce((total, item) => {
       const meta = variants.get(Number(item.id));
@@ -143,8 +234,9 @@
       const meta = variants.get(Number(item.id));
       const lineTotal = displayAmount(meta.variant.price) * item.qty;
       const productUrl = `/store/products/${meta.product.handle}`;
+      const bundleClass = isBundleVariant(meta.product, meta.variant) ? " cart-page__item--bundle" : "";
       return `
-        <div class="cart-page__item">
+        <div class="cart-page__item${bundleClass}">
           <a class="cart-page__item__image-wrap" href="${productUrl}">
             <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
           </a>
@@ -153,13 +245,8 @@
               <a class="cart-page__item__title" href="${productUrl}">${escapeHtml(meta.product.title)}</a>
               <strong class="cart-page__item__line-price">${formatDisplayAmount(lineTotal)}</strong>
             </div>
-            <div class="cart-page__item__options">${escapeHtml(meta.variant.title)}</div>
-            <div class="cart-page__item__quantity qty-controls cart-page__quantity">
-              <span>quantity</span>
-              <button class="cart-page__item__button cart-page__item__button--minus" type="button" data-cart-dec="${item.id}" aria-label="Decrease quantity">-</button>
-              <span>${item.qty}</span>
-              <button class="cart-page__item__button cart-page__item__button--plus" type="button" data-cart-inc="${item.id}" aria-label="Increase quantity">+</button>
-            </div>
+            ${cartPageOptionsHtml(meta)}
+            ${cartPageQuantityHtml(item, meta)}
             <button class="cart-page__item__remove" type="button" data-cart-remove="${item.id}">remove</button>
           </div>
         </div>
@@ -194,18 +281,15 @@
       const meta = variants.get(Number(item.id));
       const lineTotal = displayAmount(meta.variant.price) * item.qty;
       const productUrl = `/store/products/${meta.product.handle}`;
+      const bundleClass = isBundleVariant(meta.product, meta.variant) ? " cart-drawer__item--bundle" : "";
       return `
-        <div class="cart-drawer__item">
+        <div class="cart-drawer__item${bundleClass}">
           <img class="cart-drawer__item__image" src="${productImage(meta.product, meta.variant)}" alt="">
           <div class="cart-drawer__item__details">
             <a href="${productUrl}">${escapeHtml(meta.product.title)}</a>
-            <div class="cart-drawer__item__options">${escapeHtml(meta.variant.title)}</div>
+            ${drawerOptionsHtml(meta)}
           </div>
-          <div class="qty-controls cart-drawer__quantity">
-            <button type="button" data-cart-dec="${item.id}">-</button>
-            <span>${item.qty}</span>
-            <button type="button" data-cart-inc="${item.id}">+</button>
-          </div>
+          ${drawerQuantityHtml(item, meta)}
           <div class="cart-drawer__item__price">${formatDisplayAmount(lineTotal)}</div>
         </div>
       `;
