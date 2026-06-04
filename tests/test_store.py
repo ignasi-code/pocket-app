@@ -457,8 +457,14 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-page", html)
         self.assertIn("cart-page__items", html)
         self.assertIn("cart-page__summary", html)
-        self.assertIn("cart-page__checkout button button--blue", html)
-        self.assertIn("cart-page__gift", html)
+        self.assertIn('class="cart-page__checkout"', html)
+        self.assertNotIn("cart-page__gift", html)
+
+    def test_cart_page_mobile_summary_spacing_matches_live_checkout_width(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".cart-page__summary", source)
+        self.assertIn("padding: 14px;", source)
 
     def test_cart_drawer_uses_live_checkout_and_item_classes(self):
         response = self.client.get("/store")
