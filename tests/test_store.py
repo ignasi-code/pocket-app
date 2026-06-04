@@ -804,6 +804,12 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-cart-page", html)
         self.assertIn("/store/api/checkout", html)
 
+    def test_checkout_success_redirects_directly_to_shopify_cart(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("window.location.href = data.shopify_cart_url", source)
+        self.assertNotIn("Open Shopify cart", source)
+
     def test_cart_page_uses_live_cart_structure(self):
         response = self.client.get("/store/cart")
 
@@ -1034,7 +1040,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260604-home-collection", html)
+        self.assertIn("/store/assets/store.js?v=20260604-checkout-direct", html)
 
     def test_unknown_product_returns_404(self):
         response = self.client.get("/store/products/nope")

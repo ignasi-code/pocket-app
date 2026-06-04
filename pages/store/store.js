@@ -683,12 +683,11 @@
       if (output) output.textContent = data.error || "Checkout failed.";
       return;
     }
-    if (output) {
-      output.innerHTML = `
-        <p><strong>Verified:</strong> ${data.item_count} items, ${formatDisplayPrice(data.subtotal_cents / 100)}</p>
-        <p><a class="button" href="${data.shopify_cart_url}">Open Shopify cart</a></p>
-      `;
+    if (data.shopify_cart_url) {
+      window.location.href = data.shopify_cart_url;
+      return;
     }
+    if (output) output.textContent = "Checkout failed.";
   }
 
   document.addEventListener("click", event => {
