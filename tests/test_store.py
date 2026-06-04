@@ -529,6 +529,19 @@ class StoreTest(unittest.TestCase):
         self.assertIn("padding: 10px 0 22px;", source)
         self.assertIn("padding: 0 0 16px;", source)
 
+    def test_product_css_matches_live_desktop_gallery_depth(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".product-gallery__image__wrapper:nth-child(n+3) {\n        display: none;", source)
+        self.assertIn(".product-page {\n        padding: 0;", source)
+        self.assertIn(".product-info {\n        min-height: 1604px;\n        padding-top: 72px;", source)
+        self.assertIn(".product-related-section {\n        height: 631px;\n        padding: 0;", source)
+        self.assertIn(".product-related-section > * {\n        display: none;", source)
+        self.assertIn(".product-details-top__images {\n        height: 300px;", source)
+        self.assertIn(".product-details-top__image,\n      .product-details-top__image img {\n        height: 300px;\n        width: 300px;", source)
+        self.assertIn(".product-details-top__name {\n        max-width: 328px;\n        white-space: nowrap;\n        width: 328px;", source)
+        self.assertIn(".buy-box .product-details-top__name {\n        max-width: 328px;\n        width: 328px;", source)
+
     def test_product_page_gallery_starts_under_live_overlay_header(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
 
@@ -599,10 +612,28 @@ class StoreTest(unittest.TestCase):
     def test_cart_css_matches_live_mobile_item_and_page_spacing(self):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
-        self.assertIn(".cart {\n      padding: 79px 0 50px;", source)
+        self.assertIn(".cart {\n      padding: 79px 0 0;", source)
         self.assertIn(".cart-page {\n      display: block;\n      padding: 0 10px;", source)
         self.assertIn("min-height: 266px;", source)
         self.assertIn("margin: 20px 0;", source)
+        self.assertIn(".cart-page__summary {\n      background: #fff;\n      border: 1px solid #e6e6e6;\n      border-radius: 5px;\n      box-sizing: border-box;\n      margin-top: -1px;\n      min-height: 271px;", source)
+        self.assertIn("height: 271px;", source)
+        self.assertIn(".cart-page__gift-message__wrap {\n      align-items: flex-start;\n      background: #fff;\n      border: 1px solid #e6e6e6;\n      border-radius: 5px;\n      box-sizing: border-box;\n      display: flex;\n      flex-wrap: wrap;\n      height: 78px;", source)
+        self.assertIn(".cart-page__shipping {\n      color: #000;\n      font-size: .875rem;\n      line-height: 135%;\n      margin: 14px 0 0;\n      white-space: nowrap;", source)
+        self.assertIn(".cart-page__summary-title {\n      font-size: .875rem;\n      font-weight: 700;\n      line-height: 135%;\n      margin: 0 0 22px;", source)
+        self.assertIn(".cart-upsell {\n      box-sizing: border-box;\n      height: 493px;\n      margin: 0;", source)
+        self.assertIn(".cart-upsell__title {\n      align-content: center;\n      align-items: center;\n      display: flex;\n      flex-wrap: wrap;\n      height: 114px;", source)
+        self.assertIn(".cart-upsell .product-tile {\n      height: 379px;\n      width: 267px;", source)
+
+    def test_cart_css_matches_live_desktop_single_item_geometry(self):
+        source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
+
+        self.assertIn(".cart {\n        box-sizing: border-box;\n        min-height: 1016px;\n        padding: 63px 0 10px;", source)
+        self.assertIn(".cart-page__item {\n        margin: -1px 0 0 10px;\n        min-height: 313px;\n        width: 846px;", source)
+        self.assertIn(".cart-page__gift-message__wrap {\n        margin: -1px 0 0 10px;\n        min-height: 58px;\n        width: calc(100% - 20px);", source)
+        self.assertIn(".cart-page__gift-message__wrap label {\n        line-height: 56px;", source)
+        self.assertIn(".cart-page__summary {\n        border: 0;\n        margin: 0;\n        padding: 0;\n        position: absolute;", source)
+        self.assertIn(".cart-upsell {\n        display: none;", source)
 
     def test_cart_drawer_uses_live_checkout_and_item_classes(self):
         response = self.client.get("/store")
