@@ -374,7 +374,7 @@ class StoreTest(unittest.TestCase):
         source = (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
         self.assertIn(".collection-items {\n        display: grid;\n        grid-template-columns: repeat(4, minmax(0, 1fr));\n        padding-top: 72px;", source)
-        self.assertIn(".collection-filter-bar {\n        grid-column: 1 / -1;\n        height: 76px;", source)
+        self.assertIn(".collection-filter-bar {\n        grid-column: 1 / -1;\n        height: 76px;\n        order: -1;\n        top: 72px;", source)
         self.assertIn(".collection-grid {\n        display: contents;", source)
         self.assertIn(".collection-hero {\n        grid-column: 1 / span 2;\n        grid-row: span 2;\n        height: 765px;", source)
         self.assertIn(".product-tile {\n        height: 384px;", source)
