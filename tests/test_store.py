@@ -61,6 +61,14 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-critical-css"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
+    def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn(".search-drawer,.cart-notification,.cart-notification__overlay,.promo,.quickshop__overlay,.quickshop__drawer,.menu-drawer,.cart-drawer", html)
+        self.assertIn("position:fixed;top:0;visibility:hidden;width:0", html)
+
     def test_store_css_asset_is_cacheable_for_lighthouse(self):
         response = self.client.get("/store/assets/store.css?v=20260605-css-images")
         self.addCleanup(response.close)
