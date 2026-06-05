@@ -1,5 +1,7 @@
 import json
+import hashlib
 import html as html_lib
+import hmac
 import os
 import platform
 import re
@@ -12,7 +14,7 @@ import time
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from flask import Flask, Response, abort, jsonify, render_template, render_template_string, request, send_file
+from flask import Flask, Response, abort, jsonify, make_response, render_template, render_template_string, request, send_file
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -62,6 +64,8 @@ GEMINI_ARGS = current_gemini_args()
 GEMINI_WORKDIR = Path(os.environ.get("POCKET_GEMINI_WORKDIR", BASE_DIR)).expanduser()
 GEMINI_TIMEOUT_SECONDS = int(os.environ.get("POCKET_GEMINI_TIMEOUT_SECONDS", "180"))
 POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
+OPS_SESSION_COOKIE = "pocket_ops_session"
+DEFAULT_OPS_SESSION_SECONDS = 12 * 60 * 60
 MAX_PROMPT_LENGTH = int(os.environ.get("POCKET_MAX_PROMPT_LENGTH", "12000"))
 TERMINAL_TIMEOUT_SECONDS = int(os.environ.get("POCKET_TERMINAL_TIMEOUT_SECONDS", "120"))
 TERMINAL_MAX_COMMAND_LENGTH = int(os.environ.get("POCKET_TERMINAL_MAX_COMMAND_LENGTH", "20000"))
@@ -163,6 +167,90 @@ def request_token():
 
 def access_denied():
     return bool(POCKET_ACCESS_TOKEN and request_token() != POCKET_ACCESS_TOKEN)
+
+
+def current_ops_session_seconds():
+    raw_value = clean_config_value(os.environ.get("POCKET_OPS_SESSION_SECONDS"))
+    if not raw_value:
+        return DEFAULT_OPS_SESSION_SECONDS
+    try:
+        seconds = int(raw_value)
+    except ValueError:
+        return DEFAULT_OPS_SESSION_SECONDS
+    return max(60, min(seconds, 7 * 24 * 60 * 60))
+
+
+def ops_open_enabled():
+    return truthy_env("POCKET_OPS_OPEN")
+
+
+def sign_ops_session(expires_at):
+    if not POCKET_ACCESS_TOKEN:
+        return ""
+    payload = str(expires_at).encode("utf-8")
+    secret = POCKET_ACCESS_TOKEN.encode("utf-8")
+    return hmac.new(secret, payload, hashlib.sha256).hexdigest()
+
+
+def create_ops_session_value():
+    expires_at = int(time.time() + current_ops_session_seconds())
+    return f"{expires_at}.{sign_ops_session(expires_at)}"
+
+
+def ops_session_valid():
+    value = request.cookies.get(OPS_SESSION_COOKIE, "")
+    try:
+        expires_text, signature = value.split(".", 1)
+        expires_at = int(expires_text)
+    except ValueError:
+        return False
+    if expires_at < int(time.time()):
+        return False
+    expected = sign_ops_session(expires_at)
+    return bool(expected and hmac.compare_digest(signature, expected))
+
+
+def ops_authorized():
+    if ops_open_enabled() or not POCKET_ACCESS_TOKEN:
+        return True, False
+    if ops_session_valid():
+        return True, False
+    if request_token() == POCKET_ACCESS_TOKEN:
+        return True, True
+    return False, False
+
+
+def ops_auth_label():
+    if ops_open_enabled():
+        return "Open mode is enabled by POCKET_OPS_OPEN=1."
+    if not POCKET_ACCESS_TOKEN:
+        return "No Pocket access token is configured."
+    if ops_session_valid():
+        return "Ops is unlocked for this browser."
+    return "Unlock once with your Pocket access token."
+
+
+def run_git_pull():
+    started = time.time()
+    result = subprocess.run(
+        ["git", "pull", "origin", "master"],
+        cwd=str(BASE_DIR),
+        text=True,
+        capture_output=True,
+        timeout=120,
+        check=False,
+    )
+    output = "\n".join(part for part in [result.stdout, result.stderr] if part).strip()
+    elapsed = round(time.time() - started, 2)
+    ok = result.returncode == 0
+    message = f"Pull completed in {elapsed}s." if ok else f"Pull failed with code {result.returncode}."
+    return {
+        "elapsed": elapsed,
+        "message": message,
+        "ok": ok,
+        "output": output,
+        "returncode": result.returncode,
+    }
 
 
 def restart_command():
@@ -1400,6 +1488,178 @@ ACTION_PAGE = """
 """
 
 
+OPS_PAGE = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pocket Ops</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101315;
+      --panel: #191f22;
+      --line: #333b40;
+      --text: #eef3f2;
+      --muted: #a9b3b0;
+      --accent: #72d6b9;
+      --accent-2: #9fc4e0;
+      --danger: #ff927e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(820px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .unlock-form,
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 18px;
+      margin-top: 14px;
+    }
+
+    .actions-form {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 8px;
+    }
+
+    input {
+      width: 100%;
+      height: 46px;
+      border: 1px solid var(--line);
+      background: #111619;
+      color: var(--text);
+      padding: 0 12px;
+      font: inherit;
+      outline: 0;
+      margin-bottom: 14px;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      width: 100%;
+      padding: 0 18px;
+      border: 0;
+      background: var(--accent);
+      color: #07110e;
+      font: inherit;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .secondary { background: var(--accent-2); }
+
+    pre {
+      margin: 14px 0 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--text);
+    }
+
+    .ok { color: var(--accent); }
+    .bad { color: var(--danger); }
+    code { color: var(--text); }
+
+    @media (max-width: 620px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Pocket Ops</h1>
+    <p>{{ auth_label }}</p>
+
+    {% if result %}
+      <section class="panel">
+        <p class="{{ 'ok' if ok else 'bad' }}">{{ result }}</p>
+        {% if output %}
+          <pre>{{ output }}</pre>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    {% if needs_unlock %}
+      <form class="unlock-form" method="post" action="/ops">
+        <h2>Unlock</h2>
+        <label for="token">Pocket access token</label>
+        <input id="token" name="token" type="password" autocomplete="current-password" required>
+        <button type="submit" name="action" value="unlock">Unlock ops</button>
+      </form>
+    {% else %}
+      <section class="panel">
+        <h2>Actions</h2>
+        <form class="actions-form grid" method="post" action="/ops">
+          <button type="submit" name="action" value="pull">Pull</button>
+          <button class="secondary" type="submit" name="action" value="restart">Restart</button>
+          <button type="submit" name="action" value="pull_restart">Pull then restart</button>
+        </form>
+      </section>
+    {% endif %}
+
+    <section class="panel">
+      <h2>Notes</h2>
+      <p>Open mode only works when <code>POCKET_OPS_OPEN=1</code> is set in the server environment. Use it only while you intentionally want unattended public tunnel operations.</p>
+      <p>Restart command: <code>{{ restart_command }}</code></p>
+    </section>
+  </main>
+</body>
+</html>
+"""
+
+
 TERMINAL_PAGE = """
 <!doctype html>
 <html lang="en">
@@ -2227,6 +2487,113 @@ def setup_page():
     )
 
 
+def render_ops_page(result="", output="", ok=False, status=200, set_session=False, unlocked=False):
+    needs_unlock = bool(
+        POCKET_ACCESS_TOKEN
+        and not ops_open_enabled()
+        and not ops_session_valid()
+        and not unlocked
+    )
+    response = make_response(render_template_string(
+        OPS_PAGE,
+        auth_label=ops_auth_label() if not unlocked else "Ops is unlocked for this browser.",
+        needs_unlock=needs_unlock,
+        result=result,
+        output=output,
+        ok=ok,
+        restart_command=restart_command(),
+    ), status)
+    if set_session:
+        response.set_cookie(
+            OPS_SESSION_COOKIE,
+            create_ops_session_value(),
+            max_age=current_ops_session_seconds(),
+            httponly=True,
+            secure=request.is_secure,
+            samesite="Lax",
+        )
+    return response
+
+
+@app.route("/ops", methods=["GET", "POST"])
+def ops_page():
+    if request.method == "GET":
+        return render_ops_page()
+
+    action = str(request.form.get("action") or "unlock").strip()
+    authorized, set_session = ops_authorized()
+    if not authorized:
+        return render_ops_page(
+            result="Invalid Pocket access token.",
+            output="",
+            ok=False,
+            status=401,
+        )
+
+    if action == "unlock":
+        return render_ops_page(
+            result="Ops unlocked. You can pull, restart, or pull then restart without typing the token again.",
+            output="",
+            ok=True,
+            set_session=set_session,
+            unlocked=True,
+        )
+
+    if action == "pull":
+        pull = run_git_pull()
+        return render_ops_page(
+            result=pull["message"],
+            output=pull["output"],
+            ok=pull["ok"],
+            status=200 if pull["ok"] else 502,
+            set_session=set_session,
+            unlocked=set_session,
+        )
+
+    if action == "restart":
+        command = restart_current_process()
+        return render_ops_page(
+            result="Restart requested. Wait a moment, then reload the page.",
+            output=f"Command: {command}\nLog: {RESTART_LOG_PATH}",
+            ok=True,
+            set_session=set_session,
+            unlocked=set_session,
+        )
+
+    if action == "pull_restart":
+        pull = run_git_pull()
+        if not pull["ok"]:
+            return render_ops_page(
+                result=pull["message"],
+                output=pull["output"],
+                ok=False,
+                status=502,
+                set_session=set_session,
+                unlocked=set_session,
+            )
+        command = restart_current_process()
+        output = "\n\n".join(part for part in [
+            pull["output"],
+            f"Restart command: {command}\nLog: {RESTART_LOG_PATH}",
+        ] if part)
+        return render_ops_page(
+            result=f"{pull['message']} Restart requested. Wait a moment, then reload the page.",
+            output=output,
+            ok=True,
+            set_session=set_session,
+            unlocked=set_session,
+        )
+
+    return render_ops_page(
+        result=f"Unknown ops action: {action}",
+        output="",
+        ok=False,
+        status=400,
+        set_session=set_session,
+        unlocked=set_session,
+    )
+
+
 @app.route("/pull", methods=["GET", "POST"])
 def pull_page():
     if request.method == "GET":
@@ -2257,19 +2624,7 @@ def pull_page():
             ok=False,
         ), 401
 
-    started = time.time()
-    result = subprocess.run(
-        ["git", "pull", "origin", "master"],
-        cwd=str(BASE_DIR),
-        text=True,
-        capture_output=True,
-        timeout=120,
-        check=False,
-    )
-    output = "\n".join(part for part in [result.stdout, result.stderr] if part).strip()
-    elapsed = round(time.time() - started, 2)
-    ok = result.returncode == 0
-    message = f"Pull completed in {elapsed}s." if ok else f"Pull failed with code {result.returncode}."
+    pull = run_git_pull()
 
     return render_template_string(
         ACTION_PAGE,
@@ -2279,12 +2634,12 @@ def pull_page():
         action="/pull",
         button="Pull from Git",
         auth_required=bool(POCKET_ACCESS_TOKEN),
-        result=message,
-        output=output,
-        ok=ok,
-        next_href="/restart" if ok else "",
+        result=pull["message"],
+        output=pull["output"],
+        ok=pull["ok"],
+        next_href="/restart" if pull["ok"] else "",
         next_label="Restart Server",
-    ), 200 if ok else 502
+    ), 200 if pull["ok"] else 502
 
 
 @app.route("/restart", methods=["GET", "POST"])

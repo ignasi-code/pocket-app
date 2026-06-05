@@ -36,6 +36,7 @@ Control pages:
 - `/store`: Public static-first Shopify storefront prototype with home, collection, product, cart, and mock checkout.
 - `/terminal`: Token-protected browser terminal for pasted shell commands.
 - `/setup`: Save local `.env` config from the browser.
+- `/ops`: Unlock once, then run pull, restart, or pull then restart from one page.
 - `/pull`: Run `git pull origin master`.
 - `/restart`: Start a fresh Pocket Server process in the background, then stop the old one.
 
@@ -65,6 +66,8 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_STORE_BASE_URL`: Shopify store base URL used to generate mock cart permalinks. Default: `https://roxanneassoulin.com`.
 - `POCKET_STORE_CURRENCY`: Currency label for the mock checkout response. Default: `usd`.
 - `POCKET_RESTART_COMMAND`: Optional command used by `/restart`. Default runs `python run_pocket.py`.
+- `POCKET_OPS_SESSION_SECONDS`: How long `/ops` stays unlocked in one browser after a valid token. Default: `43200`.
+- `POCKET_OPS_OPEN`: Set to `1` only when you intentionally want `/ops` pull/restart actions to work without a token through the public tunnel.
 
 ## Store prototype
 
@@ -84,7 +87,7 @@ The browser owns cart state in `localStorage`. The mock checkout endpoint verifi
 /store/api/checkout
 ```
 
-Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`.
+Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`. Leave `POCKET_OPS_OPEN` unset or `0` unless you are deliberately allowing unattended tunnel operations for a short window.
 
 To let Gemini CLI auto-approve tool calls from `/gpt`, set `POCKET_GEMINI_ARGS` to:
 
