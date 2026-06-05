@@ -57,8 +57,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-lcp-preloads" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-lcp-preloads"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-mono-defer" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-mono-defer"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
     def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
@@ -79,7 +79,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".site-header", response.get_data(as_text=True))
 
     def test_store_minified_css_asset_is_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-lcp-preloads")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-mono-defer")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -91,9 +91,9 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("Roxanne Assoulin fidelity pass", text)
 
     def test_store_defers_relative_mono_font_until_user_motion(self):
-        css_response = self.client.get("/store/assets/store.min.css?v=20260605-lcp-preloads")
+        css_response = self.client.get("/store/assets/store.min.css?v=20260605-mono-defer")
         self.addCleanup(css_response.close)
-        script_response = self.client.get("/store/assets/store.js?v=20260605-product-detail-defer")
+        script_response = self.client.get("/store/assets/store.js?v=20260605-mono-defer")
         self.addCleanup(script_response.close)
 
         self.assertEqual(css_response.status_code, 200)
@@ -1497,7 +1497,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-product-detail-defer", html)
+        self.assertIn("/store/assets/store.js?v=20260605-mono-defer", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1540,7 +1540,7 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("await loadCatalog();", cart_drawer_source)
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-product-detail-defer")
+        response = self.client.get("/store/assets/store.js?v=20260605-mono-defer")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
