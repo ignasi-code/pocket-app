@@ -36,7 +36,7 @@
                   {% if hero_is_lcp %}
                   <img src="{{ image_url(hero_image, 420) }}" srcset="{{ image_srcset(hero_image, [390, 420]) }}" sizes="100vw" alt="" width="760" height="760" decoding="async"{% if hero_is_lcp %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %}>
                   {% else %}
-                  <img data-home-deferred-image data-src="{{ image_url(hero_image, 480) }}" data-srcset="{{ image_srcset(hero_image, [390, 480]) }}" data-sizes="100vw" alt="" width="760" height="760" decoding="async" loading="lazy">
+                  <img data-home-deferred-image data-src="{{ image_url(hero_image, 420) }}" data-srcset="{{ image_srcset(hero_image, [390, 420]) }}" data-sizes="100vw" alt="" width="760" height="760" decoding="async" loading="lazy">
                   {% endif %}
                 </picture>
               </div>
@@ -72,7 +72,7 @@
                       <source media="(min-width: 1024px)" data-srcset="{{ image_srcset(tile.image_desktop, [760, 1200, 1600]) }}" data-sizes="50vw">
                     {% endif %}
                     {% set tile_image = tile.image_mobile or tile.image or placeholder_image %}
-                    <img data-home-deferred-image data-src="{{ image_url(tile_image, 760) }}" data-srcset="{{ image_srcset(tile_image, [390, 760]) }}" data-sizes="(min-width: 1024px) 50vw, 100vw" alt="" width="760" height="760" loading="lazy" decoding="async">
+                    <img data-home-deferred-image data-src="{{ image_url(tile_image, 420) }}" data-srcset="{{ image_srcset(tile_image, [390, 420]) }}" data-sizes="(min-width: 1024px) 50vw, 100vw" alt="" width="760" height="760" loading="lazy" decoding="async">
                   </picture>
                 </div>
                 {% if tile.title %}

@@ -543,6 +543,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-src=", deferred_tag)
         self.assertIn("data-srcset=", deferred_tag)
         self.assertIn("data-sizes=", deferred_tag)
+        self.assertIn("&amp;width=420", deferred_tag)
+        self.assertNotIn("&amp;width=480", deferred_tag)
         self.assertNotIn(" src=", deferred_tag)
         self.assertNotIn(" srcset=", deferred_tag)
 
@@ -552,6 +554,8 @@ class StoreTest(unittest.TestCase):
         split_end = html.index(">", split_start)
         split_tag = html[split_start:split_end]
         self.assertNotIn(" src=", split_tag)
+        self.assertIn("&amp;width=420", split_tag)
+        self.assertNotIn("&amp;width=760", split_tag)
         self.assertNotIn("&amp;width=1200 1200w", split_tag)
         self.assertIn('data-sizes="(min-width: 1024px) 50vw, 100vw"', split_tag)
 
