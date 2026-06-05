@@ -241,6 +241,20 @@ class StoreTest(unittest.TestCase):
         self.assertLess(url.index("quality=70"), url.index("width=390"))
         self.assertNotIn("_760x_crop_center", url)
 
+    def test_store_frontend_shopify_image_helper_adds_quality_transform(self):
+        source = self.store_js_source()
+        helper_source = source[
+            source.index("function shopifyImageUrl(src, width)"):
+            source.index("function productImage(product, variant, width)")
+        ]
+
+        self.assertIn('url.searchParams.delete("quality");', helper_source)
+        self.assertIn('if (width) url.searchParams.set("quality", "70");', helper_source)
+        self.assertLess(
+            helper_source.index('url.searchParams.set("quality", "70")'),
+            helper_source.index('url.searchParams.set("width", String(width))'),
+        )
+
     def test_homepage_preloads_lcp_hero_responsive_image_for_lighthouse(self):
         response = self.client.get("/store")
 
@@ -1473,12 +1487,20 @@ class StoreTest(unittest.TestCase):
 
     def test_store_js_lazy_loads_cart_page_upsells(self):
         source = self.store_js_source()
+        binding_source = source[
+            source.index("function bindDeferredCartPageUpsells()"):
+            source.index("function hydrateVisibleProductDetailImages()")
+        ]
 
         self.assertIn("function bindDeferredCartPageUpsells()", source)
         self.assertIn("[data-cart-page-upsell-fragment]", source)
         self.assertIn("fetch(sentinel.dataset.fragmentUrl)", source)
         self.assertIn("loadDeferredMonoFont();", source)
         self.assertIn("bindDeferredCartPageUpsells();", source)
+        self.assertNotIn("IntersectionObserver", binding_source)
+        self.assertNotIn("rootMargin", binding_source)
+        self.assertIn('window.addEventListener("scroll", () => loadDeferredCartPageUpsells(sentinel), { passive: true, once: true });', binding_source)
+        self.assertIn('window.addEventListener("pointerdown", () => loadDeferredCartPageUpsells(sentinel), { passive: true, once: true });', binding_source)
 
     def test_cart_page_mobile_summary_spacing_matches_live_checkout_width(self):
         source = self.store_css_source()
@@ -1743,7 +1765,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-defer" defer fetchpriority="low"></script>', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-upsell-defer" defer fetchpriority="low"></script>', html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")

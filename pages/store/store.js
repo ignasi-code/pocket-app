@@ -185,6 +185,8 @@
       url.searchParams.delete("width");
       url.searchParams.delete("height");
       url.searchParams.delete("crop");
+      url.searchParams.delete("quality");
+      if (width) url.searchParams.set("quality", "70");
       if (width) url.searchParams.set("width", String(width));
       return url.toString();
     } catch {
@@ -363,15 +365,6 @@
   function bindDeferredCartPageUpsells() {
     const sentinel = document.querySelector("[data-cart-page-upsell-fragment]");
     if (!sentinel) return;
-    if ("IntersectionObserver" in window) {
-      const observer = new IntersectionObserver(entries => {
-        if (!entries.some(entry => entry.isIntersecting)) return;
-        observer.disconnect();
-        loadDeferredCartPageUpsells(sentinel);
-      }, { rootMargin: "700px 0px" });
-      observer.observe(sentinel);
-      return;
-    }
     window.addEventListener("scroll", () => loadDeferredCartPageUpsells(sentinel), { passive: true, once: true });
     window.addEventListener("pointerdown", () => loadDeferredCartPageUpsells(sentinel), { passive: true, once: true });
     window.addEventListener("touchstart", () => loadDeferredCartPageUpsells(sentinel), { passive: true, once: true });
