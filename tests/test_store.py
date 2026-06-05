@@ -219,10 +219,10 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn('alt="Roxanne Assoulin" width="580" height="42"', html)
-        self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;width=207\" srcset=", html)
-        self.assertNotIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;width=414\" srcset=", html)
-        self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;width=207 207w", html)
-        self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;width=414 414w", html)
+        self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;quality=70&amp;width=207\" srcset=", html)
+        self.assertNotIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;quality=70&amp;width=414\" srcset=", html)
+        self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;quality=70&amp;width=207 207w", html)
+        self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;quality=70&amp;width=414 414w", html)
         self.assertIn('sizes="(min-width: 1024px) 290px, 207px"', html)
         self.assertIn('loading="lazy" decoding="async"', html)
         source = self.store_css_source()
@@ -236,7 +236,9 @@ class StoreTest(unittest.TestCase):
         )
 
         self.assertIn("0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985.jpg", url)
+        self.assertIn("quality=70", url)
         self.assertIn("width=390", url)
+        self.assertLess(url.index("quality=70"), url.index("width=390"))
         self.assertNotIn("_760x_crop_center", url)
 
     def test_homepage_preloads_lcp_hero_responsive_image_for_lighthouse(self):
@@ -247,7 +249,7 @@ class StoreTest(unittest.TestCase):
         preload_start = html.index('<link rel="preload" as="image" media="(max-width: 1023px)"')
         preload_end = html.index(">", preload_start)
         preload_tag = html[preload_start:preload_end]
-        self.assertIn('imagesrcset="https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985.jpg?v=1780086212&amp;width=390 390w', preload_tag)
+        self.assertIn('imagesrcset="https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985.jpg?v=1780086212&amp;quality=70&amp;width=390 390w', preload_tag)
         self.assertIn("&amp;width=414 414w", preload_tag)
         self.assertNotIn("&amp;width=420", preload_tag)
         self.assertNotIn("&amp;width=480 480w", preload_tag)
@@ -270,7 +272,7 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("&amp;width=480 480w", preload_tag)
         self.assertIn('imagesizes="100vw"', html)
         self.assertIn('fetchpriority="high"', html)
-        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;width=414"', html)
+        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;quality=70&amp;width=414"', html)
 
     def test_product_page_preloads_mobile_lcp_gallery_image_for_lighthouse(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
@@ -727,7 +729,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("&amp;width=760 760w", html)
         self.assertIn("&amp;width=1200 1200w", html)
         self.assertIn('sizes="50vw"', html)
-        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;width=414"', html)
+        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;quality=70&amp;width=414"', html)
         self.assertIn('sizes="100vw"', html)
 
     def test_product_page_renders_variant_add_to_cart(self):
