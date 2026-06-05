@@ -1442,7 +1442,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-product-card-defer", html)
+        self.assertIn("/store/assets/store.js?v=20260605-catalog-promise", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1458,8 +1458,16 @@ class StoreTest(unittest.TestCase):
             drawer_source.index("await loadCatalog();"),
         )
 
+    def test_store_js_reuses_inflight_catalog_request_for_cart_startup(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("let catalogPromise = null;", source)
+        self.assertIn("if (catalogPromise) return catalogPromise;", source)
+        self.assertIn("catalogPromise = fetch(\"/store/catalog.json\")", source)
+        self.assertIn("catalogPromise = null;", source)
+
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-product-card-defer")
+        response = self.client.get("/store/assets/store.js?v=20260605-catalog-promise")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)

@@ -5,6 +5,7 @@
   const displayEurRate = Number.parseFloat(document.body?.dataset.storeDisplayEurRate || "0.875");
   const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
   let catalog = null;
+  let catalogPromise = null;
   let variants = new Map();
 
   function loadCart() {
@@ -89,15 +90,24 @@
 
   async function loadCatalog() {
     if (catalog) return catalog;
-    const response = await fetch("/store/catalog.json");
-    catalog = await response.json();
-    variants = new Map();
-    for (const product of catalog.products || []) {
-      for (const variant of product.variants || []) {
-        variants.set(Number(variant.id), { product, variant });
-      }
-    }
-    return catalog;
+    if (catalogPromise) return catalogPromise;
+    catalogPromise = fetch("/store/catalog.json")
+      .then(response => response.json())
+      .then(data => {
+        catalog = data;
+        variants = new Map();
+        for (const product of catalog.products || []) {
+          for (const variant of product.variants || []) {
+            variants.set(Number(variant.id), { product, variant });
+          }
+        }
+        return catalog;
+      })
+      .catch(error => {
+        catalogPromise = null;
+        throw error;
+      });
+    return catalogPromise;
   }
 
   async function productByHandle(handle) {
