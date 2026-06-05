@@ -535,7 +535,7 @@
 
     return children.map(child => ({
       id: child.id,
-      image: productImage(product, child, 80),
+      image: productImage(product, child, 64),
       title: bundleIncludeTitle(product, child)
     }));
   }

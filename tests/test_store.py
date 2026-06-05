@@ -1807,7 +1807,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-drawer-skip" defer fetchpriority="low"></script>', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-child-images" defer fetchpriority="low"></script>', html)
 
     def test_footer_logo_is_deferred_until_scroll_for_lighthouse(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
@@ -1838,7 +1838,7 @@ class StoreTest(unittest.TestCase):
     def test_cart_bundle_include_thumbnails_use_compact_lazy_images(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
-        self.assertIn("image: productImage(product, child, 80)", source)
+        self.assertIn("image: productImage(product, child, 64)", source)
         self.assertIn('<img loading="lazy" decoding="async" src="${item.image}" alt="">', source)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
