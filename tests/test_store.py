@@ -1689,10 +1689,17 @@ class StoreTest(unittest.TestCase):
         self.assertIn("title", product)
         self.assertIn("handle", product)
         self.assertIn("images", product)
+        self.assertNotIn("id", product)
         self.assertIn("id", variant)
         self.assertIn("title", variant)
         self.assertIn("price", variant)
-        self.assertIn("featured_image", variant)
+        self.assertIn("position", variant)
+        self.assertNotIn("available", variant)
+        self.assertFalse(any(
+            "featured_image" in item and item["featured_image"] is None
+            for product_item in data["products"]
+            for item in product_item["variants"]
+        ))
         self.assertNotIn("body_html", product)
         self.assertNotIn("tags", product)
 

@@ -897,16 +897,17 @@ def store_cart_index_payload():
         ]
         variants = []
         for variant in product.get("variants", []):
-            variants.append({
+            compact_variant = {
                 "id": variant.get("id"),
                 "title": variant.get("title"),
                 "price": variant.get("price"),
-                "available": variant.get("available"),
                 "position": variant.get("position"),
-                "featured_image": store_compact_image(variant.get("featured_image")),
-            })
+            }
+            compact_featured_image = store_compact_image(variant.get("featured_image"))
+            if compact_featured_image:
+                compact_variant["featured_image"] = compact_featured_image
+            variants.append(compact_variant)
         products.append({
-            "id": product.get("id"),
             "title": product.get("title"),
             "handle": product.get("handle"),
             "images": images,
