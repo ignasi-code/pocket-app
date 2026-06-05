@@ -142,6 +142,33 @@ class StoreTest(unittest.TestCase):
         self.assertIn("right: 48px;", source)
         self.assertIn("width: 48px;", source)
 
+    def test_store_pages_include_lighthouse_accessibility_landmarks_and_headings(self):
+        home_html = self.client.get("/store").get_data(as_text=True)
+        cart_html = self.client.get("/store/cart").get_data(as_text=True)
+        collection_html = self.client.get("/store/collections/new-arrivals").get_data(as_text=True)
+
+        self.assertIn('<h1 class="visually-hidden">Roxanne Assoulin storefront</h1>', home_html)
+        self.assertIn('<h1 class="visually-hidden">Shopping bag</h1>', cart_html)
+        self.assertIn('class="shipping-promo js-shippingPromo" role="region" aria-label="Shipping promotion"', home_html)
+        self.assertIn('class="shipping-promo js-shippingPromo" role="region" aria-label="Shipping promotion"', collection_html)
+        self.assertIn('<h2 class="visually-hidden">Products</h2>', collection_html)
+
+    def test_store_accessibility_fixes_avoid_axe_violations(self):
+        product_html = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue").get_data(as_text=True)
+        cart_html = self.client.get("/store/cart").get_data(as_text=True)
+        css = self.store_css_source()
+        js = self.store_js_source()
+
+        self.assertIn(".price {\n      color: #000;\n      font-size: .75rem;\n      font-weight: 400;\n      line-height: 1.35;\n      opacity: .65;", css)
+        self.assertIn('<div class="buy-box product-details">', product_html)
+        self.assertNotIn('<aside class="buy-box product-details">', product_html)
+        self.assertIn('aria-label="Quantity"', product_html)
+        self.assertIn('<div class="cart-page__summary cart-page__totals">', cart_html)
+        self.assertNotIn('<aside class="cart-page__summary cart-page__totals">', cart_html)
+        self.assertIn('aria-label="${escapeHtml(meta.product.title)}"', js)
+        self.assertIn('data-gift-save', js)
+        self.assertIn('saveButton.disabled = !active;', js)
+
     def test_store_pages_use_route_scoped_css_assets_for_lighthouse(self):
         cases = (
             ("/store", "home"),

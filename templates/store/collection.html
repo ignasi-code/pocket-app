@@ -10,7 +10,7 @@
   {% endif %}
 {% endblock %}
 {% block body %}
-  <div class="shipping-promo js-shippingPromo" data-shipping-promo>
+  <div class="shipping-promo js-shippingPromo" role="region" aria-label="Shipping promotion" data-shipping-promo>
     <span>Enjoy complimentary ground shipping on US orders $250+</span>
     <button class="shipping-promo__close" type="button" aria-label="Close shipping message" data-shipping-promo-close></button>
   </div>
@@ -48,6 +48,7 @@
             </section>
           {% endif %}
 
+          <h2 class="visually-hidden">Products</h2>
           <section class="collection-filter-bar collection-filter__bar" aria-label="Collection controls">
             {% set labels = collection.filter_labels or ["Filter", "Sort"] %}
             <div class="collection-filter__bar__button">

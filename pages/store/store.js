@@ -604,7 +604,7 @@
               <span>add a gift message (up to 100 characters)</span>
             </div>
             <textarea placeholder="type your message" class="js-cartGiftMessage" maxlength="100" disabled data-gift-textarea></textarea>
-            <button class="button button--cart-message-save js-cartGiftMessageSave" type="button" aria-live="polite">Save</button>
+            <button class="button button--cart-message-save js-cartGiftMessageSave" type="button" aria-live="polite" disabled data-gift-save>Save</button>
           </div>
         </div>
       </div>
@@ -661,7 +661,7 @@
         <div class="cart-page__item${bundleClass}">
           <div class="cart-page__item__copy">
             <div class="cart-page__item__details">
-              <a class="cart-page__item__image-mobile cart-page__item__image-mobile--top" href="${productUrl}">
+              <a class="cart-page__item__image-mobile cart-page__item__image-mobile--top" href="${productUrl}" aria-label="${escapeHtml(meta.product.title)}">
                 <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant, 180)}" alt="">
               </a>
               <a class="cart-page__item__title" href="${productUrl}">${escapeHtml(meta.product.title)}</a>
@@ -738,12 +738,14 @@
     const wrap = input.closest(".cart-page__gift-message__wrap");
     const panel = wrap?.querySelector("[data-gift-message]");
     const textarea = wrap?.querySelector(".js-cartGiftMessage");
+    const saveButton = wrap?.querySelector("[data-gift-save]");
     const active = input.checked;
     if (panel) {
       panel.setAttribute("aria-hidden", active ? "false" : "true");
       panel.style.height = active ? `${panel.scrollHeight}px` : "0";
     }
     if (textarea) textarea.disabled = !active;
+    if (saveButton) saveButton.disabled = !active;
   }
 
   function setOverlay(active) {

@@ -3,10 +3,11 @@
 {% block critical_css %}.cart{padding:79px 0 0}.cart-page{display:block;padding:0 10px}.cart-page__items{background:transparent;border:0;border-radius:0;margin:0;min-height:497px;overflow:visible;padding:0;width:100%}.cart-page__summary{background:#fff;border:1px solid #e6e6e6;border-radius:5px;box-sizing:border-box;margin-top:-1px;min-height:271px;height:271px;overflow:hidden;padding:14px;width:100%}.cart-page__summary-title{font-size:.875rem;font-weight:700;line-height:135%;margin:0 0 22px;text-transform:lowercase}.cart-page__total{display:flex;font-size:.875rem;justify-content:space-between;line-height:135%;margin-top:12px;text-transform:lowercase}.cart-page__total--grand{border-top:1px solid #e6e6e6;font-weight:700;margin-top:18px;padding-top:18px}.cart-page__checkout{align-items:center;appearance:none;background:#d1ebf8;border:0;border-radius:5px;box-sizing:border-box;color:#000;cursor:pointer;display:flex;font-size:1rem;font-weight:700;height:60px;justify-content:center;line-height:60px;margin:20px 0;padding:0 20px;text-decoration:none;width:100%}.cart-page__shipping{color:#000;font-size:.875rem;line-height:135%;margin:14px 0 0;white-space:nowrap}{% endblock %}
 {% block body %}
   <main class="cart" data-view="cart" data-cart-page data-checkout-endpoint="/store/api/checkout">
+    <h1 class="visually-hidden">Shopping bag</h1>
     <section class="cart-page js-cartPageSection">
       <div class="cart-page__items" data-cart-lines style="min-height: 497px"></div>
 
-      <aside class="cart-page__summary cart-page__totals">
+      <div class="cart-page__summary cart-page__totals">
         <div class="cart-page__totals__wrap">
           <p class="cart-page__summary-title cart-page__totals__head">order summary</p>
           <div class="cart-page__totals__list">
@@ -23,7 +24,7 @@
           <p class="cart-page__shipping cart-page__shipping-info">Enjoy complimentary ground shipping on US orders $250+</p>
           <div class="notice" data-checkout-output></div>
         </div>
-      </aside>
+      </div>
     </section>
 
     <div data-cart-page-upsell-fragment data-fragment-url="/store/cart-upsells-fragment"></div>
