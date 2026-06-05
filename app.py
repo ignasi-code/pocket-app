@@ -81,6 +81,7 @@ STORE_BASE_URL = os.environ.get("POCKET_STORE_BASE_URL", "https://roxanneassouli
 STORE_CURRENCY = os.environ.get("POCKET_STORE_CURRENCY", "usd").lower()
 STORE_DISPLAY_CURRENCY = os.environ.get("POCKET_STORE_DISPLAY_CURRENCY", "eur").lower()
 STORE_DISPLAY_EUR_RATE = float(os.environ.get("POCKET_STORE_DISPLAY_EUR_RATE", "0.875"))
+STORE_COLLECTION_INITIAL_PRODUCT_LIMIT = 12
 STORE_CART_UPSELL_HANDLES = [
     "the-salt-pepper-cylinder-bracelet-stack",
     "the-pearl-branch-bracelet",
@@ -722,6 +723,33 @@ def store_collection_products(handle):
         rank = {product_handle: index for index, product_handle in enumerate(ordered_handles)}
         selected.sort(key=lambda product: (rank.get(product.get("handle"), len(rank)), product.get("title", "")))
     return definition, selected
+
+
+def store_collection_view_data(handle):
+    collection, products = store_collection_products(handle)
+    if not collection:
+        return None
+    products, search_query = store_apply_search_filter(products, request.args.get("q", ""))
+    products, active_filters = store_apply_collection_filters(products, request.args)
+    products = store_sort_collection_products(products, request.args.get("sort_by"))
+    return {
+        "collection": collection,
+        "products": products,
+        "active_filters": active_filters,
+        "current_sort": request.args.get("sort_by", ""),
+        "search_query": search_query,
+    }
+
+
+def store_collection_fragment_url(handle, offset):
+    query = []
+    for key, values in request.args.lists():
+        if key == "offset":
+            continue
+        for value in values:
+            query.append((key, value))
+    query.append(("offset", str(int(offset))))
+    return f"/store/collections/{handle}/products-fragment?{urlencode(query)}"
 
 
 def store_product_price_values(product):
@@ -2323,23 +2351,41 @@ def store_page():
 
 @app.route("/store/collections/<handle>")
 def store_collection_page(handle):
-    collection, products = store_collection_products(handle)
-    if not collection:
+    view_data = store_collection_view_data(handle)
+    if not view_data:
         abort(404)
-    products, search_query = store_apply_search_filter(products, request.args.get("q", ""))
-    products, active_filters = store_apply_collection_filters(products, request.args)
-    products = store_sort_collection_products(products, request.args.get("sort_by"))
     return render_store_template(
         "store/collection.html",
         **store_template_context(
             handle=handle,
-            collection=collection,
-            products=products,
-            active_filters=active_filters,
-            current_sort=request.args.get("sort_by", ""),
-            search_query=search_query,
+            **view_data,
+            collection_initial_product_limit=STORE_COLLECTION_INITIAL_PRODUCT_LIMIT,
+            collection_deferred_url=store_collection_fragment_url(
+                handle,
+                STORE_COLLECTION_INITIAL_PRODUCT_LIMIT,
+            ),
         ),
     )
+
+
+@app.route("/store/collections/<handle>/products-fragment")
+def store_collection_products_fragment(handle):
+    view_data = store_collection_view_data(handle)
+    if not view_data:
+        abort(404)
+    try:
+        offset = max(0, int(request.args.get("offset", STORE_COLLECTION_INITIAL_PRODUCT_LIMIT)))
+    except (TypeError, ValueError):
+        offset = STORE_COLLECTION_INITIAL_PRODUCT_LIMIT
+    html = minify_store_html(render_template(
+        "store/_collection_products_fragment.html",
+        **store_template_context(
+            products=view_data["products"][offset:],
+        ),
+    ))
+    response = Response(html, mimetype="text/html")
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 @app.route("/store/products/<handle>")

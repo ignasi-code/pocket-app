@@ -1,0 +1,6 @@
+{% for product in products %}
+  {% set defer_product_card_image = true %}
+  {% set product_card_primary_mobile_width = 390 %}
+  {% set product_card_primary_mobile_srcset_widths = [240, 360, 390] %}
+  {% include "store/_product_card.html" %}
+{% endfor %}

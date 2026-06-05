@@ -288,6 +288,43 @@
     window.addEventListener("touchstart", scheduleHydration, { passive: true });
   }
 
+  function loadDeferredCollectionProducts(sentinel) {
+    if (!sentinel || sentinel.dataset.loading === "true" || sentinel.dataset.loaded === "true") return;
+    const grid = document.querySelector("[data-collection-grid]");
+    if (!grid || !sentinel.dataset.fragmentUrl) return;
+    sentinel.dataset.loading = "true";
+    fetch(sentinel.dataset.fragmentUrl)
+      .then(response => response.text())
+      .then(html => {
+        const template = document.createElement("template");
+        template.innerHTML = html.trim();
+        grid.appendChild(template.content);
+        sentinel.dataset.loaded = "true";
+        sentinel.remove();
+        hydrateVisibleProductCardImages();
+      })
+      .catch(() => {
+        sentinel.dataset.loading = "false";
+      });
+  }
+
+  function bindDeferredCollectionProducts() {
+    const sentinel = document.querySelector("[data-collection-deferred-products]");
+    if (!sentinel) return;
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return;
+        observer.disconnect();
+        loadDeferredCollectionProducts(sentinel);
+      }, { rootMargin: "900px 0px" });
+      observer.observe(sentinel);
+      return;
+    }
+    window.addEventListener("scroll", () => loadDeferredCollectionProducts(sentinel), { passive: true, once: true });
+    window.addEventListener("pointerdown", () => loadDeferredCollectionProducts(sentinel), { passive: true, once: true });
+    window.addEventListener("touchstart", () => loadDeferredCollectionProducts(sentinel), { passive: true, once: true });
+  }
+
   function hydrateVisibleProductDetailImages() {
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
     const buffer = viewportHeight * 0.5;
@@ -1159,6 +1196,7 @@
   document.querySelectorAll("[data-pdp-variant-select]").forEach(select => updatePdpSelection(select, false));
   bindDeferredHomeImageHydration();
   bindDeferredProductCardImageHydration();
+  bindDeferredCollectionProducts();
   bindDeferredProductDetailImageHydration();
   bindDeferredGalleryHydration();
   bindDeferredMonoFont();

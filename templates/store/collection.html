@@ -128,14 +128,19 @@
           </section>
 
           {% if products %}
-            <section class="grid collection-grid">
-              {% for product in products %}
+            {% set can_defer_products = not active_filtering and not current_sort and products|length > collection_initial_product_limit %}
+            {% set visible_products = products[:collection_initial_product_limit] if can_defer_products else products %}
+            <section class="grid collection-grid" data-collection-grid>
+              {% for product in visible_products %}
                 {% set defer_product_card_image = loop.index > 2 %}
                 {% set product_card_primary_mobile_width = 390 %}
                 {% set product_card_primary_mobile_srcset_widths = [240, 360, 390] %}
                 {% include "store/_product_card.html" %}
               {% endfor %}
             </section>
+            {% if can_defer_products %}
+              <div class="collection-deferred-products" data-collection-deferred-products data-fragment-url="{{ collection_deferred_url }}" aria-hidden="true"></div>
+            {% endif %}
             {% if page_count > 1 %}
               <nav class="pagination" aria-label="Collection pagination">
                 <span class="pagination__prev is-disabled" aria-disabled="true">Previous</span>

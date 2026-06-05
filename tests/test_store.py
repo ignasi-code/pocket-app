@@ -286,6 +286,10 @@ class StoreTest(unittest.TestCase):
 
     def test_product_gallery_deferred_images_hydrate_after_user_motion(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+        gallery_source = source[
+            source.index("function hydrateVisibleGalleryImages"):
+            source.index("function escapeHtml")
+        ]
 
         self.assertIn("hydrateDeferredImage", source)
         self.assertIn("bindDeferredGalleryHydration", source)
@@ -294,8 +298,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn("hydrateDeferredImage(image);", source)
         self.assertIn('gallery.addEventListener("scroll"', source)
         self.assertIn('gallery.addEventListener("pointerdown"', source)
-        self.assertNotIn("new IntersectionObserver", source)
-        self.assertNotIn("observeDeferredGalleryImages();", source)
+        self.assertNotIn("new IntersectionObserver", gallery_source)
+        self.assertNotIn("observeDeferredGalleryImages();", gallery_source)
 
     def test_product_detail_image_hydrates_after_user_motion(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -488,10 +492,13 @@ class StoreTest(unittest.TestCase):
 
     def test_collection_defers_product_card_images_after_first_visible_rows(self):
         response = self.client.get("/store/collections/new-arrivals")
+        fragment_response = self.client.get("/store/collections/new-arrivals/products-fragment?offset=12")
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(fragment_response.status_code, 200)
         html = response.get_data(as_text=True)
-        grid_start = html.index('<section class="grid collection-grid">')
+        fragment_html = fragment_response.get_data(as_text=True)
+        grid_start = html.index('<section class="grid collection-grid" data-collection-grid>')
         first_start = html.index('<img class="product-tile__image__primary"', grid_start)
         first_end = html.index(">", first_start)
         first_tag = html[first_start:first_end]
@@ -510,25 +517,55 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn(" src=", third_tag)
 
         deferred_marker = '<img class="product-tile__image__primary" data-product-card-deferred-image data-src="https://cdn.shopify.com/s/files/1/0998/6780/files/TheDoubleDropCubicPendantNecklace.jpg'
-        self.assertIn(deferred_marker, html)
-        deferred_start = html.index(deferred_marker)
-        deferred_end = html.index(">", deferred_start)
-        deferred_tag = html[deferred_start:deferred_end]
+        self.assertNotIn(deferred_marker, html)
+        self.assertIn(deferred_marker, fragment_html)
+        deferred_start = fragment_html.index(deferred_marker)
+        deferred_end = fragment_html.index(">", deferred_start)
+        deferred_tag = fragment_html[deferred_start:deferred_end]
         self.assertNotIn(" src=", deferred_tag)
         self.assertIn("data-srcset=", deferred_tag)
 
-        deferred_picture_start = html.rindex("<picture>", 0, deferred_start)
-        deferred_source_start = html.index("<source", deferred_picture_start)
-        deferred_source_end = html.index(">", deferred_source_start)
-        deferred_source_tag = html[deferred_source_start:deferred_source_end]
+        deferred_picture_start = fragment_html.rindex("<picture>", 0, deferred_start)
+        deferred_source_start = fragment_html.index("<source", deferred_picture_start)
+        deferred_source_end = fragment_html.index(">", deferred_source_start)
+        deferred_source_tag = fragment_html[deferred_source_start:deferred_source_end]
         self.assertIn("&amp;width=540 540w", deferred_source_tag)
         self.assertNotIn("&amp;width=760", deferred_source_tag)
+
+    def test_collection_initial_html_defers_offscreen_product_cards(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('data-results-count="48"', html)
+        self.assertIn('data-collection-grid', html)
+        self.assertIn('data-collection-deferred-products', html)
+        self.assertIn('/store/collections/new-arrivals/products-fragment?offset=12', html)
+        self.assertIn('data-product-handle="the-salt-pepper-cylinder-necklace-set"', html)
+        self.assertNotIn('data-product-handle="the-double-drop-cubic-pendant"', html)
+        self.assertLess(len(response.get_data()), 95000)
+
+    def test_collection_products_fragment_returns_remaining_cards(self):
+        response = self.client.get("/store/collections/new-arrivals/products-fragment?offset=12")
+        self.addCleanup(response.close)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("public", response.headers.get("Cache-Control", ""))
+        self.assertIn("max-age=3600", response.headers.get("Cache-Control", ""))
+        html = response.get_data(as_text=True)
+        self.assertIn('data-product-handle="the-short-snake-chain-necklace"', html)
+        self.assertIn('data-product-handle="the-double-drop-cubic-pendant"', html)
+        self.assertNotIn('data-product-handle="the-salt-pepper-cylinder-necklace-set"', html)
+        self.assertIn("data-product-card-deferred-image", html)
 
     def test_product_card_deferred_images_hydrate_after_scroll_or_pointer(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
         self.assertIn("function hydrateVisibleProductCardImages()", source)
         self.assertIn("function bindDeferredProductCardImageHydration()", source)
+        self.assertIn("function bindDeferredCollectionProducts()", source)
+        self.assertIn("[data-collection-deferred-products]", source)
+        self.assertIn("fetch(sentinel.dataset.fragmentUrl)", source)
         self.assertIn("[data-product-card-deferred-image][data-src]", source)
         self.assertIn('window.addEventListener("scroll"', source)
         self.assertIn('window.addEventListener("pointerdown"', source)
