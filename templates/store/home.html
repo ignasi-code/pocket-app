@@ -26,10 +26,18 @@
                 {% set hero_is_lcp = loop.first %}
                 <picture>
                   {% if section.image_desktop %}
+                    {% if hero_is_lcp %}
                     <source media="(min-width: 1024px)" srcset="{{ image_srcset(section.image_desktop, [760, 1200, 1600, 1920]) }}" sizes="100vw">
+                    {% else %}
+                    <source media="(min-width: 1024px)" data-srcset="{{ image_srcset(section.image_desktop, [760, 1200, 1600, 1920]) }}" data-sizes="100vw">
+                    {% endif %}
                   {% endif %}
                   {% set hero_image = section.image_mobile or section.image or placeholder_image %}
+                  {% if hero_is_lcp %}
                   <img src="{{ image_url(hero_image, 480) }}" srcset="{{ image_srcset(hero_image, [390, 480]) }}" sizes="100vw" alt="" width="760" height="760" decoding="async"{% if hero_is_lcp %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+                  {% else %}
+                  <img data-home-deferred-image data-src="{{ image_url(hero_image, 480) }}" data-srcset="{{ image_srcset(hero_image, [390, 480]) }}" data-sizes="100vw" alt="" width="760" height="760" decoding="async" loading="lazy">
+                  {% endif %}
                 </picture>
               </div>
               <div class="hero__cta">{{ section.title }}</div>
@@ -60,10 +68,10 @@
                 <div class="double-image-banner__tile__image js-scroll">
                   <picture>
                     {% if tile.image_desktop %}
-                      <source media="(min-width: 1024px)" srcset="{{ image_srcset(tile.image_desktop, [760, 1200, 1600]) }}" sizes="50vw">
+                      <source media="(min-width: 1024px)" data-srcset="{{ image_srcset(tile.image_desktop, [760, 1200, 1600]) }}" data-sizes="50vw">
                     {% endif %}
                     {% set tile_image = tile.image_mobile or tile.image or placeholder_image %}
-                    <img src="{{ image_url(tile_image, 760) }}" srcset="{{ image_srcset(tile_image, [390, 760, 1200]) }}" sizes="(min-width: 1024px) 50vw, 100vw" alt="" width="760" height="760" loading="lazy" decoding="async">
+                    <img data-home-deferred-image data-src="{{ image_url(tile_image, 760) }}" data-srcset="{{ image_srcset(tile_image, [390, 760]) }}" data-sizes="(min-width: 1024px) 50vw, 100vw" alt="" width="760" height="760" loading="lazy" decoding="async">
                   </picture>
                 </div>
                 {% if tile.title %}

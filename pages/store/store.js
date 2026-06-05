@@ -149,6 +149,34 @@
     document.querySelectorAll("[data-cart-drawer] [data-cart-deferred-image][data-src]").forEach(hydrateDeferredImage);
   }
 
+  function hydrateVisibleHomeImages() {
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const buffer = viewportHeight * 0.65;
+    document.querySelectorAll("[data-home-deferred-image][data-src]").forEach(image => {
+      const target = image.closest(".shopify-section") || image;
+      const rect = target.getBoundingClientRect();
+      if (rect.top < viewportHeight + buffer && rect.bottom > -buffer) {
+        hydrateDeferredImage(image);
+      }
+    });
+  }
+
+  function bindDeferredHomeImageHydration() {
+    if (!document.querySelector("[data-home-deferred-image][data-src]")) return;
+    let scheduled = false;
+    const scheduleHydration = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        hydrateVisibleHomeImages();
+      });
+    };
+    window.addEventListener("scroll", scheduleHydration, { passive: true });
+    window.addEventListener("pointerdown", scheduleHydration, { passive: true });
+    window.addEventListener("touchstart", scheduleHydration, { passive: true });
+  }
+
   function hydrateVisibleGalleryImages(gallery) {
     if (!gallery) return;
     const galleryRect = gallery.getBoundingClientRect();
@@ -981,6 +1009,7 @@
   updateCount();
   hideDismissedShippingPromos();
   document.querySelectorAll("[data-pdp-variant-select]").forEach(select => updatePdpSelection(select, false));
+  bindDeferredHomeImageHydration();
   bindDeferredGalleryHydration();
   renderCartDrawer();
   renderCartPage();

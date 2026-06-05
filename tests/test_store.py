@@ -355,6 +355,48 @@ class StoreTest(unittest.TestCase):
         self.assertIn("0531_ItsyBitsy_Mobile_47e7a0a7-064e-44fb-b14e-5971f5c14833.jpg", html)
         self.assertIn("href=\"/store/collections/custom\"", html)
 
+    def test_homepage_defers_below_fold_home_section_images_for_lighthouse(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        first_hero_img_start = html.index('<img src="https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile')
+        first_hero_img_end = html.index(">", first_hero_img_start)
+        first_hero_img_tag = html[first_hero_img_start:first_hero_img_end]
+        self.assertIn(" src=", first_hero_img_tag)
+        self.assertIn('fetchpriority="high"', first_hero_img_tag)
+
+        deferred_marker = '<img data-home-deferred-image data-src="https://roxanneassoulin.com/cdn/shop/files/0531_HappyBaby_Mobile_9f30ae56-b0cc-48f3-9f88-28ec80b99883.jpg'
+        self.assertIn(deferred_marker, html)
+        deferred_start = html.index(deferred_marker)
+        deferred_end = html.index(">", deferred_start)
+        deferred_tag = html[deferred_start:deferred_end]
+        self.assertIn("data-src=", deferred_tag)
+        self.assertIn("data-srcset=", deferred_tag)
+        self.assertIn("data-sizes=", deferred_tag)
+        self.assertNotIn(" src=", deferred_tag)
+        self.assertNotIn(" srcset=", deferred_tag)
+
+        split_marker = '<img data-home-deferred-image data-src="https://roxanneassoulin.com/cdn/shop/files/0526_Hearts.jpg'
+        self.assertIn(split_marker, html)
+        split_start = html.index(split_marker)
+        split_end = html.index(">", split_start)
+        split_tag = html[split_start:split_end]
+        self.assertNotIn(" src=", split_tag)
+        self.assertNotIn("&amp;width=1200 1200w", split_tag)
+        self.assertIn('data-sizes="(min-width: 1024px) 50vw, 100vw"', split_tag)
+
+    def test_homepage_deferred_images_hydrate_after_scroll_or_pointer(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("function hydrateVisibleHomeImages()", source)
+        self.assertIn("function bindDeferredHomeImageHydration()", source)
+        self.assertIn("[data-home-deferred-image][data-src]", source)
+        self.assertIn('window.addEventListener("scroll"', source)
+        self.assertIn('window.addEventListener("pointerdown"', source)
+        self.assertIn("hydrateDeferredImage(image);", source)
+        self.assertIn("bindDeferredHomeImageHydration();", source)
+
     def test_custom_collection_alias_matches_live_homepage_link(self):
         response = self.client.get("/store/collections/custom")
 
@@ -1352,7 +1394,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-cart-upsell-defer", html)
+        self.assertIn("/store/assets/store.js?v=20260605-home-image-defer", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1369,7 +1411,7 @@ class StoreTest(unittest.TestCase):
         )
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-cart-upsell-defer")
+        response = self.client.get("/store/assets/store.js?v=20260605-home-image-defer")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
