@@ -90,6 +90,22 @@ class StoreTest(unittest.TestCase):
         self.assertLess(len(text), len(self.store_css_source()))
         self.assertNotIn("Roxanne Assoulin fidelity pass", text)
 
+    def test_store_defers_relative_mono_font_until_user_motion(self):
+        css_response = self.client.get("/store/assets/store.min.css?v=20260605-lcp-preloads")
+        self.addCleanup(css_response.close)
+        script_response = self.client.get("/store/assets/store.js?v=20260605-product-detail-defer")
+        self.addCleanup(script_response.close)
+
+        self.assertEqual(css_response.status_code, 200)
+        self.assertEqual(script_response.status_code, 200)
+        css = css_response.get_data(as_text=True)
+        script = script_response.get_data(as_text=True)
+        self.assertNotIn("relative-mono-10-pitch-pro.woff2", css)
+        self.assertIn("font-family:RelativeMono", css)
+        self.assertIn("function loadDeferredMonoFont()", script)
+        self.assertIn("relative-mono-10-pitch-pro.woff2", script)
+        self.assertIn('window.addEventListener("scroll", loadDeferredMonoFont', script)
+
     def test_store_base_has_meta_description_for_seo_score(self):
         response = self.client.get("/store")
 

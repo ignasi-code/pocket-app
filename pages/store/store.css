@@ -14,14 +14,6 @@
       src: url("https://roxanneassoulin.com/cdn/shop/t/147/assets/SupremeLLWeb-Medium.woff2") format("woff2");
     }
 
-    @font-face {
-      font-family: RelativeMono;
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url("https://roxanneassoulin.com/cdn/shop/t/147/assets/relative-mono-10-pitch-pro.woff2") format("woff2");
-    }
-
     :root {
       --cream: #fff8eb;
       --paper: #ffffff;

@@ -4,11 +4,13 @@
   const displayCurrency = document.body?.dataset.storeDisplayCurrency || "eur";
   const displayEurRate = Number.parseFloat(document.body?.dataset.storeDisplayEurRate || "0.875");
   const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+  const deferredMonoFontCss = '@font-face{font-family:RelativeMono;font-style:normal;font-weight:400;font-display:swap;src:url("https://roxanneassoulin.com/cdn/shop/t/147/assets/relative-mono-10-pitch-pro.woff2") format("woff2")}';
   let catalog = null;
   let catalogPromise = null;
   let cartCatalog = null;
   let cartCatalogPromise = null;
   let variants = new Map();
+  let deferredMonoFontLoaded = false;
 
   function loadCart() {
     try {
@@ -23,6 +25,23 @@
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
     updateCount();
     renderCartDrawer();
+  }
+
+  function loadDeferredMonoFont() {
+    if (deferredMonoFontLoaded || document.getElementById("store-deferred-mono-font")) return;
+    deferredMonoFontLoaded = true;
+    const style = document.createElement("style");
+    style.id = "store-deferred-mono-font";
+    style.textContent = deferredMonoFontCss;
+    document.head.appendChild(style);
+  }
+
+  function bindDeferredMonoFont() {
+    if (!document.querySelector(".product-motto, .product-related-section .section-title, .cart-upsell__title")) return;
+    window.addEventListener("scroll", loadDeferredMonoFont, { passive: true, once: true });
+    window.addEventListener("pointerdown", loadDeferredMonoFont, { passive: true, once: true });
+    window.addEventListener("touchstart", loadDeferredMonoFont, { passive: true, once: true });
+    document.addEventListener("focusin", loadDeferredMonoFont, { once: true });
   }
 
   function shippingPromoDismissed() {
@@ -1128,6 +1147,7 @@
   bindDeferredProductCardImageHydration();
   bindDeferredProductDetailImageHydration();
   bindDeferredGalleryHydration();
+  bindDeferredMonoFont();
   renderCartDrawer();
   renderCartPage();
 })();
