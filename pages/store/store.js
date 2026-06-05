@@ -145,22 +145,34 @@
     hydrateDeferredImage(tile?.querySelector(".product-tile__image__hover[data-src]"));
   }
 
-  function observeDeferredGalleryImages() {
-    const images = Array.from(document.querySelectorAll("[data-gallery-image][data-src]"));
-    if (!images.length) return;
-    if (!("IntersectionObserver" in window)) {
-      images.forEach(hydrateDeferredImage);
-      return;
-    }
-    const gallery = document.querySelector("[data-product-gallery]");
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        hydrateDeferredImage(entry.target);
-        observer.unobserve(entry.target);
-      });
-    }, { root: gallery || null, rootMargin: "0px", threshold: 0.4 });
-    images.forEach(image => observer.observe(image));
+  function hydrateVisibleGalleryImages(gallery) {
+    if (!gallery) return;
+    const galleryRect = gallery.getBoundingClientRect();
+    gallery.querySelectorAll("[data-gallery-image][data-src]").forEach(image => {
+      const target = image.closest(".product-gallery__image__wrapper") || image;
+      const rect = target.getBoundingClientRect();
+      const buffer = galleryRect.width * 0.35;
+      if (rect.left < galleryRect.right + buffer && rect.right > galleryRect.left - buffer) {
+        hydrateDeferredImage(image);
+      }
+    });
+  }
+
+  function bindDeferredGalleryHydration() {
+    document.querySelectorAll("[data-product-gallery]").forEach(gallery => {
+      let scheduled = false;
+      const scheduleHydration = () => {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          hydrateVisibleGalleryImages(gallery);
+        });
+      };
+      gallery.addEventListener("scroll", scheduleHydration, { passive: true });
+      gallery.addEventListener("pointerdown", scheduleHydration, { passive: true });
+      gallery.addEventListener("touchstart", scheduleHydration, { passive: true });
+    });
   }
 
   function escapeHtml(value) {
@@ -964,7 +976,7 @@
   updateCount();
   hideDismissedShippingPromos();
   document.querySelectorAll("[data-pdp-variant-select]").forEach(select => updatePdpSelection(select, false));
-  observeDeferredGalleryImages();
+  bindDeferredGalleryHydration();
   renderCartDrawer();
   renderCartPage();
 })();

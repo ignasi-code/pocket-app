@@ -174,15 +174,18 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn(" src=", second_img_tag)
         self.assertNotIn(" srcset=", second_img_tag)
 
-    def test_product_gallery_deferred_images_have_hydration_hooks(self):
+    def test_product_gallery_deferred_images_hydrate_after_user_motion(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
         self.assertIn("hydrateDeferredImage", source)
-        self.assertIn("observeDeferredGalleryImages", source)
+        self.assertIn("bindDeferredGalleryHydration", source)
+        self.assertIn("hydrateVisibleGalleryImages", source)
         self.assertIn("[data-gallery-image][data-src]", source)
         self.assertIn("hydrateDeferredImage(image);", source)
-        self.assertIn('rootMargin: "0px"', source)
-        self.assertIn("threshold: 0.4", source)
+        self.assertIn('gallery.addEventListener("scroll"', source)
+        self.assertIn('gallery.addEventListener("pointerdown"', source)
+        self.assertNotIn("new IntersectionObserver", source)
+        self.assertNotIn("observeDeferredGalleryImages();", source)
 
     def test_homepage_mobile_shipping_grid_includes_heart_tile(self):
         response = self.client.get("/store")
@@ -1315,7 +1318,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-gallery-defer", html)
+        self.assertIn("/store/assets/store.js?v=20260605-gallery-scroll", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1332,7 +1335,7 @@ class StoreTest(unittest.TestCase):
         )
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-gallery-defer")
+        response = self.client.get("/store/assets/store.js?v=20260605-gallery-scroll")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
