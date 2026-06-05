@@ -675,7 +675,7 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn(" src=", image_tag)
         self.assertNotIn(" srcset=", image_tag)
 
-    def test_collection_defers_product_card_images_after_first_visible_rows(self):
+    def test_collection_loads_first_visible_product_row_then_defers_rest(self):
         response = self.client.get("/store/collections/new-arrivals")
         fragment_response = self.client.get("/store/collections/new-arrivals/products-fragment?offset=12")
 
@@ -694,14 +694,14 @@ class StoreTest(unittest.TestCase):
         third_end = html.index(">", third_start)
         third_tag = html[third_start:third_end]
 
-        self.assertIn("data-product-card-deferred-image", first_tag)
-        self.assertIn("data-src=", first_tag)
-        self.assertIn("data-srcset=", first_tag)
-        self.assertNotIn(" src=", first_tag)
-        self.assertIn("data-product-card-deferred-image", second_tag)
-        self.assertIn("data-src=", second_tag)
-        self.assertIn("data-srcset=", second_tag)
-        self.assertNotIn(" src=", second_tag)
+        self.assertIn('src="https://', first_tag)
+        self.assertIn("srcset=", first_tag)
+        self.assertNotIn("data-product-card-deferred-image", first_tag)
+        self.assertNotIn("data-src=", first_tag)
+        self.assertIn('src="https://', second_tag)
+        self.assertIn("srcset=", second_tag)
+        self.assertNotIn("data-product-card-deferred-image", second_tag)
+        self.assertNotIn("data-src=", second_tag)
         self.assertIn("data-product-card-deferred-image", third_tag)
         self.assertNotIn(" src=", third_tag)
 

@@ -134,7 +134,7 @@
             {% set visible_products = products[:collection_initial_product_limit] if can_defer_products else products %}
             <section class="grid collection-grid" data-collection-grid>
               {% for product in visible_products %}
-                {% set defer_product_card_image = true %}
+                {% set defer_product_card_image = loop.index > 2 %}
                 {% set defer_product_card_desktop_eager = loop.index <= 2 %}
                 {% set product_card_primary_mobile_width = 390 %}
                 {% set product_card_primary_mobile_srcset_widths = [240, 360, 390] %}
