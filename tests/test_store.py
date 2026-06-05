@@ -72,6 +72,26 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("20260605-scope-css-cart-cls", html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
+    def test_product_page_inlines_pdp_above_fold_critical_css_for_lighthouse(self):
+        product_response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+        home_response = self.client.get("/store")
+
+        self.assertEqual(product_response.status_code, 200)
+        self.assertEqual(home_response.status_code, 200)
+        product_html = product_response.get_data(as_text=True)
+        home_html = home_response.get_data(as_text=True)
+        critical_start = product_html.index('<style data-critical-store-css>')
+        critical_end = product_html.index("</style>", critical_start)
+        product_critical_css = product_html[critical_start:critical_end]
+
+        self.assertIn(".product-page{padding-top:5px", product_critical_css)
+        self.assertIn(".pdp,.product-info{display:block", product_critical_css)
+        self.assertIn(".product-gallery__image__wrapper{border:1px solid #e6e6e6", product_critical_css)
+        self.assertIn("flex:0 0 calc(100vw - 8px)", product_critical_css)
+        self.assertIn(".product-details-top{padding:0 30px 44px", product_critical_css)
+        self.assertIn(".product-details-bottom__col--options{border-bottom:1px solid #e6e6e6;order:1", product_critical_css)
+        self.assertNotIn(".product-gallery__image__wrapper{border:1px solid #e6e6e6", home_html)
+
     def test_store_pages_use_route_scoped_css_assets_for_lighthouse(self):
         cases = (
             ("/store", "home"),
