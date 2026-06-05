@@ -113,6 +113,13 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn('<meta name="description" content="A static-first Roxanne Assoulin storefront prototype with fast collection, product, and cart views.">', html)
 
+    def test_store_preconnects_font_origin_with_crossorigin(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<link rel="preconnect" href="https://roxanneassoulin.com" crossorigin>', html)
+
     def test_store_logo_images_have_explicit_dimensions(self):
         response = self.client.get("/store")
 
