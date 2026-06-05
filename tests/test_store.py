@@ -493,6 +493,13 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn(" src=", deferred_tag)
         self.assertIn("data-srcset=", deferred_tag)
 
+        deferred_picture_start = html.rindex("<picture>", 0, deferred_start)
+        deferred_source_start = html.index("<source", deferred_picture_start)
+        deferred_source_end = html.index(">", deferred_source_start)
+        deferred_source_tag = html[deferred_source_start:deferred_source_end]
+        self.assertIn("&amp;width=540 540w", deferred_source_tag)
+        self.assertNotIn("&amp;width=760", deferred_source_tag)
+
     def test_product_card_deferred_images_hydrate_after_scroll_or_pointer(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 

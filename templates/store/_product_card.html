@@ -3,15 +3,16 @@
 {% set defer_primary_image = defer_product_card_image|default(false) %}
 {% set primary_mobile_width = product_card_primary_mobile_width|default(540) %}
 {% set primary_mobile_srcset_widths = product_card_primary_mobile_srcset_widths|default([240, 360, 540]) %}
+{% set primary_desktop_srcset_widths = [360, 540] if defer_primary_image else [360, 540, 760] %}
 <article class="product-card product-tile js-productTile product-tile--collection" data-product-handle="{{ product.handle }}">
   <a href="/store/products/{{ product.handle }}" class="product-tile__link">
     <div class="product-tile__image">
       <picture>
         {% if defer_primary_image %}
-        <source media="(min-width: 1024px)" data-srcset="{{ image_srcset(primary_image, [360, 540, 760]) }}" data-sizes="25vw">
+        <source media="(min-width: 1024px)" data-srcset="{{ image_srcset(primary_image, primary_desktop_srcset_widths) }}" data-sizes="25vw">
         <img class="product-tile__image__primary" data-product-card-deferred-image data-src="{{ image_url(primary_image, primary_mobile_width) }}" data-srcset="{{ image_srcset(primary_image, primary_mobile_srcset_widths) }}" data-sizes="(min-width: 1024px) 25vw, 50vw" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async">
         {% else %}
-        <source media="(min-width: 1024px)" srcset="{{ image_srcset(primary_image, [360, 540, 760]) }}" sizes="25vw">
+        <source media="(min-width: 1024px)" srcset="{{ image_srcset(primary_image, primary_desktop_srcset_widths) }}" sizes="25vw">
         <img class="product-tile__image__primary" src="{{ image_url(primary_image, primary_mobile_width) }}" srcset="{{ image_srcset(primary_image, primary_mobile_srcset_widths) }}" sizes="(min-width: 1024px) 25vw, 50vw" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async">
         {% endif %}
       </picture>
