@@ -343,6 +343,40 @@
     window.addEventListener("touchstart", () => loadDeferredCollectionProducts(sentinel), { passive: true, once: true });
   }
 
+  function loadDeferredCartPageUpsells(sentinel) {
+    if (!sentinel || sentinel.dataset.loading === "true" || sentinel.dataset.loaded === "true") return;
+    if (!sentinel.dataset.fragmentUrl) return;
+    sentinel.dataset.loading = "true";
+    fetch(sentinel.dataset.fragmentUrl)
+      .then(response => response.text())
+      .then(html => {
+        sentinel.innerHTML = html.trim();
+        sentinel.dataset.loaded = "true";
+        loadDeferredMonoFont();
+        hydrateVisibleProductCardImages();
+      })
+      .catch(() => {
+        sentinel.dataset.loading = "false";
+      });
+  }
+
+  function bindDeferredCartPageUpsells() {
+    const sentinel = document.querySelector("[data-cart-page-upsell-fragment]");
+    if (!sentinel) return;
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return;
+        observer.disconnect();
+        loadDeferredCartPageUpsells(sentinel);
+      }, { rootMargin: "700px 0px" });
+      observer.observe(sentinel);
+      return;
+    }
+    window.addEventListener("scroll", () => loadDeferredCartPageUpsells(sentinel), { passive: true, once: true });
+    window.addEventListener("pointerdown", () => loadDeferredCartPageUpsells(sentinel), { passive: true, once: true });
+    window.addEventListener("touchstart", () => loadDeferredCartPageUpsells(sentinel), { passive: true, once: true });
+  }
+
   function hydrateVisibleProductDetailImages() {
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
     const buffer = viewportHeight * 0.5;
@@ -1216,6 +1250,7 @@
   bindDeferredHomeImageHydration();
   bindDeferredProductCardImageHydration();
   bindDeferredCollectionProducts();
+  bindDeferredCartPageUpsells();
   bindDeferredProductDetailImageHydration();
   bindDeferredGalleryHydration();
   bindDeferredMonoFont();

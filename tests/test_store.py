@@ -1390,15 +1390,34 @@ class StoreTest(unittest.TestCase):
 
     def test_cart_page_renders_live_selected_for_u_upsells(self):
         response = self.client.get("/store/cart")
+        fragment_response = self.client.get("/store/cart-upsells-fragment")
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(fragment_response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("cart-upsell", html)
-        self.assertIn("selected for u", html)
-        self.assertIn('data-product-handle="the-salt-pepper-cylinder-bracelet-stack"', html)
-        self.assertIn('data-product-handle="the-pearl-branch-bracelet"', html)
-        self.assertIn('data-product-handle="the-paprika-necklace-duo"', html)
-        self.assertIn('data-product-handle="the-netted-stone-pendant"', html)
+        fragment_html = fragment_response.get_data(as_text=True)
+        self.assertIn("public", fragment_response.headers.get("Cache-Control", ""))
+        self.assertIn("max-age=3600", fragment_response.headers.get("Cache-Control", ""))
+        self.assertIn("data-cart-page-upsell-fragment", html)
+        self.assertIn('/store/cart-upsells-fragment', html)
+        self.assertNotIn('<section class="cart-upsell shopify-section"', html)
+        self.assertNotIn("selected for u", html)
+        self.assertNotIn('data-product-handle="the-salt-pepper-cylinder-bracelet-stack"', html)
+        self.assertIn("cart-upsell", fragment_html)
+        self.assertIn("selected for u", fragment_html)
+        self.assertIn('data-product-handle="the-salt-pepper-cylinder-bracelet-stack"', fragment_html)
+        self.assertIn('data-product-handle="the-pearl-branch-bracelet"', fragment_html)
+        self.assertIn('data-product-handle="the-paprika-necklace-duo"', fragment_html)
+        self.assertIn('data-product-handle="the-netted-stone-pendant"', fragment_html)
+
+    def test_store_js_lazy_loads_cart_page_upsells(self):
+        source = self.store_js_source()
+
+        self.assertIn("function bindDeferredCartPageUpsells()", source)
+        self.assertIn("[data-cart-page-upsell-fragment]", source)
+        self.assertIn("fetch(sentinel.dataset.fragmentUrl)", source)
+        self.assertIn("loadDeferredMonoFont();", source)
+        self.assertIn("bindDeferredCartPageUpsells();", source)
 
     def test_cart_page_mobile_summary_spacing_matches_live_checkout_width(self):
         source = self.store_css_source()

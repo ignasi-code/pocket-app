@@ -25,20 +25,6 @@
       </aside>
     </section>
 
-    {% if cart_upsells %}
-      <section class="cart-upsell shopify-section" aria-label="selected for u">
-        <h2 class="cart-upsell__title" aria-label="selected for u">
-          {% for char in "selectedforu" %}
-            <span>{{ char }}</span>
-          {% endfor %}
-        </h2>
-        <div class="cart-upsell__products product-module__products">
-          {% for product in cart_upsells %}
-            {% set defer_product_card_image = true %}
-            {% include "store/_product_card.html" %}
-          {% endfor %}
-        </div>
-      </section>
-    {% endif %}
+    <div data-cart-page-upsell-fragment data-fragment-url="/store/cart-upsells-fragment"></div>
   </main>
 {% endblock %}

@@ -2410,8 +2410,19 @@ def store_product_page(handle):
 def store_cart_page():
     return render_store_template(
         "store/cart.html",
-        **store_template_context(cart_upsells=store_cart_upsell_products()),
+        **store_template_context(),
     )
+
+
+@app.route("/store/cart-upsells-fragment")
+def store_cart_upsells_fragment():
+    html = minify_store_html(render_template(
+        "store/_cart_page_upsells.html",
+        **store_template_context(cart_upsells=store_cart_upsell_products()),
+    ))
+    response = Response(html, mimetype="text/html")
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 @app.route("/store/cart-drawer-upsells-fragment")
