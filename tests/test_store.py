@@ -153,6 +153,8 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn('alt="Roxanne Assoulin" width="580" height="42"', html)
+        self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;width=207\" srcset=", html)
+        self.assertNotIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;width=414\" srcset=", html)
         self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;width=207 207w", html)
         self.assertIn("roxane-assoulin-logo.png?v=157219181899558921191761553533&amp;width=414 414w", html)
         self.assertIn('sizes="(min-width: 1024px) 290px, 207px"', html)
