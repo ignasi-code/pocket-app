@@ -700,6 +700,44 @@ class StoreTest(unittest.TestCase):
         self.assertIn('class="product-tile__image__hover is-loading"', html)
         self.assertNotIn('<a class="product-tile__image"', html)
 
+    def test_product_tile_hover_images_defer_network_until_interaction(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        hover_start = html.index('<img class="product-tile__image__hover is-loading"')
+        hover_end = html.index(">", hover_start)
+        hover_tag = html[hover_start:hover_end]
+        self.assertIn("data-src=", hover_tag)
+        self.assertIn("data-srcset=", hover_tag)
+        self.assertIn("data-sizes=", hover_tag)
+        self.assertNotIn(" src=", hover_tag)
+        self.assertNotIn(" srcset=", hover_tag)
+
+    def test_product_tile_primary_mobile_srcset_avoids_desktop_width(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        primary_start = html.index('<img class="product-tile__image__primary"')
+        primary_end = html.index(">", primary_start)
+        primary_tag = html[primary_start:primary_end]
+        self.assertIn("&amp;width=240 240w", primary_tag)
+        self.assertIn("&amp;width=360 360w", primary_tag)
+        self.assertIn("&amp;width=540 540w", primary_tag)
+        self.assertNotIn("&amp;width=760", primary_tag)
+        self.assertIn('sizes="(min-width: 1024px) 25vw, 50vw"', primary_tag)
+
+    def test_product_tile_hover_loader_preserves_desktop_hover_behavior(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+        css = self.store_css_source()
+
+        self.assertIn("hydrateProductTileHoverImage", source)
+        self.assertIn(".product-tile__image__hover.is-loaded", css)
+        self.assertIn('document.addEventListener("pointerover"', source)
+        self.assertIn('document.addEventListener("mouseover"', source)
+        self.assertIn('document.addEventListener("focusin"', source)
+
     def test_key_collection_pages_use_extracted_live_hero_assets(self):
         cases = {
             "necklaces": "Necklaces.jpg",
@@ -1252,7 +1290,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-promo-dismissal", html)
+        self.assertIn("/store/assets/store.js?v=20260605-hover-defer", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1269,7 +1307,7 @@ class StoreTest(unittest.TestCase):
         )
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-promo-dismissal")
+        response = self.client.get("/store/assets/store.js?v=20260605-hover-defer")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)

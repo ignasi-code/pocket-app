@@ -125,6 +125,19 @@
     return shopifyImageUrl(src, width);
   }
 
+  function hydrateProductTileHoverImage(tile) {
+    const image = tile?.querySelector(".product-tile__image__hover[data-src]");
+    if (!image || image.dataset.loaded === "true") return;
+    image.addEventListener("load", () => {
+      image.classList.remove("is-loading");
+      image.classList.add("is-loaded");
+    }, { once: true });
+    image.src = image.dataset.src;
+    if (image.dataset.srcset) image.srcset = image.dataset.srcset;
+    if (image.dataset.sizes) image.sizes = image.dataset.sizes;
+    image.dataset.loaded = "true";
+  }
+
   function escapeHtml(value) {
     return String(value || "")
       .replaceAll("&", "&amp;")
@@ -888,6 +901,18 @@
       if (priceNode && selected?.dataset.price) priceNode.textContent = selected.dataset.price;
       if (imageNode && selected?.dataset.imageSrc) imageNode.src = selected.dataset.imageSrc;
     }
+  });
+
+  document.addEventListener("pointerover", event => {
+    hydrateProductTileHoverImage(event.target.closest(".js-productTile"));
+  });
+
+  document.addEventListener("mouseover", event => {
+    hydrateProductTileHoverImage(event.target.closest(".js-productTile"));
+  });
+
+  document.addEventListener("focusin", event => {
+    hydrateProductTileHoverImage(event.target.closest(".js-productTile"));
   });
 
   document.addEventListener("keydown", event => {

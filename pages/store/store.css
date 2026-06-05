@@ -2792,8 +2792,8 @@
       transition: opacity .3s cubic-bezier(.165,.84,.44,1);
     }
 
-    .product-tile:focus-within .product-tile__image__hover,
-    .product-tile:hover .product-tile__image__hover {
+    .product-tile:focus-within .product-tile__image__hover.is-loaded,
+    .product-tile:hover .product-tile__image__hover.is-loaded {
       opacity: 1;
     }
 
