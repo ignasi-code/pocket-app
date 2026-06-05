@@ -183,6 +183,18 @@
     hydrateDeferredImage(tile?.querySelector(".product-tile__image__hover[data-src]"));
   }
 
+  function updateDeferredImageSource(image, src, srcset, sizes) {
+    if (!image || !src) return;
+    image.dataset.src = src;
+    if (srcset) image.dataset.srcset = srcset;
+    if (sizes) image.dataset.sizes = sizes;
+    if (image.dataset.loaded === "true") {
+      image.src = src;
+      if (srcset) image.srcset = srcset;
+      if (sizes) image.sizes = sizes;
+    }
+  }
+
   function hydrateCartDrawerImages() {
     document.querySelectorAll("[data-cart-drawer] [data-cart-deferred-image][data-src]").forEach(hydrateDeferredImage);
   }
@@ -236,6 +248,34 @@
       requestAnimationFrame(() => {
         scheduled = false;
         hydrateVisibleProductCardImages();
+      });
+    };
+    window.addEventListener("scroll", scheduleHydration, { passive: true });
+    window.addEventListener("pointerdown", scheduleHydration, { passive: true });
+    window.addEventListener("touchstart", scheduleHydration, { passive: true });
+  }
+
+  function hydrateVisibleProductDetailImages() {
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const buffer = viewportHeight * 0.5;
+    document.querySelectorAll("[data-product-details-deferred-image][data-src]").forEach(image => {
+      const target = image.closest(".product-details-top") || image;
+      const rect = target.getBoundingClientRect();
+      if (rect.top < viewportHeight + buffer && rect.bottom > -buffer) {
+        hydrateDeferredImage(image);
+      }
+    });
+  }
+
+  function bindDeferredProductDetailImageHydration() {
+    if (!document.querySelector("[data-product-details-deferred-image][data-src]")) return;
+    let scheduled = false;
+    const scheduleHydration = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        hydrateVisibleProductDetailImages();
       });
     };
     window.addEventListener("scroll", scheduleHydration, { passive: true });
@@ -821,12 +861,21 @@
     const price = selected.dataset.price;
     const detailImage = document.querySelector("[data-product-details-image]");
     const imageSrc = selected.dataset.imageSrc;
+    const imageSrcset = selected.dataset.imageSrcset;
+    const imageSizes = selected.dataset.imageSizes;
     const fullImageSrc = selected.dataset.fullImageSrc || imageSrc;
 
     if (triggerTitle) triggerTitle.textContent = title;
     if (priceNode && price) priceNode.textContent = price;
     if (detailImage && imageSrc) {
-      detailImage.src = imageSrc;
+      if (detailImage.matches("[data-product-details-deferred-image]")) {
+        updateDeferredImageSource(detailImage, imageSrc, imageSrcset, imageSizes);
+        if (scrollGallery) hydrateDeferredImage(detailImage);
+      } else {
+        detailImage.src = imageSrc;
+        if (imageSrcset) detailImage.srcset = imageSrcset;
+        if (imageSizes) detailImage.sizes = imageSizes;
+      }
       detailImage.closest("[data-lightbox-open]")?.setAttribute("data-lightbox-src", fullImageSrc);
     }
     if (form && price) form.dataset.selectedPrice = price;
@@ -1077,6 +1126,7 @@
   document.querySelectorAll("[data-pdp-variant-select]").forEach(select => updatePdpSelection(select, false));
   bindDeferredHomeImageHydration();
   bindDeferredProductCardImageHydration();
+  bindDeferredProductDetailImageHydration();
   bindDeferredGalleryHydration();
   renderCartDrawer();
   renderCartPage();

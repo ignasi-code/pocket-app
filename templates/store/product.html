@@ -54,7 +54,7 @@
             <div class="product-details-top__images">
               <button class="product-details-top__image" type="button" data-lightbox-open data-lightbox-src="{{ selected_option.image_src }}" data-lightbox-alt="{{ product.title }}">
                 <span>Zoom image</span>
-              <img src="{{ image_url(selected_option.image_src, 320) }}" srcset="{{ image_srcset(selected_option.image_src, [180, 320, 480]) }}" sizes="(min-width: 1024px) 320px, 42vw" alt="{{ product.title }}" width="320" height="384" loading="lazy" decoding="async" data-product-details-image>
+              <img data-product-details-deferred-image data-src="{{ image_url(selected_option.image_src, 320) }}" data-srcset="{{ image_srcset(selected_option.image_src, [180, 320, 480]) }}" data-sizes="(min-width: 1024px) 320px, 42vw" alt="{{ product.title }}" width="320" height="384" loading="lazy" decoding="async" data-product-details-image>
             </button>
           </div>
           <div class="js-productDetailsTop">
@@ -107,7 +107,7 @@
               <div class="option-selector product-option-selector" data-option-selector>
                 <select class="option-selector__native" name="variant_id" data-pdp-variant-select aria-hidden="true" tabindex="-1">
                   {% for option in variant_options %}
-                    <option value="{{ option.variant.id }}" data-image-src="{{ image_url(option.image_src, 320) }}" data-full-image-src="{{ option.image_src }}" data-price="{{ option.price_label }}" data-title="{{ option.title }}" data-option-url="{{ option.url }}" {% if option.variant.available is sameas false %}disabled{% endif %} {% if option.selected %}selected{% endif %}>
+                    <option value="{{ option.variant.id }}" data-image-src="{{ image_url(option.image_src, 320) }}" data-image-srcset="{{ image_srcset(option.image_src, [180, 320, 480]) }}" data-image-sizes="(min-width: 1024px) 320px, 42vw" data-full-image-src="{{ option.image_src }}" data-price="{{ option.price_label }}" data-title="{{ option.title }}" data-option-url="{{ option.url }}" {% if option.variant.available is sameas false %}disabled{% endif %} {% if option.selected %}selected{% endif %}>
                       {{ option.title }} - {{ option.price_label }}{% if option.variant.available is sameas false %} - sold out{% endif %}
                     </option>
                   {% endfor %}
