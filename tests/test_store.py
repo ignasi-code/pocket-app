@@ -1807,7 +1807,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-image-q60" defer fetchpriority="low"></script>', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-drawer-skip" defer fetchpriority="low"></script>', html)
 
     def test_footer_logo_is_deferred_until_scroll_for_lighthouse(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
@@ -1870,10 +1870,15 @@ class StoreTest(unittest.TestCase):
             source.index("async function openCartDrawer()"):
             source.index("function setCollectionDrawerVisibility")
         ]
+        cart_page_source = source[
+            source.index("async function renderCartPage()"):
+            source.index("async function renderCartDrawer()")
+        ]
 
         self.assertIn("updateCount();", startup_source)
         self.assertNotIn("renderCartDrawer();", startup_source)
         self.assertIn("await renderCartDrawer();", open_drawer_source)
+        self.assertIn("saveCart(cart, { renderDrawer: false });", cart_page_source)
 
     def test_cart_renderers_use_compact_cart_catalog_loader(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")

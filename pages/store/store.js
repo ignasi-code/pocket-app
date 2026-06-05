@@ -23,10 +23,10 @@
     }
   }
 
-  function saveCart(cart) {
+  function saveCart(cart, options = {}) {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
     updateCount();
-    renderCartDrawer();
+    if (options.renderDrawer !== false) renderCartDrawer();
   }
 
   function loadDeferredMonoFont() {
@@ -637,7 +637,7 @@
 
     await loadCartCatalog(rawCart);
     const cart = rawCart.filter(item => variants.has(Number(item.id)));
-    saveCart(cart);
+    saveCart(cart, { renderDrawer: false });
 
     const subtotalLabel = formatDisplayAmount(cartSubtotal(cart));
     if (subtotal) subtotal.textContent = subtotalLabel;
