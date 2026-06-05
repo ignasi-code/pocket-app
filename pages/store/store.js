@@ -8,6 +8,7 @@
   let catalog = null;
   let catalogPromise = null;
   let cartCatalog = null;
+  let cartCatalogKey = "";
   let cartCatalogPromise = null;
   let variants = new Map();
   let deferredMonoFontLoaded = false;
@@ -135,15 +136,27 @@
     return catalogPromise;
   }
 
-  async function loadCartCatalog() {
-    if (cartCatalog) return cartCatalog;
+  function cartCatalogUrl(cart) {
+    const ids = [...new Set((cart || [])
+      .map(item => Number(item.id))
+      .filter(id => Number.isFinite(id) && id > 0))]
+      .sort((a, b) => a - b);
+    if (!ids.length) return "/store/cart-index.json";
+    return `/store/cart-items.json?ids=${ids.join(",")}`;
+  }
+
+  async function loadCartCatalog(cart = []) {
     if (catalog) {
       cartCatalog = catalog;
+      cartCatalogKey = "catalog";
       buildVariantIndex(cartCatalog.products);
       return cartCatalog;
     }
-    if (cartCatalogPromise) return cartCatalogPromise;
-    cartCatalogPromise = fetch("/store/cart-index.json")
+    const url = cartCatalogUrl(cart);
+    if (cartCatalog && cartCatalogKey === url) return cartCatalog;
+    if (cartCatalogPromise && cartCatalogKey === url) return cartCatalogPromise;
+    cartCatalogKey = url;
+    cartCatalogPromise = fetch(url)
       .then(response => response.json())
       .then(data => {
         cartCatalog = data;
@@ -152,6 +165,7 @@
       })
       .catch(error => {
         cartCatalogPromise = null;
+        cartCatalogKey = "";
         throw error;
       });
     return cartCatalogPromise;
@@ -511,7 +525,7 @@
       return;
     }
 
-    await loadCartCatalog();
+    await loadCartCatalog(rawCart);
     const cart = rawCart.filter(item => variants.has(Number(item.id)));
     saveCart(cart);
 
@@ -575,7 +589,7 @@
       return;
     }
 
-    await loadCartCatalog();
+    await loadCartCatalog(rawCart);
     const cart = rawCart.filter(item => variants.has(Number(item.id)));
     const count = cart.reduce((total, item) => total + Number(item.qty || 0), 0);
 

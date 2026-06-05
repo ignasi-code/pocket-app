@@ -890,29 +890,52 @@ def store_compact_image(image):
 def store_cart_index_payload():
     products = []
     for product in load_store_catalog().get("products", []):
-        images = [
-            compact_image
-            for compact_image in [store_compact_image((product.get("images") or [{}])[0])]
-            if compact_image
-        ]
-        variants = []
-        for variant in product.get("variants", []):
-            compact_variant = {
-                "id": variant.get("id"),
-                "title": variant.get("title"),
-                "price": variant.get("price"),
-                "position": variant.get("position"),
-            }
-            compact_featured_image = store_compact_image(variant.get("featured_image"))
-            if compact_featured_image:
-                compact_variant["featured_image"] = compact_featured_image
-            variants.append(compact_variant)
-        products.append({
-            "title": product.get("title"),
-            "handle": product.get("handle"),
-            "images": images,
-            "variants": variants,
-        })
+        products.append(store_compact_cart_product(product))
+    return {"products": products}
+
+
+def store_compact_cart_product(product):
+    images = [
+        compact_image
+        for compact_image in [store_compact_image((product.get("images") or [{}])[0])]
+        if compact_image
+    ]
+    variants = []
+    for variant in product.get("variants", []):
+        compact_variant = {
+            "id": variant.get("id"),
+            "title": variant.get("title"),
+            "price": variant.get("price"),
+            "position": variant.get("position"),
+        }
+        compact_featured_image = store_compact_image(variant.get("featured_image"))
+        if compact_featured_image:
+            compact_variant["featured_image"] = compact_featured_image
+        variants.append(compact_variant)
+    return {
+        "title": product.get("title"),
+        "handle": product.get("handle"),
+        "images": images,
+        "variants": variants,
+    }
+
+
+def store_cart_items_payload(raw_ids):
+    requested_ids = {
+        int(item)
+        for item in re.findall(r"\d+", raw_ids or "")
+    }
+    products = []
+    if not requested_ids:
+        return {"products": products}
+    for product in load_store_catalog().get("products", []):
+        variant_ids = {
+            int(variant.get("id"))
+            for variant in product.get("variants", [])
+            if str(variant.get("id") or "").isdigit()
+        }
+        if requested_ids & variant_ids:
+            products.append(store_compact_cart_product(product))
     return {"products": products}
 
 
@@ -2413,6 +2436,19 @@ def store_catalog():
 def store_cart_index():
     response = Response(
         json.dumps(store_cart_index_payload(), separators=(",", ":")),
+        mimetype="application/json",
+    )
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
+@app.route("/store/cart-items.json")
+def store_cart_items():
+    response = Response(
+        json.dumps(
+            store_cart_items_payload(request.args.get("ids", "")),
+            separators=(",", ":"),
+        ),
         mimetype="application/json",
     )
     response.headers["Cache-Control"] = "public, max-age=3600"

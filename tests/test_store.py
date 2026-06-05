@@ -1613,7 +1613,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("if (!rawCart.length) {", drawer_source)
         self.assertLess(
             drawer_source.index("if (!rawCart.length) {"),
-            drawer_source.index("await loadCartCatalog();"),
+            drawer_source.index("await loadCartCatalog(rawCart);"),
         )
 
     def test_store_js_reuses_inflight_catalog_request_for_cart_startup(self):
@@ -1635,10 +1635,12 @@ class StoreTest(unittest.TestCase):
             source.index("function toggleGiftMessage")
         ]
 
-        self.assertIn("async function loadCartCatalog()", source)
-        self.assertIn('fetch("/store/cart-index.json")', source)
-        self.assertIn("await loadCartCatalog();", cart_page_source)
-        self.assertIn("await loadCartCatalog();", cart_drawer_source)
+        self.assertIn("async function loadCartCatalog(cart = [])", source)
+        self.assertIn("function cartCatalogUrl(cart)", source)
+        self.assertIn('return `/store/cart-items.json?ids=${ids.join(",")}`;', source)
+        self.assertIn('return "/store/cart-index.json";', source)
+        self.assertIn("await loadCartCatalog(rawCart);", cart_page_source)
+        self.assertIn("await loadCartCatalog(rawCart);", cart_drawer_source)
         self.assertNotIn("await loadCatalog();", cart_page_source)
         self.assertNotIn("await loadCatalog();", cart_drawer_source)
 
@@ -1700,6 +1702,26 @@ class StoreTest(unittest.TestCase):
             for product_item in data["products"]
             for item in product_item["variants"]
         ))
+        self.assertNotIn("body_html", product)
+        self.assertNotIn("tags", product)
+
+    def test_cart_items_json_returns_only_requested_variant_products(self):
+        first_product, first_variant = self.first_available_variant()
+        response = self.client.get(f"/store/cart-items.json?ids={first_variant['id']}")
+        full_response = self.client.get("/store/cart-index.json")
+        self.addCleanup(response.close)
+        self.addCleanup(full_response.close)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("public", response.headers.get("Cache-Control", ""))
+        self.assertIn("max-age=3600", response.headers.get("Cache-Control", ""))
+        self.assertLess(len(response.get_data()), len(full_response.get_data()) * 0.25)
+
+        data = response.get_json()
+        self.assertEqual(len(data["products"]), 1)
+        product = data["products"][0]
+        self.assertEqual(product["handle"], first_product["handle"])
+        self.assertIn(int(first_variant["id"]), {int(variant["id"]) for variant in product["variants"]})
         self.assertNotIn("body_html", product)
         self.assertNotIn("tags", product)
 
