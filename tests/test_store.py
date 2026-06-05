@@ -57,8 +57,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-mono-defer" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-mono-defer"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-detail-placeholder" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-detail-placeholder"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
     def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
@@ -79,7 +79,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".site-header", response.get_data(as_text=True))
 
     def test_store_minified_css_asset_is_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-mono-defer")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-detail-placeholder")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -91,7 +91,7 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("Roxanne Assoulin fidelity pass", text)
 
     def test_store_defers_relative_mono_font_until_user_motion(self):
-        css_response = self.client.get("/store/assets/store.min.css?v=20260605-mono-defer")
+        css_response = self.client.get("/store/assets/store.min.css?v=20260605-detail-placeholder")
         self.addCleanup(css_response.close)
         script_response = self.client.get("/store/assets/store.js?v=20260605-mono-defer")
         self.addCleanup(script_response.close)
@@ -214,6 +214,12 @@ class StoreTest(unittest.TestCase):
         self.assertIn('loading="lazy"', image_tag)
         self.assertNotIn(" src=", image_tag)
         self.assertNotIn(" srcset=", image_tag)
+
+    def test_product_deferred_detail_image_hides_broken_placeholder_before_hydration(self):
+        source = self.store_css_source()
+
+        self.assertIn(".product-details-top__image img[data-product-details-deferred-image]:not([src])", source)
+        self.assertIn("visibility: hidden", source)
 
     def test_product_gallery_deferred_images_hydrate_after_user_motion(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
