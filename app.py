@@ -2357,8 +2357,8 @@ def store_asset_css():
 
 
 STORE_FONT_ASSETS = {
-    "SupremeLLWeb-Regular-store-subset.woff2",
-    "SupremeLLWeb-Medium-store-subset.woff2",
+    "SupremeLLWeb-Regular-store-tight.woff2",
+    "SupremeLLWeb-Medium-store-tight.woff2",
 }
 
 
