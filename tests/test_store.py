@@ -954,7 +954,8 @@ class StoreTest(unittest.TestCase):
         primary_tag = html[primary_start:primary_end]
         self.assertIn("&amp;width=240 240w", primary_tag)
         self.assertIn("&amp;width=360 360w", primary_tag)
-        self.assertIn("&amp;width=480 480w", primary_tag)
+        self.assertIn("&amp;width=390 390w", primary_tag)
+        self.assertNotIn("&amp;width=480 480w", primary_tag)
         self.assertNotIn("&amp;width=540", primary_tag)
         self.assertNotIn("&amp;width=760", primary_tag)
         self.assertIn('sizes="(min-width: 1024px) 25vw, 50vw"', primary_tag)
