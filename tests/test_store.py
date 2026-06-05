@@ -57,8 +57,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-score-polish" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-score-polish"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-lcp-preloads" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-lcp-preloads"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
     def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
@@ -79,7 +79,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".site-header", response.get_data(as_text=True))
 
     def test_store_minified_css_asset_is_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-score-polish")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-lcp-preloads")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -128,6 +128,36 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("&amp;width=640 640w", html)
         self.assertIn('imagesizes="100vw"', html)
         self.assertIn('fetchpriority="high"', html)
+
+    def test_collection_preloads_mobile_lcp_hero_for_lighthouse(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<link rel="preload" as="image" media="(max-width: 1023px)"', html)
+        self.assertIn("New-Arrivals.jpg", html)
+        self.assertIn("&amp;width=390 390w", html)
+        self.assertIn("&amp;width=480 480w", html)
+        self.assertIn('imagesizes="100vw"', html)
+        self.assertIn('fetchpriority="high"', html)
+        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;width=480"', html)
+
+    def test_product_page_preloads_mobile_lcp_gallery_image_for_lighthouse(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<link rel="preload" as="image" media="(max-width: 1023px)"', html)
+        self.assertIn("THE_CYLINDER_CORD_NECKLACE_2495", html)
+        self.assertIn("&amp;width=390 390w", html)
+        self.assertIn("&amp;width=480 480w", html)
+        self.assertIn('imagesizes="100vw"', html)
+        self.assertIn('fetchpriority="high"', html)
+        first_img_start = html.index('<img src="https://cdn.shopify.com/s/files/1/0998/6780/files/THE_CYLINDER_CORD_NECKLACE_2495.jpg?v=')
+        first_img_end = html.index(">", first_img_start)
+        self.assertIn("&amp;width=480", html[first_img_start:first_img_end])
+        self.assertNotIn("&amp;width=760", html[first_img_start:first_img_end])
+        self.assertNotIn("&amp;width=1200", html[first_img_start:first_img_end])
 
     def test_homepage_mobile_shipping_grid_includes_heart_tile(self):
         response = self.client.get("/store")
@@ -343,7 +373,9 @@ class StoreTest(unittest.TestCase):
         self.assertIn("collection-hero__image", html)
         self.assertIn("&amp;width=760 760w", html)
         self.assertIn("&amp;width=1200 1200w", html)
-        self.assertIn('sizes="(min-width: 1024px) 50vw, 100vw"', html)
+        self.assertIn('sizes="50vw"', html)
+        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;width=480"', html)
+        self.assertIn('sizes="100vw"', html)
 
     def test_product_page_renders_variant_add_to_cart(self):
         product, variant = self.first_available_variant()
@@ -907,7 +939,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn("product-gallery__image__wrapper", html)
         self.assertIn("&amp;width=760 760w", html)
         self.assertIn("&amp;width=1200 1200w", html)
-        self.assertIn('sizes="(min-width: 1024px) 50vw, 100vw"', html)
+        self.assertIn('sizes="50vw"', html)
+        self.assertIn('sizes="100vw"', html)
         self.assertIn('sizes="(min-width: 1024px) 320px, 42vw"', html)
 
     def test_product_javascript_updates_details_top_image_for_variant_switch(self):
@@ -936,6 +969,7 @@ class StoreTest(unittest.TestCase):
         source = self.store_css_source()
 
         self.assertIn(".product-gallery__image__wrapper:nth-child(n+3) {\n        display: none;", source)
+        self.assertIn(".product-gallery__zoom picture {\n      display: block;\n      height: 100%;\n      width: 100%;", source)
         self.assertIn(".product-page {\n        padding: 0;", source)
         self.assertIn(".product-info {\n        min-height: 1604px;\n        padding-top: 72px;", source)
         self.assertIn(".product-related-section {\n        height: 631px;\n        padding: 0;", source)

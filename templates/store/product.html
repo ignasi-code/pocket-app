@@ -1,5 +1,13 @@
 {% extends "store/base.html" %}
 {% block title %}{{ product.title }} - Pocket Store{% endblock %}
+{% block head_extra %}
+  {% set preload_gallery_images = pdp_gallery_images(product) %}
+  {% set first_gallery_image = preload_gallery_images[0] if preload_gallery_images else none %}
+  {% if first_gallery_image %}
+  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(first_gallery_image.src, 480) }}" imagesrcset="{{ image_srcset(first_gallery_image.src, [390, 480]) }}" imagesizes="100vw" fetchpriority="high">
+  <link rel="preload" as="image" media="(min-width: 1024px)" href="{{ image_url(first_gallery_image.src, 760) }}" imagesrcset="{{ image_srcset(first_gallery_image.src, [760, 1200]) }}" imagesizes="50vw" fetchpriority="high">
+  {% endif %}
+{% endblock %}
 {% block body %}
   <main class="page product-page">
     {% set product_merch = product_merchandising(product.handle) %}
@@ -13,7 +21,10 @@
           {% for image in gallery_images[:6] %}
             <div class="product-gallery__image__wrapper js-productImage">
               <button class="product-gallery__zoom" type="button" data-lightbox-open data-lightbox-src="{{ image.src }}" data-lightbox-alt="{{ product.title }}">
-                <img src="{{ image_url(image.src, 760) }}" srcset="{{ image_srcset(image.src, [390, 760, 1200]) }}" sizes="(min-width: 1024px) 50vw, 100vw" alt="{{ product.title }}" width="760" height="912" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async"{% if loop.first %} fetchpriority="high"{% endif %} data-gallery-image data-gallery-image-src="{{ image.src }}">
+                <picture>
+                  <source media="(min-width: 1024px)" srcset="{{ image_srcset(image.src, [760, 1200]) }}" sizes="50vw">
+                  <img src="{{ image_url(image.src, 480) }}" srcset="{{ image_srcset(image.src, [390, 480]) }}" sizes="100vw" alt="{{ product.title }}" width="760" height="912" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async"{% if loop.first %} fetchpriority="high"{% endif %} data-gallery-image data-gallery-image-src="{{ image.src }}">
+                </picture>
               </button>
             </div>
           {% else %}

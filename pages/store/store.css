@@ -1462,6 +1462,12 @@
       width: 100%;
     }
 
+    .product-gallery__zoom picture {
+      display: block;
+      height: 100%;
+      width: 100%;
+    }
+
     .gallery img,
     .product-gallery__image__wrapper img {
       aspect-ratio: auto;
