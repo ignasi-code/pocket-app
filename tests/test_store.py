@@ -14,6 +14,9 @@ class StoreTest(unittest.TestCase):
             return path.read_text(encoding="utf-8")
         return (pocket.BASE_DIR / "templates" / "store" / "base.html").read_text(encoding="utf-8")
 
+    def store_js_source(self):
+        return (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
     def first_available_variant(self):
         for product in pocket.load_store_catalog().get("products", []):
             for variant in product.get("variants", []):
@@ -93,7 +96,7 @@ class StoreTest(unittest.TestCase):
     def test_store_defers_relative_mono_font_until_user_motion(self):
         css_response = self.client.get("/store/assets/store.min.css?v=20260605-font-tight")
         self.addCleanup(css_response.close)
-        script_response = self.client.get("/store/assets/store.js?v=20260605-mono-defer")
+        script_response = self.client.get("/store/assets/store.min.js?v=20260605-js-min")
         self.addCleanup(script_response.close)
 
         self.assertEqual(css_response.status_code, 200)
@@ -1600,7 +1603,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-mono-defer", html)
+        self.assertIn("/store/assets/store.min.js?v=20260605-js-min", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1645,12 +1648,16 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("await loadCatalog();", cart_drawer_source)
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-mono-defer")
+        response = self.client.get("/store/assets/store.min.js?v=20260605-js-min")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
+        script = response.get_data(as_text=True)
         self.assertIn("public", response.headers.get("Cache-Control", ""))
         self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
+        self.assertIn("function loadDeferredMonoFont()", script)
+        self.assertIn("function cartCatalogUrl(cart)", script)
+        self.assertLess(len(script), len(self.store_js_source()))
 
     def test_store_js_runtime_images_request_small_shopify_widths(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")

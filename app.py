@@ -2379,6 +2379,22 @@ def store_asset_js():
     return response
 
 
+def minify_store_js(js):
+    return "\n".join(
+        line.strip()
+        for line in js.splitlines()
+        if line.strip()
+    )
+
+
+@app.route("/store/assets/store.min.js")
+def store_asset_min_js():
+    js = (BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+    response = Response(minify_store_js(js), mimetype="text/javascript")
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
 @app.route("/store/assets/store.css")
 def store_asset_css():
     response = send_file(
