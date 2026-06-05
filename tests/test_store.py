@@ -57,8 +57,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-detail-placeholder" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-detail-placeholder"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-font-subset" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-font-subset"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
     def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
@@ -79,7 +79,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".site-header", response.get_data(as_text=True))
 
     def test_store_minified_css_asset_is_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-detail-placeholder")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-font-subset")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -91,7 +91,7 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("Roxanne Assoulin fidelity pass", text)
 
     def test_store_defers_relative_mono_font_until_user_motion(self):
-        css_response = self.client.get("/store/assets/store.min.css?v=20260605-detail-placeholder")
+        css_response = self.client.get("/store/assets/store.min.css?v=20260605-font-subset")
         self.addCleanup(css_response.close)
         script_response = self.client.get("/store/assets/store.js?v=20260605-mono-defer")
         self.addCleanup(script_response.close)
@@ -106,6 +106,31 @@ class StoreTest(unittest.TestCase):
         self.assertIn("relative-mono-10-pitch-pro.woff2", script)
         self.assertIn('window.addEventListener("scroll", loadDeferredMonoFont', script)
 
+    def test_store_uses_cacheable_local_subset_supreme_fonts(self):
+        response = self.client.get("/store/assets/store.min.css?v=20260605-font-subset")
+        self.addCleanup(response.close)
+
+        self.assertEqual(response.status_code, 200)
+        css = response.get_data(as_text=True)
+        self.assertIn('/store/assets/fonts/SupremeLLWeb-Regular-store-subset.woff2', css)
+        self.assertIn('/store/assets/fonts/SupremeLLWeb-Medium-store-subset.woff2', css)
+        self.assertNotIn("https://roxanneassoulin.com/cdn/shop/t/147/assets/SupremeLLWeb-Regular.woff2", css)
+        self.assertNotIn("https://roxanneassoulin.com/cdn/shop/t/147/assets/SupremeLLWeb-Medium.woff2", css)
+
+        for filename in (
+            "SupremeLLWeb-Regular-store-subset.woff2",
+            "SupremeLLWeb-Medium-store-subset.woff2",
+        ):
+            with self.subTest(filename=filename):
+                font_response = self.client.get(f"/store/assets/fonts/{filename}")
+                self.addCleanup(font_response.close)
+
+                self.assertEqual(font_response.status_code, 200)
+                self.assertIn("public", font_response.headers.get("Cache-Control", ""))
+                self.assertIn("max-age=31536000", font_response.headers.get("Cache-Control", ""))
+                self.assertEqual(font_response.mimetype, "font/woff2")
+                self.assertLess(len(font_response.data), 60000)
+
     def test_store_base_has_meta_description_for_seo_score(self):
         response = self.client.get("/store")
 
@@ -113,12 +138,14 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn('<meta name="description" content="A static-first Roxanne Assoulin storefront prototype with fast collection, product, and cart views.">', html)
 
-    def test_store_preconnects_font_origin_with_crossorigin(self):
+    def test_store_preconnects_remote_image_origins(self):
         response = self.client.get("/store")
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<link rel="preconnect" href="https://roxanneassoulin.com" crossorigin>', html)
+        self.assertIn('<link rel="preconnect" href="https://cdn.shopify.com">', html)
+        self.assertIn('<link rel="preconnect" href="https://roxanneassoulin.com">', html)
+        self.assertNotIn('href="https://roxanneassoulin.com" crossorigin', html)
 
     def test_store_logo_images_have_explicit_dimensions(self):
         response = self.client.get("/store")

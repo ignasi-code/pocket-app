@@ -2356,6 +2356,25 @@ def store_asset_css():
     return response
 
 
+STORE_FONT_ASSETS = {
+    "SupremeLLWeb-Regular-store-subset.woff2",
+    "SupremeLLWeb-Medium-store-subset.woff2",
+}
+
+
+@app.route("/store/assets/fonts/<path:filename>")
+def store_asset_font(filename):
+    if filename not in STORE_FONT_ASSETS:
+        abort(404)
+    response = send_file(
+        BASE_DIR / "pages" / "store" / "fonts" / filename,
+        mimetype="font/woff2",
+        max_age=31536000,
+    )
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
 def minify_store_css(css):
     css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
     css = re.sub(r"\s+", " ", css)
