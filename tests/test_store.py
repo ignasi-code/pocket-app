@@ -129,6 +129,19 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".cart-page__items{background:transparent;border:0", cart_critical_css)
         self.assertNotIn(".cart-page__summary{background:#fff;border:1px solid #e6e6e6", home_html)
 
+    def test_mobile_header_uses_lighthouse_safe_tap_targets(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        source = self.store_css_source()
+        self.assertIn(".brand{align-items:center;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:5px;box-sizing:border-box;display:flex;height:59px;justify-content:center;left:58px;margin:0;position:absolute;right:95px;top:0}", html)
+        self.assertIn(".store-search{background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:5px;box-sizing:border-box;cursor:pointer;height:59px;padding:0;position:absolute;right:48px;top:0;width:48px;z-index:2}", html)
+        self.assertIn(".cart-link{appearance:none;background:#b9d2e8;border:1px solid rgba(0,0,0,.1);border-radius:5px;box-sizing:border-box;color:#000;cursor:pointer;display:flex;font-size:.75rem;font-weight:700;height:59px;justify-content:center;line-height:59px;min-height:0;padding:0;position:absolute;right:0;text-align:center;top:0;width:48px;z-index:2}", html)
+        self.assertIn("right: 95px;", source)
+        self.assertIn("right: 48px;", source)
+        self.assertIn("width: 48px;", source)
+
     def test_store_pages_use_route_scoped_css_assets_for_lighthouse(self):
         cases = (
             ("/store", "home"),

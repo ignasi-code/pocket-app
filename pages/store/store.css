@@ -144,7 +144,7 @@
       left: 58px;
       margin: 0;
       position: absolute;
-      right: 75px;
+      right: 95px;
       top: 0;
       align-items: center;
       justify-content: center;
@@ -165,9 +165,9 @@
       height: 59px;
       padding: 0;
       position: absolute;
-      right: 38px;
+      right: 48px;
       top: 0;
-      width: 38px;
+      width: 48px;
       z-index: 2;
     }
 
@@ -176,7 +176,7 @@
       border-radius: 50%;
       content: "";
       height: 12px;
-      left: 10px;
+      left: 15px;
       position: absolute;
       top: 20px;
       width: 12px;
@@ -186,7 +186,7 @@
       background: #000;
       content: "";
       height: 1px;
-      left: 22px;
+      left: 27px;
       position: absolute;
       top: 33px;
       transform: rotate(45deg);
@@ -213,7 +213,7 @@
       right: 0;
       text-align: center;
       top: 0;
-      width: 38px;
+      width: 48px;
       z-index: 2;
     }
 
