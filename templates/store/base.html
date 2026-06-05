@@ -22,6 +22,7 @@
   <noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-font-subset"></noscript>
 </head>
 <body data-store-display-currency="{{ store_display_currency }}" data-store-display-eur-rate="{{ store_display_eur_rate }}">
+  {% set store_logo_src = "https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" %}
   <div class="announcement">free US shipping over $250</div>
   <header class="site-header header">
     <button class="site-header__menu header__toggle" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="store-menu" data-menu-toggle><span>Toggle Menu</span></button>
@@ -32,7 +33,7 @@
       <a href="/store/collections/bracelets">bracelets</a>
     </nav>
     <a class="brand header__logo" href="/store">
-      <img src="https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" alt="Roxanne Assoulin" width="580" height="42">
+      <img src="{{ image_url(store_logo_src, 414) }}" srcset="{{ image_srcset(store_logo_src, [207, 290, 414, 580]) }}" sizes="(min-width: 1024px) 290px, 207px" alt="Roxanne Assoulin" width="580" height="42">
     </a>
     <button class="store-search header__search-toggle" type="button" aria-expanded="false" aria-controls="search-drawer" data-search-open><span>Toggle Search</span></button>
     <nav class="header-extra desktop-visible" aria-label="Account links">
@@ -147,7 +148,7 @@
     </ul>
     <div class="footer__content">
       <div class="footer__logo">
-        <img src="https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" alt="Roxanne Assoulin" width="580" height="42">
+        <img src="{{ image_url(store_logo_src, 206) }}" srcset="{{ image_srcset(store_logo_src, [103, 206]) }}" sizes="103px" alt="Roxanne Assoulin" width="580" height="42" loading="lazy" decoding="async">
       </div>
       <div class="footer-nav__tabset">
         <span class="footer-nav__tab">About</span>
