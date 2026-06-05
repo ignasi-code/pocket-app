@@ -2414,6 +2414,17 @@ def store_cart_page():
     )
 
 
+@app.route("/store/cart-drawer-upsells-fragment")
+def store_cart_drawer_upsells_fragment():
+    html = minify_store_html(render_template(
+        "store/_cart_drawer_upsells.html",
+        **store_template_context(cart_upsells=store_cart_upsell_products()),
+    ))
+    response = Response(html, mimetype="text/html")
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
 @app.route("/store/assets/store.js")
 def store_asset_js():
     response = send_file(

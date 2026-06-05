@@ -10,6 +10,7 @@
   let cartCatalog = null;
   let cartCatalogKey = "";
   let cartCatalogPromise = null;
+  let cartDrawerUpsellsPromise = null;
   let variants = new Map();
   let deferredMonoFontLoaded = false;
 
@@ -230,6 +231,23 @@
 
   function hydrateCartDrawerImages() {
     document.querySelectorAll("[data-cart-drawer] [data-cart-deferred-image][data-src]").forEach(hydrateDeferredImage);
+  }
+
+  async function loadCartDrawerUpsells() {
+    const target = document.querySelector("[data-cart-drawer-upsell-fragment]");
+    if (!target || target.dataset.loaded === "true") return;
+    if (cartDrawerUpsellsPromise) return cartDrawerUpsellsPromise;
+    if (!target.dataset.fragmentUrl) return;
+    cartDrawerUpsellsPromise = fetch(target.dataset.fragmentUrl)
+      .then(response => response.text())
+      .then(html => {
+        target.innerHTML = html;
+        target.dataset.loaded = "true";
+      })
+      .catch(() => {
+        cartDrawerUpsellsPromise = null;
+      });
+    return cartDrawerUpsellsPromise;
   }
 
   function hydrateVisibleHomeImages() {
@@ -837,6 +855,7 @@
     closeMenuDrawer();
     closeQuickshopDrawer();
     await renderCartDrawer();
+    await loadCartDrawerUpsells();
     const drawer = document.querySelector("[data-cart-drawer]");
     const toggle = document.querySelector("[data-cart-open]");
     if (drawer) {

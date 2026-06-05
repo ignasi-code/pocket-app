@@ -31,7 +31,7 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("Pocket Store", html)
-        self.assertIn("data-store-add", html)
+        self.assertIn("data-quickshop-open", html)
         self.assertIn("/store/cart", html)
 
     def test_homepage_uses_live_theme_module_structure(self):
@@ -665,7 +665,7 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("Necklaces", html)
-        self.assertIn("data-store-add", html)
+        self.assertIn("data-quickshop-open", html)
 
     def test_collection_hero_uses_responsive_shopify_image_delivery(self):
         response = self.client.get("/store/collections/new-arrivals")
@@ -1448,24 +1448,31 @@ class StoreTest(unittest.TestCase):
 
     def test_cart_drawer_renders_live_upsell_carousel_shell(self):
         response = self.client.get("/store")
+        fragment_response = self.client.get("/store/cart-drawer-upsells-fragment")
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(fragment_response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("cart-drawer__upsell slick-slider", html)
-        self.assertIn("A few more ideas...", html)
-        self.assertIn("swiper-upsell-prev", html)
-        self.assertIn("swiper-upsell-next", html)
-        self.assertIn("cart-drawer__upsell-track", html)
-        self.assertIn('data-store-add data-handle="the-salt-pepper-cylinder-bracelet-stack"', html)
+        fragment_html = fragment_response.get_data(as_text=True)
+        self.assertIn("data-cart-drawer-upsell-fragment", html)
+        self.assertIn('/store/cart-drawer-upsells-fragment', html)
+        self.assertNotIn("cart-drawer__upsell slick-slider", html)
+        self.assertNotIn("A few more ideas...", html)
+        self.assertNotIn('data-store-add data-handle="the-salt-pepper-cylinder-bracelet-stack"', html)
+        self.assertIn("cart-drawer__upsell slick-slider", fragment_html)
+        self.assertIn("A few more ideas...", fragment_html)
+        self.assertIn("swiper-upsell-prev", fragment_html)
+        self.assertIn("swiper-upsell-next", fragment_html)
+        self.assertIn("cart-drawer__upsell-track", fragment_html)
+        self.assertIn('data-store-add data-handle="the-salt-pepper-cylinder-bracelet-stack"', fragment_html)
 
     def test_cart_drawer_upsell_images_are_deferred_until_drawer_opens(self):
-        response = self.client.get("/store")
+        response = self.client.get("/store/cart-drawer-upsells-fragment")
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         upsell_start = html.index('<div class="cart-drawer__upsell slick-slider"')
-        upsell_end = html.index('<div class="cart-drawer__summary">', upsell_start)
-        upsell_html = html[upsell_start:upsell_end]
+        upsell_html = html[upsell_start:]
         first_image_start = upsell_html.index("<img")
         first_image_end = upsell_html.index(">", first_image_start)
         first_image_tag = upsell_html[first_image_start:first_image_end]
@@ -1476,6 +1483,14 @@ class StoreTest(unittest.TestCase):
         self.assertIn('sizes="120px"', first_image_tag)
         self.assertNotIn(" src=", first_image_tag)
         self.assertNotIn(" srcset=", first_image_tag)
+
+    def test_store_js_lazy_loads_cart_drawer_upsells(self):
+        source = self.store_js_source()
+
+        self.assertIn("async function loadCartDrawerUpsells()", source)
+        self.assertIn("[data-cart-drawer-upsell-fragment]", source)
+        self.assertIn("fetch(target.dataset.fragmentUrl)", source)
+        self.assertIn("await loadCartDrawerUpsells();", source)
 
     def test_cart_drawer_hydrates_deferred_upsell_images_when_opened(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
