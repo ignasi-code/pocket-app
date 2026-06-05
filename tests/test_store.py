@@ -60,7 +60,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-font-tight" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-font-tight" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
         self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-font-tight"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
@@ -1674,7 +1674,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.min.js?v=20260605-js-min", html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-js-min" defer fetchpriority="low"></script>', html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
