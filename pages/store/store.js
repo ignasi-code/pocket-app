@@ -535,7 +535,7 @@
 
     return children.map(child => ({
       id: child.id,
-      image: productImage(product, child, 120),
+      image: productImage(product, child, 80),
       title: bundleIncludeTitle(product, child)
     }));
   }
@@ -552,7 +552,7 @@
         <li class="bundle-options-label">includes:</li>
         ${includes.map((item, index) => `
           <li class="${index === 0 ? "bundle-child first" : "bundle-child"}">
-            <img src="${item.image}" alt="">
+            <img loading="lazy" decoding="async" src="${item.image}" alt="">
             <span>${escapeHtml(item.title)}</span>
           </li>
         `).join("")}

@@ -1812,6 +1812,12 @@ class StoreTest(unittest.TestCase):
         self.assertIn('window.addEventListener("scroll", scheduleHydration', source)
         self.assertIn("bindDeferredFooterImageHydration();", source)
 
+    def test_cart_bundle_include_thumbnails_use_compact_lazy_images(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("image: productImage(product, child, 80)", source)
+        self.assertIn('<img loading="lazy" decoding="async" src="${item.image}" alt="">', source)
+
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
         drawer_source = source[
