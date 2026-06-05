@@ -82,7 +82,7 @@ STORE_CURRENCY = os.environ.get("POCKET_STORE_CURRENCY", "usd").lower()
 STORE_DISPLAY_CURRENCY = os.environ.get("POCKET_STORE_DISPLAY_CURRENCY", "eur").lower()
 STORE_DISPLAY_EUR_RATE = float(os.environ.get("POCKET_STORE_DISPLAY_EUR_RATE", "0.875"))
 STORE_COLLECTION_INITIAL_PRODUCT_LIMIT = 12
-STORE_IMAGE_QUALITY = 70
+STORE_IMAGE_QUALITY = 60
 STORE_CART_UPSELL_HANDLES = [
     "the-salt-pepper-cylinder-bracelet-stack",
     "the-pearl-branch-bracelet",

@@ -186,7 +186,7 @@
       url.searchParams.delete("height");
       url.searchParams.delete("crop");
       url.searchParams.delete("quality");
-      if (width) url.searchParams.set("quality", "70");
+      if (width) url.searchParams.set("quality", "60");
       if (width) url.searchParams.set("width", String(width));
       return url.toString();
     } catch {
