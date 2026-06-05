@@ -74,6 +74,45 @@ class OpsPageTest(unittest.TestCase):
         self.assertIn("Pull completed in 0.01s.", html)
         self.assertIn("Restart requested", html)
 
+    def test_ops_can_enable_open_mode_after_valid_unlock(self):
+        with patch.dict(pocket.os.environ, {"POCKET_OPS_OPEN": "0"}):
+            with patch("app.write_env_updates") as write_env_updates:
+                response = self.client.post(
+                    "/ops",
+                    data={"action": "enable_open", "token": "secret"},
+                )
+
+            self.assertEqual(response.status_code, 200)
+            write_env_updates.assert_called_once_with({"POCKET_OPS_OPEN": "1"})
+            self.assertEqual(pocket.os.environ["POCKET_OPS_OPEN"], "1")
+            self.assertIn("Open mode enabled", response.get_data(as_text=True))
+
+            with patch(
+                "app.run_git_pull",
+                create=True,
+                return_value={
+                    "elapsed": 0.01,
+                    "message": "Pull completed in 0.01s.",
+                    "ok": True,
+                    "output": "Already up to date.",
+                    "returncode": 0,
+                },
+            ) as run_git_pull:
+                pull = self.client.post("/ops", data={"action": "pull"})
+
+        self.assertEqual(pull.status_code, 200)
+        run_git_pull.assert_called_once_with()
+
+    def test_ops_can_disable_open_mode_without_manual_token(self):
+        with patch.dict(pocket.os.environ, {"POCKET_OPS_OPEN": "1"}):
+            with patch("app.write_env_updates") as write_env_updates:
+                response = self.client.post("/ops", data={"action": "disable_open"})
+
+            self.assertEqual(response.status_code, 200)
+            write_env_updates.assert_called_once_with({"POCKET_OPS_OPEN": "0"})
+            self.assertEqual(pocket.os.environ["POCKET_OPS_OPEN"], "0")
+            self.assertIn("Open mode disabled", response.get_data(as_text=True))
+
 
 if __name__ == "__main__":
     unittest.main()

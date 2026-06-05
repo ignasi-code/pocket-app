@@ -230,6 +230,12 @@ def ops_auth_label():
     return "Unlock once with your Pocket access token."
 
 
+def set_ops_open_mode(enabled):
+    updates = {"POCKET_OPS_OPEN": "1" if enabled else "0"}
+    write_env_updates(updates)
+    refresh_runtime_config(updates)
+
+
 def run_git_pull():
     started = time.time()
     result = subprocess.run(
@@ -1653,6 +1659,15 @@ OPS_PAGE = """
       <h2>Notes</h2>
       <p>Open mode only works when <code>POCKET_OPS_OPEN=1</code> is set in the server environment. Use it only while you intentionally want unattended public tunnel operations.</p>
       <p>Restart command: <code>{{ restart_command }}</code></p>
+      {% if not needs_unlock %}
+        <form class="actions-form" method="post" action="/ops">
+          {% if open_mode %}
+            <button class="secondary" type="submit" name="action" value="disable_open">Disable open mode</button>
+          {% else %}
+            <button class="secondary" type="submit" name="action" value="enable_open">Enable open mode</button>
+          {% endif %}
+        </form>
+      {% endif %}
     </section>
   </main>
 </body>
@@ -2502,6 +2517,7 @@ def render_ops_page(result="", output="", ok=False, status=200, set_session=Fals
         output=output,
         ok=ok,
         restart_command=restart_command(),
+        open_mode=ops_open_enabled(),
     ), status)
     if set_session:
         response.set_cookie(
@@ -2537,6 +2553,46 @@ def ops_page():
             ok=True,
             set_session=set_session,
             unlocked=True,
+        )
+
+    if action == "enable_open":
+        try:
+            set_ops_open_mode(True)
+        except OSError as exc:
+            return render_ops_page(
+                result="Could not enable open mode.",
+                output=str(exc),
+                ok=False,
+                status=500,
+                set_session=set_session,
+                unlocked=set_session,
+            )
+        return render_ops_page(
+            result="Open mode enabled. Pull and restart actions now work without a manual token.",
+            output="",
+            ok=True,
+            set_session=set_session,
+            unlocked=True,
+        )
+
+    if action == "disable_open":
+        try:
+            set_ops_open_mode(False)
+        except OSError as exc:
+            return render_ops_page(
+                result="Could not disable open mode.",
+                output=str(exc),
+                ok=False,
+                status=500,
+                set_session=set_session,
+                unlocked=set_session,
+            )
+        return render_ops_page(
+            result="Open mode disabled. Token or browser unlock is required again.",
+            output="",
+            ok=True,
+            set_session=set_session,
+            unlocked=set_session,
         )
 
     if action == "pull":
