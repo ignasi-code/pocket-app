@@ -2490,7 +2490,7 @@ STORE_FONT_ASSETS = {
 }
 
 STORE_FULL_CSS_ASSET = "/store/assets/store.min.css?v=20260605-cart-cls"
-STORE_SCOPED_CSS_VERSION = "20260605-scope-css-promo-wrap"
+STORE_SCOPED_CSS_VERSION = "20260605-scope-css-menu-drawer"
 STORE_CSS_SCOPES = {"home", "collection", "product", "cart"}
 
 STORE_SCOPED_CSS_EXCLUDE_PREFIXES = {

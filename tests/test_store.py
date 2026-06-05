@@ -67,8 +67,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-promo-wrap" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-promo-wrap"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-menu-drawer" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-menu-drawer"></noscript>', html)
         self.assertNotIn("20260605-scope-css-cart-cls", html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
@@ -183,7 +183,7 @@ class StoreTest(unittest.TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
                 html = response.get_data(as_text=True)
-                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-promo-wrap"
+                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-menu-drawer"
                 self.assertIn(href, html)
                 self.assertNotIn("/store/assets/store.min.css?v=20260605-cart-cls", html)
 
@@ -953,6 +953,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn('.drawer-is-open .menu-drawer[aria-hidden="false"]', source)
         self.assertIn("transform: translateX(0) !important", source)
         self.assertIn("visibility: visible !important", source)
+
+    def test_menu_drawer_overrides_critical_hidden_height_when_open(self):
+        source = self.store_css_source()
+
+        self.assertIn(".menu-drawer {\n      background: var(--blue);", source)
+        self.assertIn("height: 100dvh;", source)
+        self.assertIn("overflow-y: auto;", source)
 
     def test_menu_drawer_uses_runtime_transform_visibility_guard(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
