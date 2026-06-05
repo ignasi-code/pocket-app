@@ -34,6 +34,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-quickshop-open", html)
         self.assertIn("/store/cart", html)
 
+    def test_store_base_declares_inline_favicon_to_avoid_browser_404(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<link rel="icon" href="data:,">', html)
+
     def test_homepage_uses_live_theme_module_structure(self):
         response = self.client.get("/store")
 
