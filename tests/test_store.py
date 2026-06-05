@@ -941,6 +941,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-src=", hover_tag)
         self.assertIn("data-srcset=", hover_tag)
         self.assertIn("data-sizes=", hover_tag)
+        self.assertNotIn("&amp;width=760", hover_tag)
         self.assertNotIn(" src=", hover_tag)
         self.assertNotIn(" srcset=", hover_tag)
 

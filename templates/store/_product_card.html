@@ -15,7 +15,7 @@
         <img class="product-tile__image__primary" src="{{ image_url(primary_image, primary_mobile_width) }}" srcset="{{ image_srcset(primary_image, primary_mobile_srcset_widths) }}" sizes="(min-width: 1024px) 25vw, 50vw" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async">
         {% endif %}
       </picture>
-      <img class="product-tile__image__hover is-loading" data-src="{{ image_url(hover_image, 540) }}" data-srcset="{{ image_srcset(hover_image, [240, 360, 540, 760]) }}" data-sizes="(min-width: 1024px) 25vw, 50vw" alt="" width="760" height="912" loading="lazy" decoding="async">
+      <img class="product-tile__image__hover is-loading" data-src="{{ image_url(hover_image, 540) }}" data-srcset="{{ image_srcset(hover_image, [240, 360, 540]) }}" data-sizes="(min-width: 1024px) 25vw, 50vw" alt="" width="760" height="912" loading="lazy" decoding="async">
     </div>
     <div class="product-tile__top"></div>
     <div class="product-card__body product-tile__details product-tile__copy__wrapper">
