@@ -67,8 +67,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-cart-reserve" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-cart-reserve"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-a11y-price" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-a11y-price"></noscript>', html)
         self.assertNotIn("20260605-scope-css-cart-cls", html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
@@ -160,6 +160,7 @@ class StoreTest(unittest.TestCase):
         js = self.store_js_source()
 
         self.assertIn(".price {\n      color: #000;\n      font-size: .75rem;\n      font-weight: 400;\n      line-height: 1.35;\n      opacity: .65;", css)
+        self.assertIn(".product-tile__price {\n      color: #000;\n      font-size: .75rem;\n      font-weight: 400;\n      line-height: 135%;\n      opacity: .65;", css)
         self.assertIn('<div class="buy-box product-details">', product_html)
         self.assertNotIn('<aside class="buy-box product-details">', product_html)
         self.assertIn('aria-label="Quantity"', product_html)
@@ -182,7 +183,7 @@ class StoreTest(unittest.TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
                 html = response.get_data(as_text=True)
-                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-cart-reserve"
+                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-a11y-price"
                 self.assertIn(href, html)
                 self.assertNotIn("/store/assets/store.min.css?v=20260605-cart-cls", html)
 
@@ -1904,7 +1905,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-child-images" defer fetchpriority="low"></script>', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-a11y" defer fetchpriority="low"></script>', html)
 
     def test_footer_logo_is_deferred_until_scroll_for_lighthouse(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
