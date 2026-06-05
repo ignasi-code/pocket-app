@@ -398,8 +398,19 @@ class StoreTest(unittest.TestCase):
         first_start = html.index('<img class="product-tile__image__primary"', grid_start)
         first_end = html.index(">", first_start)
         first_tag = html[first_start:first_end]
+        second_start = html.index('<img class="product-tile__image__primary"', first_end)
+        second_end = html.index(">", second_start)
+        second_tag = html[second_start:second_end]
+        third_start = html.index('<img class="product-tile__image__primary"', second_end)
+        third_end = html.index(">", third_start)
+        third_tag = html[third_start:third_end]
+
         self.assertIn(" src=", first_tag)
         self.assertNotIn("data-product-card-deferred-image", first_tag)
+        self.assertIn(" src=", second_tag)
+        self.assertNotIn("data-product-card-deferred-image", second_tag)
+        self.assertIn("data-product-card-deferred-image", third_tag)
+        self.assertNotIn(" src=", third_tag)
 
         deferred_marker = '<img class="product-tile__image__primary" data-product-card-deferred-image data-src="https://cdn.shopify.com/s/files/1/0998/6780/files/TheDoubleDropCubicPendantNecklace.jpg'
         self.assertIn(deferred_marker, html)
