@@ -859,6 +859,7 @@ def store_query_url(**updates):
 
 
 def store_template_context(**kwargs):
+    store_css_scope = kwargs.pop("store_css_scope", None)
     merchandising = load_store_merchandising()
     context = {
         "collections": store_collection_definitions(),
@@ -881,6 +882,7 @@ def store_template_context(**kwargs):
         "store_display_currency": STORE_DISPLAY_CURRENCY,
         "store_display_eur_rate": STORE_DISPLAY_EUR_RATE,
         "cart_upsells": store_cart_upsell_products(),
+        "store_css_asset": store_css_asset_url(store_css_scope),
     }
     context.update(kwargs)
     return context
@@ -2345,6 +2347,7 @@ def store_page():
         **store_template_context(
             homepage=load_store_homepage(),
             products_by_handle=products_by_handle,
+            store_css_scope="home",
         ),
     )
 
@@ -2364,6 +2367,7 @@ def store_collection_page(handle):
                 handle,
                 STORE_COLLECTION_INITIAL_PRODUCT_LIMIT,
             ),
+            store_css_scope="collection",
         ),
     )
 
@@ -2402,6 +2406,7 @@ def store_product_page(handle):
         **store_template_context(
             product=product,
             related=related,
+            store_css_scope="product",
         ),
     )
 
@@ -2410,7 +2415,7 @@ def store_product_page(handle):
 def store_cart_page():
     return render_store_template(
         "store/cart.html",
-        **store_template_context(),
+        **store_template_context(store_css_scope="cart"),
     )
 
 
@@ -2479,6 +2484,54 @@ STORE_FONT_ASSETS = {
     "SupremeLLWeb-Medium-store-tight.woff2",
 }
 
+STORE_FULL_CSS_ASSET = "/store/assets/store.min.css?v=20260605-font-tight"
+STORE_SCOPED_CSS_VERSION = "20260605-scope-css"
+STORE_CSS_SCOPES = {"home", "collection", "product", "cart"}
+
+STORE_SCOPED_CSS_EXCLUDE_PREFIXES = {
+    "home": {
+        "collection", "collection-filter", "collection-grid", "collection-hero", "pagination",
+        "pdp", "product-info", "product-page", "product-details", "product-buy", "product-qty",
+        "product-short", "product-motto", "product-detail", "details-list", "option-selector",
+        "gallery", "product-gallery", "cart-page", "cart-upsell",
+    },
+    "collection": {
+        "hero", "hero-copy", "hero-cta", "product-module", "double-image", "split-banner",
+        "split-tile", "category-module", "category-list", "info-module", "pdp", "product-info",
+        "product-page", "product-details", "product-buy", "product-qty", "product-short",
+        "product-motto", "product-detail", "details-list", "option-selector", "gallery",
+        "product-gallery", "cart-page", "cart-upsell",
+    },
+    "product": {
+        "hero", "hero-copy", "hero-cta", "product-module", "double-image", "split-banner",
+        "split-tile", "category-module", "category-list", "info-module", "collection",
+        "collection-filter", "collection-grid", "collection-hero", "pagination", "cart-page",
+        "cart-upsell",
+    },
+    "cart": {
+        "hero", "hero-copy", "hero-cta", "product-module", "double-image", "split-banner",
+        "split-tile", "category-module", "category-list", "info-module", "collection",
+        "collection-filter", "collection-grid", "collection-hero", "pagination", "pdp",
+        "product-info", "product-page", "product-details", "product-buy", "product-qty",
+        "product-short", "product-motto", "product-detail", "details-list", "option-selector",
+        "gallery", "product-gallery",
+    },
+}
+
+STORE_SCOPED_CSS_KEEP_PREFIXES = (
+    "cart-drawer", "product-tile", "product-card", "quickshop", "search-drawer", "menu-drawer",
+    "drawer", "footer", "shipping-promo", "site-header", "brand", "store-search", "cart-link",
+    "button", "price", "grid", "empty-state", "plain-button",
+)
+
+STORE_CSS_CLASS_RE = re.compile(r"\.([A-Za-z0-9_-]+)")
+
+
+def store_css_asset_url(scope=None):
+    if scope in STORE_CSS_SCOPES:
+        return f"/store/assets/store.{scope}.min.css?v={STORE_SCOPED_CSS_VERSION}"
+    return STORE_FULL_CSS_ASSET
+
 
 @app.route("/store/assets/fonts/<path:filename>")
 def store_asset_font(filename):
@@ -2501,10 +2554,94 @@ def minify_store_css(css):
     return css.strip()
 
 
+def iter_store_css_blocks(css):
+    index = 0
+    length = len(css)
+    while index < length:
+        while index < length and css[index].isspace():
+            index += 1
+        if index >= length:
+            break
+        prelude_start = index
+        while index < length and css[index] != "{":
+            index += 1
+        if index >= length:
+            break
+        prelude = css[prelude_start:index].strip()
+        index += 1
+        body_start = index
+        depth = 1
+        while index < length and depth:
+            if css[index] == "{":
+                depth += 1
+            elif css[index] == "}":
+                depth -= 1
+            index += 1
+        yield prelude, css[body_start:index - 1]
+
+
+def split_store_css_selectors(prelude):
+    return [selector.strip() for selector in prelude.split(",") if selector.strip()]
+
+
+def store_css_class_is_excluded(class_name, scope):
+    if any(class_name.startswith(prefix) for prefix in STORE_SCOPED_CSS_KEEP_PREFIXES):
+        return False
+    return any(
+        class_name == prefix
+        or class_name.startswith(prefix + "-")
+        or class_name.startswith(prefix + "__")
+        for prefix in STORE_SCOPED_CSS_EXCLUDE_PREFIXES.get(scope, set())
+    )
+
+
+def store_css_selector_matches_scope(selector, scope):
+    class_names = STORE_CSS_CLASS_RE.findall(selector)
+    if not class_names:
+        return True
+    return not any(store_css_class_is_excluded(class_name, scope) for class_name in class_names)
+
+
+def filter_store_css_for_scope(css, scope):
+    if scope not in STORE_CSS_SCOPES:
+        return css
+
+    blocks = []
+    for prelude, body in iter_store_css_blocks(css):
+        if prelude.startswith("@font-face"):
+            blocks.append(f"{prelude}{{{body}}}")
+        elif prelude.startswith("@media"):
+            filtered_body = filter_store_css_for_scope(body, scope).strip()
+            if filtered_body:
+                blocks.append(f"{prelude}{{{filtered_body}}}")
+        elif prelude.startswith("@"):
+            blocks.append(f"{prelude}{{{body}}}")
+        else:
+            selectors = [
+                selector
+                for selector in split_store_css_selectors(prelude)
+                if store_css_selector_matches_scope(selector, scope)
+            ]
+            if selectors:
+                blocks.append(f"{', '.join(selectors)}{{{body}}}")
+    return "\n".join(blocks)
+
+
 @app.route("/store/assets/store.min.css")
 def store_asset_min_css():
     css = (BASE_DIR / "pages" / "store" / "store.css").read_text(encoding="utf-8")
     response = Response(minify_store_css(css), mimetype="text/css")
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
+@app.route("/store/assets/store.<scope>.min.css")
+def store_asset_scoped_min_css(scope):
+    if scope not in STORE_CSS_SCOPES:
+        abort(404)
+    css = (BASE_DIR / "pages" / "store" / "store.css").read_text(encoding="utf-8")
+    scoped_css = filter_store_css_for_scope(css, scope)
+    response = Response(minify_store_css(scoped_css), mimetype="text/css")
     response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     return response
 

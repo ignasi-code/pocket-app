@@ -60,9 +60,26 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-font-tight" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-font-tight"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
+
+    def test_store_pages_use_route_scoped_css_assets_for_lighthouse(self):
+        cases = (
+            ("/store", "home"),
+            ("/store/collections/new-arrivals", "collection"),
+            ("/store/products/the-cylinder-cord-necklace-cloud-blue", "product"),
+            ("/store/cart", "cart"),
+        )
+
+        for path, scope in cases:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                html = response.get_data(as_text=True)
+                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css"
+                self.assertIn(href, html)
+                self.assertNotIn("/store/assets/store.min.css?v=20260605-font-tight", html)
 
     def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
         response = self.client.get("/store")
@@ -95,6 +112,37 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("ui-sans-serif", text)
         self.assertNotIn("border-radius:999px", text)
         self.assertNotIn("Roxanne Assoulin fidelity pass", text)
+
+    def test_store_scoped_css_assets_are_cacheable_and_smaller_for_lighthouse(self):
+        full_response = self.client.get("/store/assets/store.min.css?v=20260605-font-tight")
+        self.addCleanup(full_response.close)
+        full_length = len(full_response.get_data(as_text=True))
+        cases = {
+            "home": (".product-module", ".collection-hero", ".product-details", ".cart-page"),
+            "collection": (".collection-hero", ".product-module", ".product-details", ".cart-page"),
+            "product": (".product-details", ".collection-hero", ".product-module", ".cart-page"),
+            "cart": (".cart-page", ".collection-hero", ".product-details", ".product-module"),
+        }
+
+        for scope, markers in cases.items():
+            with self.subTest(scope=scope):
+                response = self.client.get(f"/store/assets/store.{scope}.min.css?v=20260605-scope-css")
+                self.addCleanup(response.close)
+                text = response.get_data(as_text=True)
+                present, *absent = markers
+
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("public", response.headers.get("Cache-Control", ""))
+                self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
+                self.assertIn("/store/assets/fonts/SupremeLLWeb-Regular-store-tight.woff2", text)
+                self.assertIn(".site-header", text)
+                self.assertIn(".footer", text)
+                self.assertIn(".cart-drawer", text)
+                self.assertIn(present, text)
+                for marker in absent:
+                    self.assertNotIn(marker, text)
+                self.assertLess(len(text), full_length)
+                self.assertLess(len(text), 33000)
 
     def test_store_defers_relative_mono_font_until_user_motion(self):
         css_response = self.client.get("/store/assets/store.min.css?v=20260605-font-tight")
