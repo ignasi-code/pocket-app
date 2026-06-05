@@ -4,7 +4,7 @@
   {% set preload_gallery_images = pdp_gallery_images(product) %}
   {% set first_gallery_image = preload_gallery_images[0] if preload_gallery_images else none %}
   {% if first_gallery_image %}
-  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(first_gallery_image.src, 414) }}" imagesrcset="{{ image_srcset(first_gallery_image.src, [390, 414]) }}" imagesizes="100vw" fetchpriority="high">
+  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(first_gallery_image.src, 390) }}" imagesrcset="{{ image_srcset(first_gallery_image.src, [390]) }}" imagesizes="100vw" fetchpriority="high">
   <link rel="preload" as="image" media="(min-width: 1024px)" href="{{ image_url(first_gallery_image.src, 760) }}" imagesrcset="{{ image_srcset(first_gallery_image.src, [760, 1200]) }}" imagesizes="50vw" fetchpriority="high">
   {% endif %}
 {% endblock %}
@@ -24,7 +24,7 @@
                 <picture>
                   {% if loop.first %}
                   <source media="(min-width: 1024px)" srcset="{{ image_srcset(image.src, [760, 1200]) }}" sizes="50vw">
-                  <img src="{{ image_url(image.src, 414) }}" srcset="{{ image_srcset(image.src, [390, 414]) }}" sizes="100vw" alt="{{ product.title }}" width="760" height="912" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async"{% if loop.first %} fetchpriority="high"{% endif %} data-gallery-image data-gallery-image-src="{{ image.src }}">
+                  <img src="{{ image_url(image.src, 390) }}" srcset="{{ image_srcset(image.src, [390]) }}" sizes="100vw" alt="{{ product.title }}" width="760" height="912" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async"{% if loop.first %} fetchpriority="high"{% endif %} data-gallery-image data-gallery-image-src="{{ image.src }}">
                   {% else %}
                   <source media="(min-width: 1024px)" data-srcset="{{ image_srcset(image.src, [760, 1200]) }}" data-sizes="50vw">
                   <img data-gallery-deferred data-src="{{ image_url(image.src, 420) }}" data-srcset="{{ image_srcset(image.src, [390, 420]) }}" data-sizes="100vw" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async" data-gallery-image data-gallery-image-src="{{ image.src }}">

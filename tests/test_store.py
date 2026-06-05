@@ -273,7 +273,7 @@ class StoreTest(unittest.TestCase):
         preload_end = html.index(">", preload_start)
         preload_tag = html[preload_start:preload_end]
         self.assertIn('imagesrcset="https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985.jpg?v=1780086212&amp;quality=60&amp;width=390 390w', preload_tag)
-        self.assertIn("&amp;width=414 414w", preload_tag)
+        self.assertNotIn("&amp;width=414", preload_tag)
         self.assertNotIn("&amp;width=420", preload_tag)
         self.assertNotIn("&amp;width=480 480w", preload_tag)
         self.assertNotIn("&amp;width=640 640w", html)
@@ -290,12 +290,12 @@ class StoreTest(unittest.TestCase):
         preload_tag = html[preload_start:preload_end]
         self.assertIn("New-Arrivals.jpg", html)
         self.assertIn("&amp;width=390 390w", preload_tag)
-        self.assertIn("&amp;width=414 414w", preload_tag)
+        self.assertNotIn("&amp;width=414", preload_tag)
         self.assertNotIn("&amp;width=420", preload_tag)
         self.assertNotIn("&amp;width=480 480w", preload_tag)
         self.assertIn('imagesizes="100vw"', html)
         self.assertIn('fetchpriority="high"', html)
-        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;quality=60&amp;width=414"', html)
+        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;quality=60&amp;width=390"', html)
 
     def test_product_page_preloads_mobile_lcp_gallery_image_for_lighthouse(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
@@ -307,14 +307,15 @@ class StoreTest(unittest.TestCase):
         preload_tag = html[preload_start:preload_end]
         self.assertIn("THE_CYLINDER_CORD_NECKLACE_2495", html)
         self.assertIn("&amp;width=390 390w", preload_tag)
-        self.assertIn("&amp;width=414 414w", preload_tag)
+        self.assertNotIn("&amp;width=414", preload_tag)
         self.assertNotIn("&amp;width=420", preload_tag)
         self.assertNotIn("&amp;width=480 480w", preload_tag)
         self.assertIn('imagesizes="100vw"', html)
         self.assertIn('fetchpriority="high"', html)
         first_img_start = html.index('<img src="https://cdn.shopify.com/s/files/1/0998/6780/files/THE_CYLINDER_CORD_NECKLACE_2495.jpg?v=')
         first_img_end = html.index(">", first_img_start)
-        self.assertIn("&amp;width=414", html[first_img_start:first_img_end])
+        self.assertIn("&amp;width=390", html[first_img_start:first_img_end])
+        self.assertNotIn("&amp;width=414", html[first_img_start:first_img_end])
         self.assertNotIn("&amp;width=420", html[first_img_start:first_img_end])
         self.assertNotIn("&amp;width=760", html[first_img_start:first_img_end])
         self.assertNotIn("&amp;width=1200", html[first_img_start:first_img_end])
@@ -520,8 +521,9 @@ class StoreTest(unittest.TestCase):
         first_img_start = html.index('<img src="https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile')
         first_img_end = html.index(">", first_img_start)
         first_img_tag = html[first_img_start:first_img_end]
+        self.assertIn("&amp;width=390\"", first_img_tag)
         self.assertIn("&amp;width=390 390w", first_img_tag)
-        self.assertIn("&amp;width=414 414w", first_img_tag)
+        self.assertNotIn("&amp;width=414", first_img_tag)
         self.assertNotIn("&amp;width=420", first_img_tag)
         self.assertNotIn("&amp;width=480 480w", first_img_tag)
         self.assertNotIn("&amp;width=560 560w", html)
@@ -777,7 +779,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("&amp;width=760 760w", html)
         self.assertIn("&amp;width=1200 1200w", html)
         self.assertIn('sizes="50vw"', html)
-        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;quality=60&amp;width=414"', html)
+        self.assertIn('src="https://roxanneassoulin.com/cdn/shop/collections/New-Arrivals.jpg?v=1779127477&amp;quality=60&amp;width=390"', html)
         self.assertIn('sizes="100vw"', html)
 
     def test_product_page_renders_variant_add_to_cart(self):
