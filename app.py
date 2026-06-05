@@ -2483,12 +2483,14 @@ def store_asset_css():
 
 
 STORE_FONT_ASSETS = {
+    "SupremeLLWeb-Regular-store-latin.woff2",
+    "SupremeLLWeb-Medium-store-latin.woff2",
     "SupremeLLWeb-Regular-store-tight.woff2",
     "SupremeLLWeb-Medium-store-tight.woff2",
 }
 
-STORE_FULL_CSS_ASSET = "/store/assets/store.min.css?v=20260605-font-tight"
-STORE_SCOPED_CSS_VERSION = "20260605-scope-css"
+STORE_FULL_CSS_ASSET = "/store/assets/store.min.css?v=20260605-font-latin"
+STORE_SCOPED_CSS_VERSION = "20260605-scope-css-font-latin"
 STORE_CSS_SCOPES = {"home", "collection", "product", "cart"}
 
 STORE_SCOPED_CSS_EXCLUDE_PREFIXES = {

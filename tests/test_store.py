@@ -60,8 +60,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-font-latin" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-font-latin"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
     def test_store_pages_use_route_scoped_css_assets_for_lighthouse(self):
@@ -77,9 +77,9 @@ class StoreTest(unittest.TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
                 html = response.get_data(as_text=True)
-                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css"
+                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-font-latin"
                 self.assertIn(href, html)
-                self.assertNotIn("/store/assets/store.min.css?v=20260605-font-tight", html)
+                self.assertNotIn("/store/assets/store.min.css?v=20260605-font-latin", html)
 
     def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
         response = self.client.get("/store")
@@ -99,7 +99,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".site-header", response.get_data(as_text=True))
 
     def test_store_minified_css_asset_is_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-font-tight")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-font-latin")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -114,7 +114,7 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("Roxanne Assoulin fidelity pass", text)
 
     def test_store_scoped_css_assets_are_cacheable_and_smaller_for_lighthouse(self):
-        full_response = self.client.get("/store/assets/store.min.css?v=20260605-font-tight")
+        full_response = self.client.get("/store/assets/store.min.css?v=20260605-font-latin")
         self.addCleanup(full_response.close)
         full_length = len(full_response.get_data(as_text=True))
         cases = {
@@ -126,7 +126,7 @@ class StoreTest(unittest.TestCase):
 
         for scope, markers in cases.items():
             with self.subTest(scope=scope):
-                response = self.client.get(f"/store/assets/store.{scope}.min.css?v=20260605-scope-css")
+                response = self.client.get(f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-font-latin")
                 self.addCleanup(response.close)
                 text = response.get_data(as_text=True)
                 present, *absent = markers
@@ -134,7 +134,7 @@ class StoreTest(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertIn("public", response.headers.get("Cache-Control", ""))
                 self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
-                self.assertIn("/store/assets/fonts/SupremeLLWeb-Regular-store-tight.woff2", text)
+                self.assertIn("/store/assets/fonts/SupremeLLWeb-Regular-store-latin.woff2", text)
                 self.assertIn(".site-header", text)
                 self.assertIn(".footer", text)
                 self.assertIn(".cart-drawer", text)
@@ -145,7 +145,7 @@ class StoreTest(unittest.TestCase):
                 self.assertLess(len(text), 33000)
 
     def test_store_defers_relative_mono_font_until_user_motion(self):
-        css_response = self.client.get("/store/assets/store.min.css?v=20260605-font-tight")
+        css_response = self.client.get("/store/assets/store.min.css?v=20260605-font-latin")
         self.addCleanup(css_response.close)
         script_response = self.client.get("/store/assets/store.min.js?v=20260605-js-min")
         self.addCleanup(script_response.close)
@@ -161,19 +161,21 @@ class StoreTest(unittest.TestCase):
         self.assertIn('window.addEventListener("scroll", loadDeferredMonoFont', script)
 
     def test_store_uses_cacheable_local_subset_supreme_fonts(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-font-tight")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-font-latin")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
         css = response.get_data(as_text=True)
-        self.assertIn('/store/assets/fonts/SupremeLLWeb-Regular-store-tight.woff2', css)
-        self.assertIn('/store/assets/fonts/SupremeLLWeb-Medium-store-tight.woff2', css)
+        self.assertIn('/store/assets/fonts/SupremeLLWeb-Regular-store-latin.woff2', css)
+        self.assertIn('/store/assets/fonts/SupremeLLWeb-Medium-store-latin.woff2', css)
+        self.assertNotIn('/store/assets/fonts/SupremeLLWeb-Regular-store-tight.woff2', css)
+        self.assertNotIn('/store/assets/fonts/SupremeLLWeb-Medium-store-tight.woff2', css)
         self.assertNotIn("https://roxanneassoulin.com/cdn/shop/t/147/assets/SupremeLLWeb-Regular.woff2", css)
         self.assertNotIn("https://roxanneassoulin.com/cdn/shop/t/147/assets/SupremeLLWeb-Medium.woff2", css)
 
         for filename in (
-            "SupremeLLWeb-Regular-store-tight.woff2",
-            "SupremeLLWeb-Medium-store-tight.woff2",
+            "SupremeLLWeb-Regular-store-latin.woff2",
+            "SupremeLLWeb-Medium-store-latin.woff2",
         ):
             with self.subTest(filename=filename):
                 font_response = self.client.get(f"/store/assets/fonts/{filename}")

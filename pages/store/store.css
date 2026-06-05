@@ -3,7 +3,7 @@
       font-style: normal;
       font-weight: 400;
       font-display: swap;
-      src: url("/store/assets/fonts/SupremeLLWeb-Regular-store-tight.woff2") format("woff2");
+      src: url("/store/assets/fonts/SupremeLLWeb-Regular-store-latin.woff2") format("woff2");
     }
 
     @font-face {
@@ -11,7 +11,7 @@
       font-style: normal;
       font-weight: 700;
       font-display: swap;
-      src: url("/store/assets/fonts/SupremeLLWeb-Medium-store-tight.woff2") format("woff2");
+      src: url("/store/assets/fonts/SupremeLLWeb-Medium-store-latin.woff2") format("woff2");
     }
 
     /* Roxanne Assoulin fidelity styles. */
