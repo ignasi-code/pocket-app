@@ -904,9 +904,21 @@ class StoreTest(unittest.TestCase):
         primary_tag = html[primary_start:primary_end]
         self.assertIn("&amp;width=240 240w", primary_tag)
         self.assertIn("&amp;width=360 360w", primary_tag)
-        self.assertIn("&amp;width=540 540w", primary_tag)
+        self.assertIn("&amp;width=480 480w", primary_tag)
+        self.assertNotIn("&amp;width=540", primary_tag)
         self.assertNotIn("&amp;width=760", primary_tag)
         self.assertIn('sizes="(min-width: 1024px) 25vw, 50vw"', primary_tag)
+
+    def test_home_product_tiles_keep_wider_mobile_card_candidate(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        module_start = html.index('<section class="shopify-section product-module">')
+        primary_start = html.index('<img class="product-tile__image__primary"', module_start)
+        primary_end = html.index(">", primary_start)
+        primary_tag = html[primary_start:primary_end]
+        self.assertIn("&amp;width=540 540w", primary_tag)
 
     def test_product_tile_hover_loader_preserves_desktop_hover_behavior(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")

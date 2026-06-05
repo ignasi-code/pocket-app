@@ -131,6 +131,8 @@
             <section class="grid collection-grid">
               {% for product in products %}
                 {% set defer_product_card_image = loop.index > 2 %}
+                {% set product_card_primary_mobile_width = 480 %}
+                {% set product_card_primary_mobile_srcset_widths = [240, 360, 480] %}
                 {% include "store/_product_card.html" %}
               {% endfor %}
             </section>
