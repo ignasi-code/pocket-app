@@ -195,6 +195,31 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".search-drawer,.cart-notification,.cart-notification__overlay,.promo,.quickshop__overlay,.quickshop__drawer,.menu-drawer,.cart-drawer", html)
         self.assertIn("position:fixed;top:0;visibility:hidden;width:0", html)
 
+    def test_store_critical_css_hides_accessibility_text_before_scoped_css_loads(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        critical_start = html.index('<style data-critical-store-css>')
+        critical_end = html.index("</style>", critical_start)
+        critical_css = html[critical_start:critical_end]
+
+        self.assertIn(".visually-hidden{border:0;clip:rect(0 0 0 0);height:1px", critical_css)
+        self.assertIn('<h1 class="visually-hidden">Roxanne Assoulin storefront</h1>', html)
+
+    def test_store_critical_css_stabilizes_above_fold_controls_before_scoped_css_loads(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        critical_start = html.index('<style data-critical-store-css>')
+        critical_end = html.index("</style>", critical_start)
+        critical_css = html[critical_start:critical_end]
+
+        self.assertIn(".hero__cta:before,.hero__cta:after{box-sizing:border-box;content:\"\";position:absolute", critical_css)
+        self.assertIn(".shipping-promo__close{background:transparent;border:0;cursor:pointer;height:50px", critical_css)
+        self.assertIn(".shipping-promo__close:before,.shipping-promo__close:after{background:#fff;content:\"\";height:1px", critical_css)
+
     def test_store_css_asset_is_cacheable_for_lighthouse(self):
         response = self.client.get("/store/assets/store.css?v=20260605-css-images")
         self.addCleanup(response.close)
