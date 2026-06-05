@@ -344,6 +344,54 @@ class StoreTest(unittest.TestCase):
         self.assertIn("&amp;width=540 540w", html)
         self.assertIn('sizes="(min-width: 1024px) 25vw, 50vw"', html)
 
+    def test_homepage_product_module_defers_card_primary_images_for_lighthouse(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        module_start = html.index('<section class="shopify-section product-module">')
+        image_start = html.index('<img class="product-tile__image__primary"', module_start)
+        image_end = html.index(">", image_start)
+        image_tag = html[image_start:image_end]
+
+        self.assertIn("data-product-card-deferred-image", image_tag)
+        self.assertIn("data-src=", image_tag)
+        self.assertIn("data-srcset=", image_tag)
+        self.assertIn("data-sizes=", image_tag)
+        self.assertNotIn(" src=", image_tag)
+        self.assertNotIn(" srcset=", image_tag)
+
+    def test_collection_defers_product_card_images_after_first_visible_rows(self):
+        response = self.client.get("/store/collections/new-arrivals")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        grid_start = html.index('<section class="grid collection-grid">')
+        first_start = html.index('<img class="product-tile__image__primary"', grid_start)
+        first_end = html.index(">", first_start)
+        first_tag = html[first_start:first_end]
+        self.assertIn(" src=", first_tag)
+        self.assertNotIn("data-product-card-deferred-image", first_tag)
+
+        deferred_marker = '<img class="product-tile__image__primary" data-product-card-deferred-image data-src="https://cdn.shopify.com/s/files/1/0998/6780/files/TheDoubleDropCubicPendantNecklace.jpg'
+        self.assertIn(deferred_marker, html)
+        deferred_start = html.index(deferred_marker)
+        deferred_end = html.index(">", deferred_start)
+        deferred_tag = html[deferred_start:deferred_end]
+        self.assertNotIn(" src=", deferred_tag)
+        self.assertIn("data-srcset=", deferred_tag)
+
+    def test_product_card_deferred_images_hydrate_after_scroll_or_pointer(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("function hydrateVisibleProductCardImages()", source)
+        self.assertIn("function bindDeferredProductCardImageHydration()", source)
+        self.assertIn("[data-product-card-deferred-image][data-src]", source)
+        self.assertIn('window.addEventListener("scroll"', source)
+        self.assertIn('window.addEventListener("pointerdown"', source)
+        self.assertIn("hydrateDeferredImage(image);", source)
+        self.assertIn("bindDeferredProductCardImageHydration();", source)
+
     def test_homepage_uses_live_desktop_split_assets_and_custom_category_link(self):
         response = self.client.get("/store")
 
@@ -1394,7 +1442,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-home-image-defer", html)
+        self.assertIn("/store/assets/store.js?v=20260605-product-card-defer", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1411,7 +1459,7 @@ class StoreTest(unittest.TestCase):
         )
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-home-image-defer")
+        response = self.client.get("/store/assets/store.js?v=20260605-product-card-defer")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)

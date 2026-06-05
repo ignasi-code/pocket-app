@@ -54,6 +54,7 @@
             {% for handle in section.products %}
               {% set product = products_by_handle.get(handle) %}
               {% if product %}
+                {% set defer_product_card_image = true %}
                 {% include "store/_product_card.html" %}
               {% endif %}
             {% endfor %}

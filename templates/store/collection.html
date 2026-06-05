@@ -130,6 +130,7 @@
           {% if products %}
             <section class="grid collection-grid">
               {% for product in products %}
+                {% set defer_product_card_image = loop.index > 4 %}
                 {% include "store/_product_card.html" %}
               {% endfor %}
             </section>

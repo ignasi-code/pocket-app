@@ -177,6 +177,34 @@
     window.addEventListener("touchstart", scheduleHydration, { passive: true });
   }
 
+  function hydrateVisibleProductCardImages() {
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const buffer = viewportHeight * 0.75;
+    document.querySelectorAll("[data-product-card-deferred-image][data-src]").forEach(image => {
+      const target = image.closest(".product-tile") || image;
+      const rect = target.getBoundingClientRect();
+      if (rect.top < viewportHeight + buffer && rect.bottom > -buffer) {
+        hydrateDeferredImage(image);
+      }
+    });
+  }
+
+  function bindDeferredProductCardImageHydration() {
+    if (!document.querySelector("[data-product-card-deferred-image][data-src]")) return;
+    let scheduled = false;
+    const scheduleHydration = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        hydrateVisibleProductCardImages();
+      });
+    };
+    window.addEventListener("scroll", scheduleHydration, { passive: true });
+    window.addEventListener("pointerdown", scheduleHydration, { passive: true });
+    window.addEventListener("touchstart", scheduleHydration, { passive: true });
+  }
+
   function hydrateVisibleGalleryImages(gallery) {
     if (!gallery) return;
     const galleryRect = gallery.getBoundingClientRect();
@@ -1010,6 +1038,7 @@
   hideDismissedShippingPromos();
   document.querySelectorAll("[data-pdp-variant-select]").forEach(select => updatePdpSelection(select, false));
   bindDeferredHomeImageHydration();
+  bindDeferredProductCardImageHydration();
   bindDeferredGalleryHydration();
   renderCartDrawer();
   renderCartPage();
