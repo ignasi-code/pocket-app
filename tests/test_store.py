@@ -60,8 +60,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-font-latin" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-font-latin"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-cart-cls" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-cart-cls"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
     def test_store_pages_use_route_scoped_css_assets_for_lighthouse(self):
@@ -77,9 +77,9 @@ class StoreTest(unittest.TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
                 html = response.get_data(as_text=True)
-                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-font-latin"
+                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-cart-cls"
                 self.assertIn(href, html)
-                self.assertNotIn("/store/assets/store.min.css?v=20260605-font-latin", html)
+                self.assertNotIn("/store/assets/store.min.css?v=20260605-cart-cls", html)
 
     def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
         response = self.client.get("/store")
@@ -99,7 +99,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".site-header", response.get_data(as_text=True))
 
     def test_store_minified_css_asset_is_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-font-latin")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-cart-cls")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -114,7 +114,7 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("Roxanne Assoulin fidelity pass", text)
 
     def test_store_scoped_css_assets_are_cacheable_and_smaller_for_lighthouse(self):
-        full_response = self.client.get("/store/assets/store.min.css?v=20260605-font-latin")
+        full_response = self.client.get("/store/assets/store.min.css?v=20260605-cart-cls")
         self.addCleanup(full_response.close)
         full_length = len(full_response.get_data(as_text=True))
         cases = {
@@ -126,7 +126,7 @@ class StoreTest(unittest.TestCase):
 
         for scope, markers in cases.items():
             with self.subTest(scope=scope):
-                response = self.client.get(f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-font-latin")
+                response = self.client.get(f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-cart-cls")
                 self.addCleanup(response.close)
                 text = response.get_data(as_text=True)
                 present, *absent = markers
@@ -145,7 +145,7 @@ class StoreTest(unittest.TestCase):
                 self.assertLess(len(text), 33000)
 
     def test_store_defers_relative_mono_font_until_user_motion(self):
-        css_response = self.client.get("/store/assets/store.min.css?v=20260605-font-latin")
+        css_response = self.client.get("/store/assets/store.min.css?v=20260605-cart-cls")
         self.addCleanup(css_response.close)
         script_response = self.client.get("/store/assets/store.min.js?v=20260605-js-min")
         self.addCleanup(script_response.close)
@@ -161,7 +161,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn('window.addEventListener("scroll", loadDeferredMonoFont', script)
 
     def test_store_uses_cacheable_local_subset_supreme_fonts(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-font-latin")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-cart-cls")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -1526,6 +1526,12 @@ class StoreTest(unittest.TestCase):
 
         self.assertIn(".cart-page__summary", source)
         self.assertIn("padding: 14px;", source)
+
+    def test_cart_items_reserve_single_bundle_height_before_javascript_for_cls(self):
+        source = self.store_css_source()
+
+        self.assertIn(".cart-page__items", source)
+        self.assertIn("min-height: 497px;", source)
 
     def test_cart_empty_state_keeps_centered_live_treatment(self):
         source = self.store_css_source()

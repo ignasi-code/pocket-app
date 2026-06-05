@@ -2489,8 +2489,8 @@ STORE_FONT_ASSETS = {
     "SupremeLLWeb-Medium-store-tight.woff2",
 }
 
-STORE_FULL_CSS_ASSET = "/store/assets/store.min.css?v=20260605-font-latin"
-STORE_SCOPED_CSS_VERSION = "20260605-scope-css-font-latin"
+STORE_FULL_CSS_ASSET = "/store/assets/store.min.css?v=20260605-cart-cls"
+STORE_SCOPED_CSS_VERSION = "20260605-scope-css-cart-cls"
 STORE_CSS_SCOPES = {"home", "collection", "product", "cart"}
 
 STORE_SCOPED_CSS_EXCLUDE_PREFIXES = {
