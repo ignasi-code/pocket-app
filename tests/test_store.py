@@ -67,8 +67,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-a11y-price" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-a11y-price"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-promo-wrap" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-promo-wrap"></noscript>', html)
         self.assertNotIn("20260605-scope-css-cart-cls", html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
@@ -183,7 +183,7 @@ class StoreTest(unittest.TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
                 html = response.get_data(as_text=True)
-                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-a11y-price"
+                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-promo-wrap"
                 self.assertIn(href, html)
                 self.assertNotIn("/store/assets/store.min.css?v=20260605-cart-cls", html)
 
@@ -523,18 +523,21 @@ class StoreTest(unittest.TestCase):
         self.assertIn('document.documentElement.classList.add("shipping-promo-dismissed");', source)
         self.assertIn("hideDismissedShippingPromos();", source)
 
-    def test_product_page_keeps_shipping_promo_out_of_pdp_first_view(self):
+    def test_product_page_renders_live_shipping_promo_like_original(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertNotIn("shipping-promo js-shippingPromo", html)
+        self.assertIn('class="shipping-promo js-shippingPromo" role="region" aria-label="Shipping promotion"', html)
+        self.assertIn("Enjoy complimentary ground shipping on US orders $250+", html)
+        self.assertIn("data-shipping-promo-close", html)
 
     def test_shipping_promo_css_matches_live_mobile_bar(self):
         source = self.store_css_source()
 
         self.assertIn(".shipping-promo {\n      background: #cf3d2f;", source)
         self.assertIn("position: fixed;\n      right: 10px;\n      top: 79px;", source)
+        self.assertIn(".shipping-promo span {\n      display: block;\n      min-width: 0;", source)
         self.assertIn(".shipping-promo.is-hidden {\n      display: none;", source)
 
     def test_shipping_promo_css_matches_live_desktop_compact_box(self):

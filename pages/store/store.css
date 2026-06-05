@@ -238,6 +238,11 @@
       z-index: 39;
     }
 
+    .shipping-promo span {
+      display: block;
+      min-width: 0;
+    }
+
     .shipping-promo.is-hidden {
       display: none;
     }
