@@ -1540,6 +1540,13 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".cart-page__items", source)
         self.assertIn("min-height: 497px;", source)
 
+    def test_cart_items_reserve_is_in_initial_html_before_async_css_for_cls(self):
+        response = self.client.get("/store/cart")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('<div class="cart-page__items" data-cart-lines style="min-height: 497px"></div>', html)
+
     def test_cart_empty_state_keeps_centered_live_treatment(self):
         source = self.store_css_source()
 
