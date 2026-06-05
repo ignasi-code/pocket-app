@@ -6,6 +6,8 @@
   const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
   let catalog = null;
   let catalogPromise = null;
+  let cartCatalog = null;
+  let cartCatalogPromise = null;
   let variants = new Map();
 
   function loadCart() {
@@ -88,6 +90,15 @@
     renderCartPage();
   }
 
+  function buildVariantIndex(products) {
+    variants = new Map();
+    for (const product of products || []) {
+      for (const variant of product.variants || []) {
+        variants.set(Number(variant.id), { product, variant });
+      }
+    }
+  }
+
   async function loadCatalog() {
     if (catalog) return catalog;
     if (catalogPromise) return catalogPromise;
@@ -95,12 +106,7 @@
       .then(response => response.json())
       .then(data => {
         catalog = data;
-        variants = new Map();
-        for (const product of catalog.products || []) {
-          for (const variant of product.variants || []) {
-            variants.set(Number(variant.id), { product, variant });
-          }
-        }
+        buildVariantIndex(catalog.products);
         return catalog;
       })
       .catch(error => {
@@ -108,6 +114,28 @@
         throw error;
       });
     return catalogPromise;
+  }
+
+  async function loadCartCatalog() {
+    if (cartCatalog) return cartCatalog;
+    if (catalog) {
+      cartCatalog = catalog;
+      buildVariantIndex(cartCatalog.products);
+      return cartCatalog;
+    }
+    if (cartCatalogPromise) return cartCatalogPromise;
+    cartCatalogPromise = fetch("/store/cart-index.json")
+      .then(response => response.json())
+      .then(data => {
+        cartCatalog = data;
+        buildVariantIndex(cartCatalog.products);
+        return cartCatalog;
+      })
+      .catch(error => {
+        cartCatalogPromise = null;
+        throw error;
+      });
+    return cartCatalogPromise;
   }
 
   async function productByHandle(handle) {
@@ -424,7 +452,7 @@
       return;
     }
 
-    await loadCatalog();
+    await loadCartCatalog();
     const cart = rawCart.filter(item => variants.has(Number(item.id)));
     saveCart(cart);
 
@@ -488,7 +516,7 @@
       return;
     }
 
-    await loadCatalog();
+    await loadCartCatalog();
     const cart = rawCart.filter(item => variants.has(Number(item.id)));
     const count = cart.reduce((total, item) => total + Number(item.qty || 0), 0);
 

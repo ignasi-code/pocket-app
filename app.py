@@ -871,6 +871,40 @@ def store_variant_lookup():
     return lookup
 
 
+def store_compact_image(image):
+    if isinstance(image, dict) and image.get("src"):
+        return {"src": image["src"]}
+    return None
+
+
+def store_cart_index_payload():
+    products = []
+    for product in load_store_catalog().get("products", []):
+        images = [
+            compact_image
+            for compact_image in [store_compact_image((product.get("images") or [{}])[0])]
+            if compact_image
+        ]
+        variants = []
+        for variant in product.get("variants", []):
+            variants.append({
+                "id": variant.get("id"),
+                "title": variant.get("title"),
+                "price": variant.get("price"),
+                "available": variant.get("available"),
+                "position": variant.get("position"),
+                "featured_image": store_compact_image(variant.get("featured_image")),
+            })
+        products.append({
+            "id": product.get("id"),
+            "title": product.get("title"),
+            "handle": product.get("handle"),
+            "images": images,
+            "variants": variants,
+        })
+    return {"products": products}
+
+
 def parse_cart_item(raw_item):
     if not isinstance(raw_item, dict):
         raise ValueError("Each cart item must be an object.")
@@ -2341,6 +2375,16 @@ def store_asset_min_css():
 @app.route("/store/catalog.json")
 def store_catalog():
     response = send_file(STORE_CATALOG_PATH, mimetype="application/json", max_age=3600)
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
+@app.route("/store/cart-index.json")
+def store_cart_index():
+    response = Response(
+        json.dumps(store_cart_index_payload(), separators=(",", ":")),
+        mimetype="application/json",
+    )
     response.headers["Cache-Control"] = "public, max-age=3600"
     return response
 

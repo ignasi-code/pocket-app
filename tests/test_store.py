@@ -1442,7 +1442,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-catalog-promise", html)
+        self.assertIn("/store/assets/store.js?v=20260605-cart-index", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1455,7 +1455,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("if (!rawCart.length) {", drawer_source)
         self.assertLess(
             drawer_source.index("if (!rawCart.length) {"),
-            drawer_source.index("await loadCatalog();"),
+            drawer_source.index("await loadCartCatalog();"),
         )
 
     def test_store_js_reuses_inflight_catalog_request_for_cart_startup(self):
@@ -1466,8 +1466,26 @@ class StoreTest(unittest.TestCase):
         self.assertIn("catalogPromise = fetch(\"/store/catalog.json\")", source)
         self.assertIn("catalogPromise = null;", source)
 
+    def test_cart_renderers_use_compact_cart_catalog_loader(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+        cart_page_source = source[
+            source.index("async function renderCartPage()"):
+            source.index("async function renderCartDrawer()")
+        ]
+        cart_drawer_source = source[
+            source.index("async function renderCartDrawer()"):
+            source.index("function toggleGiftMessage")
+        ]
+
+        self.assertIn("async function loadCartCatalog()", source)
+        self.assertIn('fetch("/store/cart-index.json")', source)
+        self.assertIn("await loadCartCatalog();", cart_page_source)
+        self.assertIn("await loadCartCatalog();", cart_drawer_source)
+        self.assertNotIn("await loadCatalog();", cart_page_source)
+        self.assertNotIn("await loadCatalog();", cart_drawer_source)
+
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-catalog-promise")
+        response = self.client.get("/store/assets/store.js?v=20260605-cart-index")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -1492,6 +1510,33 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("products", response.get_json())
+
+    def test_cart_index_is_compact_variant_json(self):
+        catalog_response = self.client.get("/store/catalog.json")
+        cart_response = self.client.get("/store/cart-index.json")
+        self.addCleanup(catalog_response.close)
+        self.addCleanup(cart_response.close)
+
+        self.assertEqual(cart_response.status_code, 200)
+        self.assertIn("public", cart_response.headers.get("Cache-Control", ""))
+        self.assertIn("max-age=3600", cart_response.headers.get("Cache-Control", ""))
+
+        catalog_bytes = catalog_response.get_data()
+        cart_bytes = cart_response.get_data()
+        self.assertLess(len(cart_bytes), len(catalog_bytes) * 0.4)
+
+        data = cart_response.get_json()
+        product = data["products"][0]
+        variant = product["variants"][0]
+        self.assertIn("title", product)
+        self.assertIn("handle", product)
+        self.assertIn("images", product)
+        self.assertIn("id", variant)
+        self.assertIn("title", variant)
+        self.assertIn("price", variant)
+        self.assertIn("featured_image", variant)
+        self.assertNotIn("body_html", product)
+        self.assertNotIn("tags", product)
 
     def test_mock_checkout_verifies_cart_against_catalog(self):
         _product, variant = self.first_available_variant()
