@@ -428,6 +428,34 @@
     });
   }
 
+  function hydrateVisibleFooterImages() {
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const buffer = viewportHeight * 0.65;
+    document.querySelectorAll("[data-footer-deferred-image][data-src]").forEach(image => {
+      const target = image.closest(".footer") || image;
+      const rect = target.getBoundingClientRect();
+      if (rect.top < viewportHeight + buffer && rect.bottom > -buffer) {
+        hydrateDeferredImage(image);
+      }
+    });
+  }
+
+  function bindDeferredFooterImageHydration() {
+    if (!document.querySelector("[data-footer-deferred-image][data-src]")) return;
+    let scheduled = false;
+    const scheduleHydration = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        hydrateVisibleFooterImages();
+      });
+    };
+    window.addEventListener("scroll", scheduleHydration, { passive: true });
+    window.addEventListener("pointerdown", scheduleHydration, { passive: true });
+    window.addEventListener("touchstart", scheduleHydration, { passive: true });
+  }
+
   function escapeHtml(value) {
     return String(value || "")
       .replaceAll("&", "&amp;")
@@ -1246,6 +1274,7 @@
   bindDeferredCartPageUpsells();
   bindDeferredProductDetailImageHydration();
   bindDeferredGalleryHydration();
+  bindDeferredFooterImageHydration();
   bindDeferredMonoFont();
   renderCartPage();
 })();

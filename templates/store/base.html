@@ -124,7 +124,7 @@
     </ul>
     <div class="footer__content">
       <div class="footer__logo">
-        <img src="{{ image_url(store_logo_src, 206) }}" srcset="{{ image_srcset(store_logo_src, [103, 206]) }}" sizes="103px" alt="Roxanne Assoulin" width="580" height="42" loading="lazy" decoding="async">
+        <img data-footer-deferred-image data-src="{{ image_url(store_logo_src, 206) }}" data-srcset="{{ image_srcset(store_logo_src, [103, 206]) }}" data-sizes="103px" alt="Roxanne Assoulin" width="580" height="42" loading="lazy" decoding="async">
       </div>
       <div class="footer-nav__tabset">
         <span class="footer-nav__tab">About</span>
@@ -178,6 +178,6 @@
     </div>
   </footer>
 
-  <script src="/store/assets/store.min.js?v=20260605-cart-upsell-defer" defer fetchpriority="low"></script>
+  <script src="/store/assets/store.min.js?v=20260605-footer-logo-defer" defer fetchpriority="low"></script>
 </body>
 </html>

@@ -1784,7 +1784,33 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-upsell-defer" defer fetchpriority="low"></script>', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-footer-logo-defer" defer fetchpriority="low"></script>', html)
+
+    def test_footer_logo_is_deferred_until_scroll_for_lighthouse(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        logo_start = html.index('<div class="footer__logo">')
+        image_start = html.index("<img", logo_start)
+        image_end = html.index(">", image_start)
+        image_tag = html[image_start:image_end]
+
+        self.assertIn("data-footer-deferred-image", image_tag)
+        self.assertIn("data-src=", image_tag)
+        self.assertIn("data-srcset=", image_tag)
+        self.assertIn("data-sizes=", image_tag)
+        self.assertNotIn(" src=", image_tag)
+        self.assertNotIn(" srcset=", image_tag)
+
+    def test_store_js_hydrates_deferred_footer_logo_after_user_motion(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("function bindDeferredFooterImageHydration()", source)
+        self.assertIn("[data-footer-deferred-image][data-src]", source)
+        self.assertIn("hydrateDeferredImage(image);", source)
+        self.assertIn('window.addEventListener("scroll", scheduleHydration', source)
+        self.assertIn("bindDeferredFooterImageHydration();", source)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
