@@ -91,6 +91,9 @@ class StoreTest(unittest.TestCase):
         self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
         self.assertIn(".site-header", text)
         self.assertLess(len(text), len(self.store_css_source()))
+        self.assertLess(len(text), 51000)
+        self.assertNotIn("ui-sans-serif", text)
+        self.assertNotIn("border-radius:999px", text)
         self.assertNotIn("Roxanne Assoulin fidelity pass", text)
 
     def test_store_defers_relative_mono_font_until_user_motion(self):
@@ -1424,6 +1427,14 @@ class StoreTest(unittest.TestCase):
 
         self.assertIn(".cart-page__summary", source)
         self.assertIn("padding: 14px;", source)
+
+    def test_cart_empty_state_keeps_centered_live_treatment(self):
+        source = self.store_css_source()
+
+        self.assertIn(".empty-state", source)
+        self.assertIn("place-items: center", source)
+        self.assertIn("text-align: center", source)
+        self.assertIn(".cart-page__empty", source)
 
     def test_cart_css_matches_live_mobile_item_and_page_spacing(self):
         source = self.store_css_source()
