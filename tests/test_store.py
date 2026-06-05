@@ -110,6 +110,25 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".collection-filter-bar{background:#fff;display:grid", collection_critical_css)
         self.assertNotIn(".collection-hero__image{border-radius:6px", home_html)
 
+    def test_cart_page_inlines_summary_critical_css_for_lighthouse(self):
+        cart_response = self.client.get("/store/cart")
+        home_response = self.client.get("/store")
+
+        self.assertEqual(cart_response.status_code, 200)
+        self.assertEqual(home_response.status_code, 200)
+        cart_html = cart_response.get_data(as_text=True)
+        home_html = home_response.get_data(as_text=True)
+        critical_start = cart_html.index('<style data-critical-store-css>')
+        critical_end = cart_html.index("</style>", critical_start)
+        cart_critical_css = cart_html[critical_start:critical_end]
+
+        self.assertIn(".cart{padding:79px 0 0", cart_critical_css)
+        self.assertIn(".cart-page{display:block;padding:0 10px", cart_critical_css)
+        self.assertIn(".cart-page__summary{background:#fff;border:1px solid #e6e6e6", cart_critical_css)
+        self.assertIn(".cart-page__checkout{align-items:center;appearance:none;background:#d1ebf8", cart_critical_css)
+        self.assertIn(".cart-page__items{background:transparent;border:0", cart_critical_css)
+        self.assertNotIn(".cart-page__summary{background:#fff;border:1px solid #e6e6e6", home_html)
+
     def test_store_pages_use_route_scoped_css_assets_for_lighthouse(self):
         cases = (
             ("/store", "home"),
