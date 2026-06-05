@@ -858,6 +858,14 @@ def store_template_context(**kwargs):
     return context
 
 
+def minify_store_html(html):
+    return re.sub(r">\s+<", "><", html.strip())
+
+
+def render_store_template(template_name, **context):
+    return minify_store_html(render_template(template_name, **context))
+
+
 def store_variant_lookup():
     lookup = {}
     for product in load_store_catalog().get("products", []):
@@ -2280,7 +2288,7 @@ def fast_upload():
 @app.route("/store/")
 def store_page():
     products_by_handle = {product.get("handle"): product for product in store_products()}
-    return render_template(
+    return render_store_template(
         "store/home.html",
         **store_template_context(
             homepage=load_store_homepage(),
@@ -2297,7 +2305,7 @@ def store_collection_page(handle):
     products, search_query = store_apply_search_filter(products, request.args.get("q", ""))
     products, active_filters = store_apply_collection_filters(products, request.args)
     products = store_sort_collection_products(products, request.args.get("sort_by"))
-    return render_template(
+    return render_store_template(
         "store/collection.html",
         **store_template_context(
             handle=handle,
@@ -2319,7 +2327,7 @@ def store_product_page(handle):
         item for item in store_products()
         if item.get("handle") != handle and item.get("product_type") == product.get("product_type")
     ][:4]
-    return render_template(
+    return render_store_template(
         "store/product.html",
         **store_template_context(
             product=product,
@@ -2330,7 +2338,7 @@ def store_product_page(handle):
 
 @app.route("/store/cart")
 def store_cart_page():
-    return render_template(
+    return render_store_template(
         "store/cart.html",
         **store_template_context(cart_upsells=store_cart_upsell_products()),
     )

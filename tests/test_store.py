@@ -142,6 +142,14 @@ class StoreTest(unittest.TestCase):
         self.assertTrue(pocket.app.jinja_env.trim_blocks)
         self.assertTrue(pocket.app.jinja_env.lstrip_blocks)
 
+    def test_store_pages_minify_intertag_whitespace_for_payload_size(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertNotRegex(html, r">\s+<")
+        self.assertLess(len(html.encode()), 45000)
+
     def test_store_preconnects_remote_image_origins(self):
         response = self.client.get("/store")
 
