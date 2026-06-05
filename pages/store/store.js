@@ -145,6 +145,10 @@
     hydrateDeferredImage(tile?.querySelector(".product-tile__image__hover[data-src]"));
   }
 
+  function hydrateCartDrawerImages() {
+    document.querySelectorAll("[data-cart-drawer] [data-cart-deferred-image][data-src]").forEach(hydrateDeferredImage);
+  }
+
   function hydrateVisibleGalleryImages(gallery) {
     if (!gallery) return;
     const galleryRect = gallery.getBoundingClientRect();
@@ -632,6 +636,7 @@
     const drawer = document.querySelector("[data-cart-drawer]");
     const toggle = document.querySelector("[data-cart-open]");
     if (drawer) {
+      hydrateCartDrawerImages();
       drawer.setAttribute("aria-hidden", "false");
       setCartDrawerVisibility(drawer, true);
     }

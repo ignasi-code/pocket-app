@@ -1170,6 +1170,40 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-drawer__upsell-track", html)
         self.assertIn('data-store-add data-handle="the-salt-pepper-cylinder-bracelet-stack"', html)
 
+    def test_cart_drawer_upsell_images_are_deferred_until_drawer_opens(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        upsell_start = html.index('<div class="cart-drawer__upsell slick-slider"')
+        upsell_end = html.index('<div class="cart-drawer__summary">', upsell_start)
+        upsell_html = html[upsell_start:upsell_end]
+        first_image_start = upsell_html.index("<img")
+        first_image_end = upsell_html.index(">", first_image_start)
+        first_image_tag = upsell_html[first_image_start:first_image_end]
+
+        self.assertIn("data-cart-deferred-image", first_image_tag)
+        self.assertIn("data-src=", first_image_tag)
+        self.assertIn("data-srcset=", first_image_tag)
+        self.assertIn('sizes="120px"', first_image_tag)
+        self.assertNotIn(" src=", first_image_tag)
+        self.assertNotIn(" srcset=", first_image_tag)
+
+    def test_cart_drawer_hydrates_deferred_upsell_images_when_opened(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+        open_drawer_source = source[
+            source.index("async function openCartDrawer()"):
+            source.index("function openCollectionDrawer")
+        ]
+
+        self.assertIn("function hydrateCartDrawerImages()", source)
+        self.assertIn('[data-cart-drawer] [data-cart-deferred-image][data-src]', source)
+        self.assertIn("hydrateCartDrawerImages();", open_drawer_source)
+        self.assertLess(
+            open_drawer_source.index("hydrateCartDrawerImages();"),
+            open_drawer_source.index('drawer.setAttribute("aria-hidden", "false")'),
+        )
+
     def test_cart_javascript_renders_live_line_item_classes(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
@@ -1318,7 +1352,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-gallery-scroll", html)
+        self.assertIn("/store/assets/store.js?v=20260605-cart-upsell-defer", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1335,7 +1369,7 @@ class StoreTest(unittest.TestCase):
         )
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-gallery-scroll")
+        response = self.client.get("/store/assets/store.js?v=20260605-cart-upsell-defer")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)

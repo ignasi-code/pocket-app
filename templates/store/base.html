@@ -118,7 +118,7 @@
               <div class="cart-drawer__upsell-slide">
                 <a href="/store/products/{{ product.handle }}">
                   {% set upsell_image = product_image(product) %}
-                  <img src="{{ image_url(upsell_image, 240) }}" srcset="{{ image_srcset(upsell_image, [120, 180, 240]) }}" sizes="120px" alt="{{ product.title }}" loading="lazy" decoding="async" width="120" height="144">
+                  <img data-cart-deferred-image data-src="{{ image_url(upsell_image, 240) }}" data-srcset="{{ image_srcset(upsell_image, [120, 180, 240]) }}" sizes="120px" alt="{{ product.title }}" loading="lazy" decoding="async" width="120" height="144">
                   <div class="name">{{ product.title }}</div>
                   <div class="price">{{ price_label(product) }}</div>
                 </a>
@@ -201,6 +201,6 @@
     </div>
   </footer>
 
-  <script src="/store/assets/store.js?v=20260605-gallery-scroll"></script>
+  <script src="/store/assets/store.js?v=20260605-cart-upsell-defer"></script>
 </body>
 </html>
