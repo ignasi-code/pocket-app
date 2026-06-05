@@ -92,6 +92,24 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".product-details-bottom__col--options{border-bottom:1px solid #e6e6e6;order:1", product_critical_css)
         self.assertNotIn(".product-gallery__image__wrapper{border:1px solid #e6e6e6", home_html)
 
+    def test_collection_page_inlines_hero_critical_css_for_lighthouse(self):
+        collection_response = self.client.get("/store/collections/new-arrivals")
+        home_response = self.client.get("/store")
+
+        self.assertEqual(collection_response.status_code, 200)
+        self.assertEqual(home_response.status_code, 200)
+        collection_html = collection_response.get_data(as_text=True)
+        home_html = home_response.get_data(as_text=True)
+        critical_start = collection_html.index('<style data-critical-store-css>')
+        critical_end = collection_html.index("</style>", critical_start)
+        collection_critical_css = collection_html[critical_start:critical_end]
+
+        self.assertIn(".collection,.collection-page{box-sizing:border-box", collection_critical_css)
+        self.assertIn(".collection-hero__image{border-radius:6px", collection_critical_css)
+        self.assertIn(".collection-hero__image::before{content:\"\";display:block;padding-top:102%", collection_critical_css)
+        self.assertIn(".collection-filter-bar{background:#fff;display:grid", collection_critical_css)
+        self.assertNotIn(".collection-hero__image{border-radius:6px", home_html)
+
     def test_store_pages_use_route_scoped_css_assets_for_lighthouse(self):
         cases = (
             ("/store", "home"),
