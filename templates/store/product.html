@@ -27,7 +27,7 @@
                   <img src="{{ image_url(image.src, 420) }}" srcset="{{ image_srcset(image.src, [390, 420]) }}" sizes="100vw" alt="{{ product.title }}" width="760" height="912" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async"{% if loop.first %} fetchpriority="high"{% endif %} data-gallery-image data-gallery-image-src="{{ image.src }}">
                   {% else %}
                   <source media="(min-width: 1024px)" data-srcset="{{ image_srcset(image.src, [760, 1200]) }}" data-sizes="50vw">
-                  <img data-gallery-deferred data-src="{{ image_url(image.src, 480) }}" data-srcset="{{ image_srcset(image.src, [390, 480]) }}" data-sizes="100vw" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async" data-gallery-image data-gallery-image-src="{{ image.src }}">
+                  <img data-gallery-deferred data-src="{{ image_url(image.src, 420) }}" data-srcset="{{ image_srcset(image.src, [390, 420]) }}" data-sizes="100vw" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async" data-gallery-image data-gallery-image-src="{{ image.src }}">
                   {% endif %}
                 </picture>
               </button>

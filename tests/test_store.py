@@ -235,6 +235,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-src=", second_img_tag)
         self.assertIn("data-srcset=", second_img_tag)
         self.assertIn("data-sizes=", second_img_tag)
+        self.assertIn("&amp;width=420", second_img_tag)
+        self.assertNotIn("&amp;width=480", second_img_tag)
         self.assertIn('loading="lazy"', second_img_tag)
         self.assertNotIn(" src=", second_img_tag)
         self.assertNotIn(" srcset=", second_img_tag)
