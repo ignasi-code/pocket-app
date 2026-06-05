@@ -2,7 +2,7 @@
 {% block title %}{{ collection.title }} - Pocket Store{% endblock %}
 {% block head_extra %}
   {% if collection.hero_image_mobile %}
-  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(collection.hero_image_mobile, 480) }}" imagesrcset="{{ image_srcset(collection.hero_image_mobile, [390, 480]) }}" imagesizes="100vw" fetchpriority="high">
+  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(collection.hero_image_mobile, 420) }}" imagesrcset="{{ image_srcset(collection.hero_image_mobile, [390, 420]) }}" imagesizes="100vw" fetchpriority="high">
     {% if collection.hero_image_desktop %}
   <link rel="preload" as="image" media="(min-width: 1024px)" href="{{ image_url(collection.hero_image_desktop, 1200) }}" imagesrcset="{{ image_srcset(collection.hero_image_desktop, [760, 1200, 1600]) }}" imagesizes="50vw" fetchpriority="high">
     {% endif %}
@@ -27,7 +27,7 @@
                   {% if collection.hero_image_desktop %}
                     <source media="(min-width: 1024px)" srcset="{{ image_srcset(collection.hero_image_desktop, [760, 1200, 1600]) }}" sizes="50vw">
                   {% endif %}
-                  <img src="{{ image_url(collection.hero_image_mobile, 480) }}" srcset="{{ image_srcset(collection.hero_image_mobile, [390, 480]) }}" sizes="100vw" alt="{{ collection.hero_title or collection.title }}" width="760" height="760" loading="eager" decoding="async" fetchpriority="high">
+                  <img src="{{ image_url(collection.hero_image_mobile, 420) }}" srcset="{{ image_srcset(collection.hero_image_mobile, [390, 420]) }}" sizes="100vw" alt="{{ collection.hero_title or collection.title }}" width="760" height="760" loading="eager" decoding="async" fetchpriority="high">
                 </picture>
               </div>
               <div class="collection-hero__copy">

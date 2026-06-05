@@ -4,7 +4,7 @@
   {% set first_section = homepage.sections[0] if homepage.sections else none %}
   {% if first_section and first_section.type == "hero" %}
     {% set first_hero_image = first_section.image_mobile or first_section.image or placeholder_image %}
-  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(first_hero_image, 480) }}" imagesrcset="{{ image_srcset(first_hero_image, [390, 480]) }}" imagesizes="100vw" fetchpriority="high">
+  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(first_hero_image, 420) }}" imagesrcset="{{ image_srcset(first_hero_image, [390, 420]) }}" imagesizes="100vw" fetchpriority="high">
     {% if first_section.image_desktop %}
   <link rel="preload" as="image" media="(min-width: 1024px)" href="{{ image_url(first_section.image_desktop, 1600) }}" imagesrcset="{{ image_srcset(first_section.image_desktop, [1200, 1600, 1920]) }}" imagesizes="100vw" fetchpriority="high">
     {% endif %}
@@ -34,7 +34,7 @@
                   {% endif %}
                   {% set hero_image = section.image_mobile or section.image or placeholder_image %}
                   {% if hero_is_lcp %}
-                  <img src="{{ image_url(hero_image, 480) }}" srcset="{{ image_srcset(hero_image, [390, 480]) }}" sizes="100vw" alt="" width="760" height="760" decoding="async"{% if hero_is_lcp %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+                  <img src="{{ image_url(hero_image, 420) }}" srcset="{{ image_srcset(hero_image, [390, 420]) }}" sizes="100vw" alt="" width="760" height="760" decoding="async"{% if hero_is_lcp %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %}>
                   {% else %}
                   <img data-home-deferred-image data-src="{{ image_url(hero_image, 480) }}" data-srcset="{{ image_srcset(hero_image, [390, 480]) }}" data-sizes="100vw" alt="" width="760" height="760" decoding="async" loading="lazy">
                   {% endif %}
