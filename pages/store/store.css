@@ -920,6 +920,13 @@
       padding: 0 0 1px 1px;
     }
 
+    .home > .shopify-section:nth-child(n+2),
+    .collection-grid .product-tile:nth-child(n+5),
+    .footer {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 900px;
+    }
+
     .collection-filter__overlay {
       background: rgba(0, 0, 0, .5);
       border: 0;

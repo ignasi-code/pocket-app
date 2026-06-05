@@ -469,6 +469,14 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".hero {\n        padding: 2px;", source)
         self.assertIn(".hero__image,\n      .hero img {\n        height: calc(100vh - 4px);", source)
 
+    def test_store_skips_below_fold_render_work_for_lighthouse(self):
+        source = self.store_css_source()
+
+        self.assertIn(".home > .shopify-section:nth-child(n+2),", source)
+        self.assertIn(".collection-grid .product-tile:nth-child(n+5),", source)
+        self.assertIn(".footer {\n      content-visibility: auto;", source)
+        self.assertIn("contain-intrinsic-size: auto 900px;", source)
+
     def test_homepage_marks_first_hero_as_lcp_image(self):
         response = self.client.get("/store")
 
