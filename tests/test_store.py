@@ -586,12 +586,29 @@ class StoreTest(unittest.TestCase):
         third_end = html.index(">", third_start)
         third_tag = html[third_start:third_end]
 
-        self.assertIn(" src=", first_tag)
-        self.assertNotIn("data-product-card-deferred-image", first_tag)
-        self.assertIn(" src=", second_tag)
-        self.assertNotIn("data-product-card-deferred-image", second_tag)
+        self.assertIn("data-product-card-deferred-image", first_tag)
+        self.assertIn("data-src=", first_tag)
+        self.assertIn("data-srcset=", first_tag)
+        self.assertNotIn(" src=", first_tag)
+        self.assertIn("data-product-card-deferred-image", second_tag)
+        self.assertIn("data-src=", second_tag)
+        self.assertIn("data-srcset=", second_tag)
+        self.assertNotIn(" src=", second_tag)
         self.assertIn("data-product-card-deferred-image", third_tag)
         self.assertNotIn(" src=", third_tag)
+
+        first_picture_start = html.rindex("<picture>", 0, first_start)
+        first_source_start = html.index("<source", first_picture_start)
+        first_source_end = html.index(">", first_source_start)
+        first_source_tag = html[first_source_start:first_source_end]
+        self.assertIn('media="(min-width: 1024px)" srcset=', first_source_tag)
+        self.assertNotIn("data-srcset=", first_source_tag)
+
+        third_picture_start = html.rindex("<picture>", 0, third_start)
+        third_source_start = html.index("<source", third_picture_start)
+        third_source_end = html.index(">", third_source_start)
+        third_source_tag = html[third_source_start:third_source_end]
+        self.assertIn('media="(min-width: 1024px)" data-srcset=', third_source_tag)
 
         deferred_marker = '<img class="product-tile__image__primary" data-product-card-deferred-image data-src="https://cdn.shopify.com/s/files/1/0998/6780/files/TheDoubleDropCubicPendantNecklace.jpg'
         self.assertNotIn(deferred_marker, html)

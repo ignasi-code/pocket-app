@@ -1,6 +1,7 @@
 {% set hover_image = product.images[1].src if product.images|length > 1 else product_image(product) %}
 {% set primary_image = product_image(product) %}
 {% set defer_primary_image = defer_product_card_image|default(false) %}
+{% set eager_desktop_primary_image = defer_product_card_desktop_eager|default(false) %}
 {% set primary_mobile_width = product_card_primary_mobile_width|default(540) %}
 {% set primary_mobile_srcset_widths = product_card_primary_mobile_srcset_widths|default([240, 360, 540]) %}
 {% set primary_desktop_srcset_widths = [360, 540] if defer_primary_image else [360, 540, 760] %}
@@ -9,7 +10,11 @@
     <div class="product-tile__image">
       <picture>
         {% if defer_primary_image %}
+        {% if eager_desktop_primary_image %}
+        <source media="(min-width: 1024px)" srcset="{{ image_srcset(primary_image, primary_desktop_srcset_widths) }}" sizes="25vw">
+        {% else %}
         <source media="(min-width: 1024px)" data-srcset="{{ image_srcset(primary_image, primary_desktop_srcset_widths) }}" data-sizes="25vw">
+        {% endif %}
         <img class="product-tile__image__primary" data-product-card-deferred-image data-src="{{ image_url(primary_image, primary_mobile_width) }}" data-srcset="{{ image_srcset(primary_image, primary_mobile_srcset_widths) }}" data-sizes="(min-width: 1024px) 25vw, 50vw" alt="{{ product.title }}" width="760" height="912" loading="lazy" decoding="async">
         {% else %}
         <source media="(min-width: 1024px)" srcset="{{ image_srcset(primary_image, primary_desktop_srcset_widths) }}" sizes="25vw">
