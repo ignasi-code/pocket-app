@@ -57,8 +57,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-critical-css" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-critical-css"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.min.css?v=20260605-score-polish" as="style" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.min.css?v=20260605-score-polish"></noscript>', html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
     def test_store_critical_css_keeps_hidden_drawers_out_of_first_paint_flow(self):
@@ -79,7 +79,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".site-header", response.get_data(as_text=True))
 
     def test_store_minified_css_asset_is_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.min.css?v=20260605-critical-css")
+        response = self.client.get("/store/assets/store.min.css?v=20260605-score-polish")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)
@@ -102,7 +102,10 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('alt="Roxanne Assoulin" width="207" height="14"', html)
+        self.assertIn('alt="Roxanne Assoulin" width="580" height="42"', html)
+        source = self.store_css_source()
+        self.assertIn(".brand img {\n      display: block;\n      height: auto;\n      width: 207px;", source)
+        self.assertIn(".footer__logo img {\n      height: auto;\n      width: 103px;", source)
 
     def test_shopify_image_urls_strip_legacy_size_before_width_transform(self):
         url = pocket.store_image_url(
@@ -121,7 +124,8 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn('<link rel="preload" as="image" media="(max-width: 1023px)"', html)
         self.assertIn('imagesrcset="https://roxanneassoulin.com/cdn/shop/files/0531_MainImage_Mobile_079fd26c-9edc-4895-b83a-8fbaec281985.jpg?v=1780086212&amp;width=390 390w', html)
-        self.assertIn("&amp;width=640 640w", html)
+        self.assertIn("&amp;width=480 480w", html)
+        self.assertNotIn("&amp;width=640 640w", html)
         self.assertIn('imagesizes="100vw"', html)
         self.assertIn('fetchpriority="high"', html)
 
@@ -248,10 +252,29 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("MainImage_Mobile", html)
         self.assertIn("&amp;width=390 390w", html)
-        self.assertIn("&amp;width=560 560w", html)
-        self.assertIn("&amp;width=640 640w", html)
+        self.assertIn("&amp;width=480 480w", html)
+        self.assertNotIn("&amp;width=560 560w", html)
+        self.assertNotIn("&amp;width=640 640w", html)
         self.assertNotIn("_760x_crop_center.jpg?v=1780086212&amp;width", html)
         self.assertIn('sizes="100vw"', html)
+
+    def test_homepage_hero_cta_uses_contrast_safe_text_color(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn(".hero__cta{bottom:40px;color:#000;", html)
+        source = self.store_css_source()
+        self.assertIn(".hero__cta {\n      bottom: 40px;\n      color: #000;", source)
+
+    def test_homepage_image_only_split_banner_links_have_accessible_labels(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('aria-label="Shop The Happy Baby Necklace"', html)
+        self.assertIn('aria-label="Shop The Cord Charms"', html)
+        self.assertIn('aria-label="Schedule an appointment"', html)
 
     def test_product_tiles_use_responsive_shopify_image_delivery(self):
         response = self.client.get("/store")

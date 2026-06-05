@@ -32,6 +32,7 @@
         },
         {
           "title": "",
+          "aria_label": "Shop The Happy Baby Necklace",
           "href": "/store/products/the-happy-baby-necklace",
           "image_mobile": "https://roxanneassoulin.com/cdn/shop/files/0531_HappyBaby_Mobile_9f30ae56-b0cc-48f3-9f88-28ec80b99883_760x_crop_center.jpg?v=1780086366",
           "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/0531_HappyBaby_Mobile_9f30ae56-b0cc-48f3-9f88-28ec80b99883_957x_crop_center.jpg?v=1780086366"
@@ -61,6 +62,7 @@
       "tiles": [
         {
           "title": "",
+          "aria_label": "Shop The Cord Charms",
           "href": "/store/collections/the-cord-charms",
           "image_mobile": "https://roxanneassoulin.com/cdn/shop/files/0531_Camp_Mobile_55bf818c-5e28-4609-93ff-1e7bf5a090d6_760x_crop_center.jpg?v=1780086477",
           "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/0531_Camp_Mobile_55bf818c-5e28-4609-93ff-1e7bf5a090d6_957x_crop_center.jpg?v=1780086477"
@@ -78,12 +80,14 @@
       "tiles": [
         {
           "title": "",
+          "aria_label": "Schedule an appointment",
           "href": "/store/pages/schedule-an-appointment",
           "image_mobile": "https://roxanneassoulin.com/cdn/shop/files/0512_Store_Info_760x_crop_center.jpg?v=1778529026",
           "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/0512_Store_Info_957x_crop_center.jpg?v=1778529026"
         },
         {
           "title": "",
+          "aria_label": "Schedule an appointment",
           "href": "/store/pages/schedule-an-appointment",
           "image_mobile": "https://roxanneassoulin.com/cdn/shop/files/FOOTER_UPDATE_760x_crop_center.png?v=1766760503",
           "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/FOOTER_UPDATE_957x_crop_center.png?v=1766760503"

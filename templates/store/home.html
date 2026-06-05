@@ -4,7 +4,7 @@
   {% set first_section = homepage.sections[0] if homepage.sections else none %}
   {% if first_section and first_section.type == "hero" %}
     {% set first_hero_image = first_section.image_mobile or first_section.image or placeholder_image %}
-  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(first_hero_image, 640) }}" imagesrcset="{{ image_srcset(first_hero_image, [390, 560, 640]) }}" imagesizes="100vw" fetchpriority="high">
+  <link rel="preload" as="image" media="(max-width: 1023px)" href="{{ image_url(first_hero_image, 480) }}" imagesrcset="{{ image_srcset(first_hero_image, [390, 480]) }}" imagesizes="100vw" fetchpriority="high">
     {% if first_section.image_desktop %}
   <link rel="preload" as="image" media="(min-width: 1024px)" href="{{ image_url(first_section.image_desktop, 1600) }}" imagesrcset="{{ image_srcset(first_section.image_desktop, [1200, 1600, 1920]) }}" imagesizes="100vw" fetchpriority="high">
     {% endif %}
@@ -29,7 +29,7 @@
                     <source media="(min-width: 1024px)" srcset="{{ image_srcset(section.image_desktop, [760, 1200, 1600, 1920]) }}" sizes="100vw">
                   {% endif %}
                   {% set hero_image = section.image_mobile or section.image or placeholder_image %}
-                  <img src="{{ image_url(hero_image, 640) }}" srcset="{{ image_srcset(hero_image, [390, 560, 640]) }}" sizes="100vw" alt="" width="760" height="760" decoding="async"{% if hero_is_lcp %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+                  <img src="{{ image_url(hero_image, 480) }}" srcset="{{ image_srcset(hero_image, [390, 480]) }}" sizes="100vw" alt="" width="760" height="760" decoding="async"{% if hero_is_lcp %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %}>
                 </picture>
               </div>
               <div class="hero__cta">{{ section.title }}</div>
@@ -56,7 +56,7 @@
         <section class="shopify-section double-image-banner split-banner">
           {% for tile in section.tiles %}
             <div class="double-image-banner__tile split-tile">
-              <a href="{{ tile.href }}">
+              <a href="{{ tile.href }}"{% if tile.aria_label or tile.title %} aria-label="{{ tile.aria_label or tile.title }}"{% endif %}>
                 <div class="double-image-banner__tile__image js-scroll">
                   <picture>
                     {% if tile.image_desktop %}

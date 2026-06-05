@@ -611,7 +611,7 @@
 
     .brand img {
       display: block;
-      height: 14px;
+      height: auto;
       width: 207px;
     }
 
@@ -819,7 +819,7 @@
 
     .hero__cta {
       bottom: 40px;
-      color: #fff;
+      color: #000;
       left: 50%;
       position: absolute;
       text-align: center;
@@ -3356,6 +3356,7 @@
     }
 
     .footer__logo img {
+      height: auto;
       width: 103px;
     }
 
@@ -3481,7 +3482,7 @@
       }
 
       .brand img {
-        height: 21px;
+        height: auto;
         width: 290px;
       }
 
