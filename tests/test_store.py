@@ -159,6 +159,31 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("&amp;width=760", html[first_img_start:first_img_end])
         self.assertNotIn("&amp;width=1200", html[first_img_start:first_img_end])
 
+    def test_product_page_defers_non_lcp_gallery_images_for_mobile_lighthouse(self):
+        response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        second_img_start = html.index('<img data-gallery-deferred data-src="https://cdn.shopify.com/s/files/1/0998/6780/files/CYLINDER_DUNE_NECKLACE_2633.jpg?v=')
+        second_img_end = html.index(">", second_img_start)
+        second_img_tag = html[second_img_start:second_img_end]
+        self.assertIn("data-src=", second_img_tag)
+        self.assertIn("data-srcset=", second_img_tag)
+        self.assertIn("data-sizes=", second_img_tag)
+        self.assertIn('loading="lazy"', second_img_tag)
+        self.assertNotIn(" src=", second_img_tag)
+        self.assertNotIn(" srcset=", second_img_tag)
+
+    def test_product_gallery_deferred_images_have_hydration_hooks(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("hydrateDeferredImage", source)
+        self.assertIn("observeDeferredGalleryImages", source)
+        self.assertIn("[data-gallery-image][data-src]", source)
+        self.assertIn("hydrateDeferredImage(image);", source)
+        self.assertIn('rootMargin: "0px"', source)
+        self.assertIn("threshold: 0.4", source)
+
     def test_homepage_mobile_shipping_grid_includes_heart_tile(self):
         response = self.client.get("/store")
 
@@ -1290,7 +1315,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("/store/assets/store.js?v=20260605-hover-defer", html)
+        self.assertIn("/store/assets/store.js?v=20260605-gallery-defer", html)
 
     def test_empty_cart_renderers_do_not_fetch_catalog_before_empty_state(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
@@ -1307,7 +1332,7 @@ class StoreTest(unittest.TestCase):
         )
 
     def test_store_assets_are_cacheable_for_lighthouse(self):
-        response = self.client.get("/store/assets/store.js?v=20260605-hover-defer")
+        response = self.client.get("/store/assets/store.js?v=20260605-gallery-defer")
         self.addCleanup(response.close)
 
         self.assertEqual(response.status_code, 200)

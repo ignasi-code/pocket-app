@@ -125,9 +125,12 @@
     return shopifyImageUrl(src, width);
   }
 
-  function hydrateProductTileHoverImage(tile) {
-    const image = tile?.querySelector(".product-tile__image__hover[data-src]");
+  function hydrateDeferredImage(image) {
     if (!image || image.dataset.loaded === "true") return;
+    image.closest("picture")?.querySelectorAll("source[data-srcset]").forEach(source => {
+      source.srcset = source.dataset.srcset;
+      if (source.dataset.sizes) source.sizes = source.dataset.sizes;
+    });
     image.addEventListener("load", () => {
       image.classList.remove("is-loading");
       image.classList.add("is-loaded");
@@ -136,6 +139,28 @@
     if (image.dataset.srcset) image.srcset = image.dataset.srcset;
     if (image.dataset.sizes) image.sizes = image.dataset.sizes;
     image.dataset.loaded = "true";
+  }
+
+  function hydrateProductTileHoverImage(tile) {
+    hydrateDeferredImage(tile?.querySelector(".product-tile__image__hover[data-src]"));
+  }
+
+  function observeDeferredGalleryImages() {
+    const images = Array.from(document.querySelectorAll("[data-gallery-image][data-src]"));
+    if (!images.length) return;
+    if (!("IntersectionObserver" in window)) {
+      images.forEach(hydrateDeferredImage);
+      return;
+    }
+    const gallery = document.querySelector("[data-product-gallery]");
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        hydrateDeferredImage(entry.target);
+        observer.unobserve(entry.target);
+      });
+    }, { root: gallery || null, rootMargin: "0px", threshold: 0.4 });
+    images.forEach(image => observer.observe(image));
   }
 
   function escapeHtml(value) {
@@ -671,6 +696,7 @@
     const target = selected?.dataset.imageSrc;
     if (!target) return;
     const image = document.querySelector(`[data-gallery-image-src="${CSS.escape(target)}"]`);
+    hydrateDeferredImage(image);
     image?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
   }
 
@@ -870,6 +896,7 @@
     if (galleryDot) {
       const target = galleryDot.dataset.galleryTarget;
       const image = document.querySelector(`[data-gallery-image-src="${CSS.escape(target)}"]`);
+      hydrateDeferredImage(image);
       image?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
     }
 
@@ -937,6 +964,7 @@
   updateCount();
   hideDismissedShippingPromos();
   document.querySelectorAll("[data-pdp-variant-select]").forEach(select => updatePdpSelection(select, false));
+  observeDeferredGalleryImages();
   renderCartDrawer();
   renderCartPage();
 })();
