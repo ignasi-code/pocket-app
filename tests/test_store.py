@@ -183,7 +183,7 @@ class StoreTest(unittest.TestCase):
                 self.assertIn("public", font_response.headers.get("Cache-Control", ""))
                 self.assertIn("max-age=31536000", font_response.headers.get("Cache-Control", ""))
                 self.assertEqual(font_response.mimetype, "font/woff2")
-                self.assertLess(len(font_response.data), 40000)
+                self.assertLess(len(font_response.data), 10000)
 
     def test_store_base_has_meta_description_for_seo_score(self):
         response = self.client.get("/store")
