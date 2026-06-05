@@ -100,6 +100,8 @@ SHOPIFY_LEGACY_IMAGE_SIZE_RE = re.compile(
 RESTART_LOG_PATH = BASE_DIR / "pocket-restart.log"
 
 app = Flask(__name__)
+app.jinja_env.trim_blocks = True
+app.jinja_env.lstrip_blocks = True
 
 
 def truthy_env(name):

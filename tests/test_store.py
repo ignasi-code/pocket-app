@@ -138,6 +138,10 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn('<meta name="description" content="A static-first Roxanne Assoulin storefront prototype with fast collection, product, and cart views.">', html)
 
+    def test_store_templates_trim_jinja_whitespace_for_payload_size(self):
+        self.assertTrue(pocket.app.jinja_env.trim_blocks)
+        self.assertTrue(pocket.app.jinja_env.lstrip_blocks)
+
     def test_store_preconnects_remote_image_origins(self):
         response = self.client.get("/store")
 
