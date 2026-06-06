@@ -115,7 +115,26 @@ def export_cart_items_static_index(output_dir: Path) -> Path:
 
 
 def headers_file() -> str:
+    html_cache = "Cache-Control: public, max-age=300, stale-while-revalidate=3600, stale-if-error=86400"
     return "\n".join([
+        "/",
+        f"  {html_cache}",
+        "",
+        "/bp/*",
+        f"  {html_cache}",
+        "",
+        "/store/",
+        f"  {html_cache}",
+        "",
+        "/store/cart/*",
+        f"  {html_cache}",
+        "",
+        "/store/products/*",
+        f"  {html_cache}",
+        "",
+        "/store/collections/*",
+        f"  {html_cache}",
+        "",
         "/store/assets/*",
         "  Cache-Control: public, max-age=31536000, immutable",
         "",
@@ -130,9 +149,6 @@ def headers_file() -> str:
         "",
         "/store/collections/*/products-fragment",
         "  Cache-Control: public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400",
-        "",
-        "/*",
-        "  Cache-Control: public, max-age=300, stale-while-revalidate=3600, stale-if-error=86400",
         "",
     ])
 

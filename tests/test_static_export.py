@@ -54,3 +54,5 @@ class StaticExportTest(unittest.TestCase):
         headers = (self.output_dir / "_headers").read_text(encoding="utf-8")
         self.assertIn("/store/assets/*", headers)
         self.assertIn("Cache-Control: public, max-age=31536000, immutable", headers)
+        self.assertIn("/store/products/*", headers)
+        self.assertNotIn("/*", headers.splitlines())
