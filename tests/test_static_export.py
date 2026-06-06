@@ -77,3 +77,17 @@ class StaticExportTest(unittest.TestCase):
         self.assertIn("receiver: \"cloudflare-pages-pulse\"", source)
         self.assertIn("status: 204", source)
         self.assertIn("Cache-Control", source)
+
+    def test_cloudflare_pages_stripe_checkout_function_is_declared(self):
+        function_path = pocket.BASE_DIR / "functions" / "store" / "api" / "stripe-checkout.js"
+
+        self.assertTrue(function_path.exists())
+        source = function_path.read_text(encoding="utf-8")
+        self.assertIn("export async function onRequestPost", source)
+        self.assertIn("STRIPE_SECRET_KEY", source)
+        self.assertIn("env.ASSETS.fetch", source)
+        self.assertIn("https://api.stripe.com/v1/checkout/sessions", source)
+        self.assertIn("line_items[0][price_data][unit_amount]", source)
+        self.assertIn("Cache-Control", source)
+        self.assertNotIn("sk_test_", source)
+        self.assertNotIn("sk_live_", source)

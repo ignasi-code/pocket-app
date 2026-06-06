@@ -5,6 +5,7 @@
   const SESSION_ID_KEY = "pocket_store_session_id";
   const SHIPPING_PROMO_DISMISSED_KEY = "pocket_store_shipping_promo_dismissed";
   const PULSE_ENDPOINT = document.body?.dataset.storePulseUrl || "/store/pulse";
+  const STRIPE_CHECKOUT_ENDPOINT = document.body?.dataset.storeStripeCheckoutUrl || "/store/api/stripe-checkout";
   const storeBaseUrl = (document.body?.dataset.storeBaseUrl || "https://roxanneassoulin.com").replace(/\/+$/, "");
   const displayCurrency = document.body?.dataset.storeDisplayCurrency || "eur";
   const displayEurRate = Number.parseFloat(document.body?.dataset.storeDisplayEurRate || "0.875");
@@ -1282,6 +1283,46 @@
     if (output) output.textContent = "Your shopping bag is empty.";
   }
 
+  async function stripeCheckout(scope = document) {
+    const root = scope || document;
+    const output = root.querySelector("[data-checkout-output]");
+    const button = root.querySelector("[data-stripe-checkout]");
+    const cart = loadCart()
+      .map(item => ({
+        id: Number(item.id),
+        qty: Math.max(0, Math.min(99, Number(item.qty || 0))),
+      }))
+      .filter(item => Number.isFinite(item.id) && item.id > 0 && item.qty > 0);
+
+    if (!cart.length) {
+      if (output) output.textContent = "Your shopping bag is empty.";
+      return;
+    }
+
+    const itemCount = cart.reduce((total, item) => total + item.qty, 0);
+    sendPulse("stripe_backup_checkout", { item_count: itemCount });
+    if (output) output.textContent = "Opening backup checkout...";
+    if (button) button.disabled = true;
+
+    try {
+      const response = await fetch(STRIPE_CHECKOUT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cartItems: cart }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) {
+        if (output) output.textContent = data.error || "Backup checkout is unavailable.";
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      if (output) output.textContent = "Backup checkout is unavailable.";
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   document.addEventListener("click", event => {
     const menuToggle = event.target.closest("[data-menu-toggle]");
     if (menuToggle) {
@@ -1392,6 +1433,13 @@
     if (lightboxOpen) openLightbox(lightboxOpen);
 
     if (event.target.closest("[data-lightbox-close]")) closeLightbox();
+
+    const stripeCheckoutButton = event.target.closest("[data-stripe-checkout]");
+    if (stripeCheckoutButton) {
+      event.preventDefault();
+      stripeCheckout(stripeCheckoutButton.closest("[data-cart-page], [data-cart-drawer]") || document);
+      return;
+    }
 
     const checkoutButton = event.target.closest("[data-checkout]");
     if (checkoutButton) {

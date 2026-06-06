@@ -1,5 +1,6 @@
 import html as html_lib
 import unittest
+from unittest.mock import patch
 
 import app as pocket
 
@@ -67,7 +68,7 @@ class StoreTest(unittest.TestCase):
             ("/store/catalog.json", 3600, 86400),
             ("/store/cart-index.json", 3600, 86400),
             ("/store/assets/store.min.js?v=20260605-js-min", 31536000, 31536000),
-            ("/store/assets/store.home.min.css?v=20260606-scope-css-drawer-restore", 31536000, 31536000),
+            ("/store/assets/store.home.min.css?v=20260606-stripe-fallback", 31536000, 31536000),
             ("/store/assets/fonts/SupremeLLWeb-Regular-store-latin.woff2", 31536000, 31536000),
         )
 
@@ -90,6 +91,31 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers.get("Cache-Control"), "no-store")
         self.assertNotIn("CDN-Cache-Control", response.headers)
+
+    def test_store_stripe_checkout_api_rejects_invalid_cart_and_is_never_cacheable(self):
+        response = self.client.post(
+            "/store/api/stripe-checkout",
+            json={"cartItems": [{"id": 999999999999999, "qty": 1}]},
+        )
+        self.addCleanup(response.close)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.headers.get("Cache-Control"), "no-store")
+        self.assertNotIn("CDN-Cache-Control", response.headers)
+        self.assertIn("Unknown variant id", response.get_json()["error"])
+
+    def test_store_stripe_checkout_api_requires_secret_after_valid_catalog_verification(self):
+        _product, variant = self.first_available_variant()
+        with patch.dict(pocket.os.environ, {"STRIPE_SECRET_KEY": ""}, clear=False):
+            response = self.client.post(
+                "/store/api/stripe-checkout",
+                json={"cartItems": [{"id": int(variant["id"]), "qty": 1}]},
+            )
+        self.addCleanup(response.close)
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.headers.get("Cache-Control"), "no-store")
+        self.assertIn("Stripe fallback is not configured", response.get_json()["error"])
 
     def test_store_pulse_receiver_is_first_party_and_never_cacheable(self):
         check_response = self.client.get("/store/pulse?check=1")
@@ -143,8 +169,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260606-scope-css-drawer-restore" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260606-scope-css-drawer-restore"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260606-stripe-fallback" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260606-stripe-fallback"></noscript>', html)
         self.assertNotIn("20260605-scope-css-cart-cls", html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
@@ -259,7 +285,7 @@ class StoreTest(unittest.TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
                 html = response.get_data(as_text=True)
-                href = f"/store/assets/store.{scope}.min.css?v=20260606-scope-css-drawer-restore"
+                href = f"/store/assets/store.{scope}.min.css?v=20260606-stripe-fallback"
                 self.assertIn(href, html)
                 self.assertNotIn("/store/assets/store.min.css?v=20260605-cart-cls", html)
 
@@ -1728,6 +1754,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-cart-page", html)
         self.assertIn('data-store-base-url="https://roxanneassoulin.com"', html)
         self.assertIn('href="https://roxanneassoulin.com/cart" data-checkout', html)
+        self.assertIn('data-store-stripe-checkout-url="/store/api/stripe-checkout"', html)
+        self.assertIn("data-stripe-checkout", html)
         self.assertNotIn('data-checkout-endpoint="/store/api/checkout"', html)
 
     def test_checkout_success_redirects_directly_to_shopify_cart(self):
@@ -1737,6 +1765,18 @@ class StoreTest(unittest.TestCase):
         self.assertIn("window.location.href = url", source)
         self.assertNotIn("fetch(endpoint", source)
         self.assertNotIn("Open Shopify cart", source)
+
+    def test_stripe_backup_checkout_posts_cart_to_server_only_on_explicit_click(self):
+        source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+
+        self.assertIn("const STRIPE_CHECKOUT_ENDPOINT", source)
+        self.assertIn("async function stripeCheckout", source)
+        self.assertIn("fetch(STRIPE_CHECKOUT_ENDPOINT", source)
+        self.assertIn("data-stripe-checkout", source)
+        self.assertIn("stripe_backup_checkout", source)
+        self.assertNotIn("STRIPE_SECRET_KEY", source)
+        self.assertNotIn("sk_test_", source)
+        self.assertNotIn("sk_live_", source)
 
     def test_cart_page_uses_live_cart_structure(self):
         response = self.client.get("/store/cart")
@@ -1748,6 +1788,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-page__items", html)
         self.assertIn("cart-page__summary", html)
         self.assertIn('<a class="cart-page__checkout" href="https://roxanneassoulin.com/cart" data-checkout>Checkout</a>', html)
+        self.assertIn('<button class="cart-page__stripe-checkout" type="button" data-stripe-checkout>backup checkout</button>', html)
         self.assertNotIn("<button class=\"cart-page__checkout\"", html)
 
     def test_cart_page_renders_live_selected_for_u_upsells(self):
@@ -1833,7 +1874,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".cart {\n      padding: 79px 0 0;", source)
         self.assertIn(".cart-page {\n      display: block;\n      padding: 0 10px;", source)
         self.assertIn("min-height: 266px;", source)
-        self.assertIn("margin: 20px 0;", source)
+        self.assertIn("margin: 20px 0 8px;", source)
         self.assertIn(".cart-page__summary {\n      background: #fff;\n      border: 1px solid #e6e6e6;\n      border-radius: 5px;\n      box-sizing: border-box;\n      margin-top: -1px;\n      min-height: 271px;", source)
         self.assertIn("height: 271px;", source)
         self.assertIn(".cart-page__gift-message__wrap {\n      align-items: flex-start;\n      background: #fff;\n      border: 1px solid #e6e6e6;\n      border-radius: 5px;\n      box-sizing: border-box;\n      display: flex;\n      flex-wrap: wrap;\n      height: 78px;", source)
@@ -1853,7 +1894,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn(".cart-page__gift-message__wrap {\n        margin: -1px 0 0;\n        min-height: 58px;\n        width: calc(100vw - 20px);", source)
         self.assertIn(".cart-page__gift-message__wrap label {\n        line-height: 56px;", source)
         self.assertIn(".cart-page__summary {\n        border: 0;\n        margin: 147px 55px 0 auto;\n        padding: 0;\n        position: static;", source)
-        self.assertIn(".cart-page__checkout {\n        display: block;\n        margin: 20px 0;\n        padding: 0;\n        width: 305px;", source)
+        self.assertIn(".cart-page__checkout {\n        display: block;\n        margin: 20px 0 8px;\n        padding: 0;\n        width: 305px;", source)
         self.assertIn(".cart-upsell {\n        display: none;", source)
 
     def test_cart_drawer_uses_live_checkout_and_item_classes(self):
@@ -1985,7 +2026,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("overflow: hidden;\n      padding: 0 23px;", source)
         self.assertIn(".cart-drawer__item--bundle {\n      min-height: 160px;", source)
         self.assertIn(".cart-drawer__upsell {\n      background: #fff;\n      border: 1px solid #e6e6e6;\n      border-radius: 5px;\n      box-sizing: border-box;\n      height: 298px;", source)
-        self.assertIn(".cart-drawer__summary {\n      display: grid;\n      gap: 8px;\n      height: 112px;", source)
+        self.assertIn(".cart-drawer__summary {\n      display: grid;\n      gap: 8px;\n      height: 136px;", source)
         self.assertIn(".cart-drawer__checkout {\n      height: 52px;\n      line-height: 52px;\n      min-height: 52px;", source)
 
     def test_cart_css_matches_live_mobile_line_item_internals(self):
@@ -2077,7 +2118,7 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn('data-store-pulse-url="/store/pulse"', html)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260606-pulse-events" defer fetchpriority="low"></script>', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260606-stripe-fallback" defer fetchpriority="low"></script>', html)
 
     def test_store_frontend_sends_tiny_first_party_pulse_events(self):
         source = self.store_js_source()

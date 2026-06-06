@@ -12,6 +12,8 @@ import sys
 import threading
 import time
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request as UrlRequest, urlopen
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from flask import Flask, Response, abort, jsonify, make_response, render_template, render_template_string, request, send_file
@@ -1081,6 +1083,52 @@ def parse_cart_item(raw_item):
     if quantity < 1 or quantity > 99:
         raise ValueError("Cart item quantity must be between 1 and 99.")
     return variant_id, quantity
+
+
+def store_verified_checkout_items(cart_items):
+    if not isinstance(cart_items, list):
+        raise ValueError("cartItems must be an array.")
+    if not cart_items:
+        raise ValueError("Cart is empty.")
+    if len(cart_items) > 100:
+        raise ValueError("Cart has too many lines.")
+
+    variants = store_variant_lookup()
+    verified_items = []
+    subtotal_cents = 0
+    permalink_parts = []
+
+    for raw_item in cart_items:
+        variant_id, quantity = parse_cart_item(raw_item)
+        catalog_item = variants.get(variant_id)
+        if not catalog_item:
+            raise ValueError(f"Unknown variant id: {variant_id}")
+
+        product = catalog_item["product"]
+        variant = catalog_item["variant"]
+        if variant.get("available") is False:
+            raise ValueError(f"Variant is unavailable: {variant_id}")
+
+        unit_amount_cents = parse_price_cents(variant.get("price"))
+        if unit_amount_cents <= 0:
+            raise ValueError(f"Variant has invalid price: {variant_id}")
+
+        line_total_cents = unit_amount_cents * quantity
+        subtotal_cents += line_total_cents
+        permalink_parts.append(f"{variant_id}:{quantity}")
+        verified_items.append({
+            "id": variant_id,
+            "title": product.get("title", "Untitled product"),
+            "variant_title": variant.get("title") or "",
+            "qty": quantity,
+            "unit_amount_cents": unit_amount_cents,
+            "unit_amount": format_price(unit_amount_cents),
+            "line_total_cents": line_total_cents,
+            "line_total": format_price(line_total_cents),
+            "image": store_product_image(product),
+        })
+
+    return verified_items, subtotal_cents, permalink_parts
 
 
 def terminal_shell_command():
@@ -2606,7 +2654,7 @@ STORE_FONT_ASSETS = {
 }
 
 STORE_FULL_CSS_ASSET = "/store/assets/store.min.css?v=20260605-cart-cls"
-STORE_SCOPED_CSS_VERSION = "20260606-scope-css-drawer-restore"
+STORE_SCOPED_CSS_VERSION = "20260606-stripe-fallback"
 STORE_CSS_SCOPES = {"home", "collection", "product", "cart"}
 
 STORE_SCOPED_CSS_EXCLUDE_PREFIXES = {
@@ -2823,53 +2871,12 @@ def store_mock_checkout():
     data = request.get_json(silent=True) or {}
     cart_items = data.get("cartItems")
 
-    if not isinstance(cart_items, list):
-        return store_json_response({"error": "cartItems must be an array."}, 400, no_store=True)
-    if not cart_items:
-        return store_json_response({"error": "Cart is empty."}, 400, no_store=True)
-    if len(cart_items) > 100:
-        return store_json_response({"error": "Cart has too many lines."}, 400, no_store=True)
-
     try:
-        variants = store_variant_lookup()
+        verified_items, subtotal_cents, permalink_parts = store_verified_checkout_items(cart_items)
     except OSError as exc:
         return store_json_response({"error": f"Store catalog is unavailable: {exc}"}, 500, no_store=True)
     except json.JSONDecodeError as exc:
         return store_json_response({"error": f"Store catalog is invalid: {exc}"}, 500, no_store=True)
-
-    verified_items = []
-    subtotal_cents = 0
-    permalink_parts = []
-
-    try:
-        for raw_item in cart_items:
-            variant_id, quantity = parse_cart_item(raw_item)
-            catalog_item = variants.get(variant_id)
-            if not catalog_item:
-                raise ValueError(f"Unknown variant id: {variant_id}")
-
-            product = catalog_item["product"]
-            variant = catalog_item["variant"]
-            if variant.get("available") is False:
-                raise ValueError(f"Variant is unavailable: {variant_id}")
-
-            unit_amount_cents = parse_price_cents(variant.get("price"))
-            if unit_amount_cents <= 0:
-                raise ValueError(f"Variant has invalid price: {variant_id}")
-
-            line_total_cents = unit_amount_cents * quantity
-            subtotal_cents += line_total_cents
-            permalink_parts.append(f"{variant_id}:{quantity}")
-            verified_items.append({
-                "id": variant_id,
-                "title": product.get("title", "Untitled product"),
-                "variant_title": variant.get("title") or "",
-                "qty": quantity,
-                "unit_amount_cents": unit_amount_cents,
-                "unit_amount": format_price(unit_amount_cents),
-                "line_total_cents": line_total_cents,
-                "line_total": format_price(line_total_cents),
-            })
     except ValueError as exc:
         return store_json_response({"error": str(exc)}, 400, no_store=True)
 
@@ -2882,6 +2889,88 @@ def store_mock_checkout():
         "line_items": verified_items,
         "shopify_cart_url": f"{STORE_BASE_URL}/cart/{','.join(permalink_parts)}",
     }, no_store=True)
+
+
+def stripe_checkout_urls():
+    root = request.url_root.rstrip("/")
+    return (
+        clean_config_value(os.environ.get("STRIPE_SUCCESS_URL")) or f"{root}/store/cart?stripe=success",
+        clean_config_value(os.environ.get("STRIPE_CANCEL_URL")) or f"{root}/store/cart?stripe=cancel",
+    )
+
+
+def stripe_checkout_form_params(verified_items):
+    success_url, cancel_url = stripe_checkout_urls()
+    params = [
+        ("mode", "payment"),
+        ("success_url", success_url),
+        ("cancel_url", cancel_url),
+        ("metadata[source]", "pocket-store-fallback"),
+    ]
+    currency = clean_config_value(os.environ.get("STRIPE_CURRENCY")) or STORE_CURRENCY
+    for index, item in enumerate(verified_items):
+        prefix = f"line_items[{index}]"
+        name = item["title"]
+        if item.get("variant_title") and item["variant_title"] != "Default Title":
+            name = f"{name} - {item['variant_title']}"
+        params.extend([
+            (f"{prefix}[quantity]", str(item["qty"])),
+            (f"{prefix}[price_data][currency]", currency.lower()),
+            (f"{prefix}[price_data][unit_amount]", str(item["unit_amount_cents"])),
+            (f"{prefix}[price_data][product_data][name]", name),
+            (f"{prefix}[price_data][product_data][metadata][variant_id]", str(item["id"])),
+        ])
+        if str(item.get("image") or "").startswith("https://"):
+            params.append((f"{prefix}[price_data][product_data][images][0]", item["image"]))
+    return params
+
+
+@app.route("/store/api/stripe-checkout", methods=["POST"])
+def store_stripe_checkout():
+    data = request.get_json(silent=True) or {}
+    cart_items = data.get("cartItems")
+
+    try:
+        verified_items, _subtotal_cents, _permalink_parts = store_verified_checkout_items(cart_items)
+    except OSError as exc:
+        return store_json_response({"error": f"Store catalog is unavailable: {exc}"}, 500, no_store=True)
+    except json.JSONDecodeError as exc:
+        return store_json_response({"error": f"Store catalog is invalid: {exc}"}, 500, no_store=True)
+    except ValueError as exc:
+        return store_json_response({"error": str(exc)}, 400, no_store=True)
+
+    stripe_secret = clean_config_value(os.environ.get("STRIPE_SECRET_KEY"))
+    if not stripe_secret:
+        return store_json_response({"error": "Stripe fallback is not configured."}, 503, no_store=True)
+
+    body = urlencode(stripe_checkout_form_params(verified_items)).encode("utf-8")
+    stripe_request = UrlRequest(
+        "https://api.stripe.com/v1/checkout/sessions",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {stripe_secret}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(stripe_request, timeout=20) as stripe_response:
+            payload = json.loads(stripe_response.read().decode("utf-8"))
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        return store_json_response({
+            "error": "Stripe checkout failed.",
+            "status": exc.code,
+            "detail": detail[:1000],
+        }, 502, no_store=True)
+    except (URLError, TimeoutError, json.JSONDecodeError) as exc:
+        return store_json_response({"error": f"Stripe checkout failed: {exc}"}, 502, no_store=True)
+
+    if not payload.get("url"):
+        return store_json_response({"error": "Stripe checkout did not return a hosted URL."}, 502, no_store=True)
+
+    return store_json_response({"mode": "stripe", "url": payload["url"]}, no_store=True)
 
 
 @app.route("/store/pulse", methods=["GET", "POST"])

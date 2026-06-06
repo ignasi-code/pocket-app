@@ -1951,7 +1951,7 @@
       height: 60px;
       justify-content: center;
       line-height: 60px;
-      margin: 20px 0;
+      margin: 20px 0 8px;
       padding: 0 20px;
       text-decoration: none;
       width: 100%;
@@ -2318,7 +2318,7 @@
     .cart-drawer__summary {
       display: grid;
       gap: 8px;
-      height: 112px;
+      height: 136px;
     }
 
     .cart-drawer__total {
@@ -3230,7 +3230,7 @@
 
       .cart-page__checkout {
         display: block;
-        margin: 20px 0;
+        margin: 20px 0 8px;
         padding: 0;
         width: 305px;
       }
