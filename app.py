@@ -64,8 +64,10 @@ GEMINI_ARGS = current_gemini_args()
 GEMINI_WORKDIR = Path(os.environ.get("POCKET_GEMINI_WORKDIR", BASE_DIR)).expanduser()
 GEMINI_TIMEOUT_SECONDS = int(os.environ.get("POCKET_GEMINI_TIMEOUT_SECONDS", "180"))
 POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
+OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 OPS_SESSION_COOKIE = "pocket_ops_session"
 DEFAULT_OPS_SESSION_SECONDS = 12 * 60 * 60
+DEFAULT_OPS_HMAC_MAX_AGE_SECONDS = 5 * 60
 MAX_PROMPT_LENGTH = int(os.environ.get("POCKET_MAX_PROMPT_LENGTH", "12000"))
 TERMINAL_TIMEOUT_SECONDS = int(os.environ.get("POCKET_TERMINAL_TIMEOUT_SECONDS", "120"))
 TERMINAL_MAX_COMMAND_LENGTH = int(os.environ.get("POCKET_TERMINAL_MAX_COMMAND_LENGTH", "20000"))
@@ -154,12 +156,13 @@ def write_env_updates(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN
+    global DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN, OPS_HMAC_SECRET
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_GEMINI_MODEL = current_default_gemini_model()
     GEMINI_ARGS = current_gemini_args()
     POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
+    OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 
 
 def request_token():
@@ -184,8 +187,63 @@ def current_ops_session_seconds():
     return max(60, min(seconds, 7 * 24 * 60 * 60))
 
 
-def ops_open_enabled():
-    return truthy_env("POCKET_OPS_OPEN")
+def current_ops_hmac_max_age_seconds():
+    raw_value = clean_config_value(os.environ.get("POCKET_OPS_HMAC_MAX_AGE_SECONDS"))
+    if not raw_value:
+        return DEFAULT_OPS_HMAC_MAX_AGE_SECONDS
+    try:
+        seconds = int(raw_value)
+    except ValueError:
+        return DEFAULT_OPS_HMAC_MAX_AGE_SECONDS
+    return max(30, min(seconds, 60 * 60))
+
+
+def current_ops_hmac_secret():
+    return OPS_HMAC_SECRET or POCKET_ACCESS_TOKEN
+
+
+def ops_hmac_message(method, path, timestamp, body):
+    return b"\n".join([
+        method.upper().encode("utf-8"),
+        path.encode("utf-8"),
+        str(timestamp).encode("utf-8"),
+        body,
+    ])
+
+
+def normalize_hmac_signature(signature):
+    text = str(signature or "").strip()
+    if text.lower().startswith("sha256="):
+        text = text.split("=", 1)[1]
+    return text.lower()
+
+
+def ops_hmac_authorized():
+    secret = current_ops_hmac_secret()
+    if not secret:
+        return False
+
+    timestamp = str(request.headers.get("X-Pocket-Ops-Timestamp") or "").strip()
+    signature = normalize_hmac_signature(request.headers.get("X-Pocket-Ops-Signature"))
+    if not timestamp or not signature:
+        return False
+
+    try:
+        timestamp_int = int(timestamp)
+    except ValueError:
+        return False
+
+    if abs(int(time.time()) - timestamp_int) > current_ops_hmac_max_age_seconds():
+        return False
+
+    body = request.get_data(cache=True) or b""
+    message = ops_hmac_message(request.method, request.path, timestamp, body)
+    expected = hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(signature, expected)
+
+
+def ops_hmac_request_present():
+    return bool(request.headers.get("X-Pocket-Ops-Timestamp") or request.headers.get("X-Pocket-Ops-Signature"))
 
 
 def sign_ops_session(expires_at):
@@ -215,29 +273,27 @@ def ops_session_valid():
 
 
 def ops_authorized():
-    if ops_open_enabled() or not POCKET_ACCESS_TOKEN:
-        return True, False
+    if ops_hmac_request_present():
+        return (True, False, "") if ops_hmac_authorized() else (False, False, "Invalid ops signature.")
+    if not POCKET_ACCESS_TOKEN and not current_ops_hmac_secret():
+        return True, False, ""
     if ops_session_valid():
-        return True, False
+        return True, False, ""
     if request_token() == POCKET_ACCESS_TOKEN:
-        return True, True
-    return False, False
+        return True, True, ""
+    if request_token():
+        return False, False, "Invalid Pocket access token."
+    if current_ops_hmac_secret():
+        return False, False, "Invalid ops signature."
+    return False, False, "Invalid Pocket access token."
 
 
 def ops_auth_label():
-    if ops_open_enabled():
-        return "Open mode is enabled by POCKET_OPS_OPEN=1."
     if not POCKET_ACCESS_TOKEN:
-        return "No Pocket access token is configured."
+        return "No Pocket access token is configured. Signed automation requests can use HMAC headers."
     if ops_session_valid():
         return "Ops is unlocked for this browser."
-    return "Unlock once with your Pocket access token."
-
-
-def set_ops_open_mode(enabled):
-    updates = {"POCKET_OPS_OPEN": "1" if enabled else "0"}
-    write_env_updates(updates)
-    refresh_runtime_config(updates)
+    return "Unlock once with your Pocket access token, or use signed HMAC headers for automation."
 
 
 def run_git_pull():
@@ -1758,17 +1814,8 @@ OPS_PAGE = """
 
     <section class="panel">
       <h2>Notes</h2>
-      <p>Open mode only works when <code>POCKET_OPS_OPEN=1</code> is set in the server environment. Use it only while you intentionally want unattended public tunnel operations.</p>
+      <p>Unattended ops requests must be signed with <code>X-Pocket-Ops-Timestamp</code> and <code>X-Pocket-Ops-Signature</code>. The signature signs <code>POST</code>, <code>/ops</code>, the timestamp, and the exact request body.</p>
       <p>Restart command: <code>{{ restart_command }}</code></p>
-      {% if not needs_unlock %}
-        <form class="actions-form" method="post" action="/ops">
-          {% if open_mode %}
-            <button class="secondary" type="submit" name="action" value="disable_open">Disable open mode</button>
-          {% else %}
-            <button class="secondary" type="submit" name="action" value="enable_open">Enable open mode</button>
-          {% endif %}
-        </form>
-      {% endif %}
     </section>
   </main>
 </body>
@@ -2847,7 +2894,6 @@ def setup_page():
 def render_ops_page(result="", output="", ok=False, status=200, set_session=False, unlocked=False):
     needs_unlock = bool(
         POCKET_ACCESS_TOKEN
-        and not ops_open_enabled()
         and not ops_session_valid()
         and not unlocked
     )
@@ -2859,7 +2905,6 @@ def render_ops_page(result="", output="", ok=False, status=200, set_session=Fals
         output=output,
         ok=ok,
         restart_command=restart_command(),
-        open_mode=ops_open_enabled(),
     ), status)
     if set_session:
         response.set_cookie(
@@ -2878,11 +2923,12 @@ def ops_page():
     if request.method == "GET":
         return render_ops_page()
 
+    request.get_data(cache=True)
     action = str(request.form.get("action") or "unlock").strip()
-    authorized, set_session = ops_authorized()
+    authorized, set_session, failure_message = ops_authorized()
     if not authorized:
         return render_ops_page(
-            result="Invalid Pocket access token.",
+            result=failure_message or "Invalid ops authorization.",
             output="",
             ok=False,
             status=401,
@@ -2897,42 +2943,12 @@ def ops_page():
             unlocked=True,
         )
 
-    if action == "enable_open":
-        try:
-            set_ops_open_mode(True)
-        except OSError as exc:
-            return render_ops_page(
-                result="Could not enable open mode.",
-                output=str(exc),
-                ok=False,
-                status=500,
-                set_session=set_session,
-                unlocked=set_session,
-            )
+    if action in {"enable_open", "disable_open"}:
         return render_ops_page(
-            result="Open mode enabled. Pull and restart actions now work without a manual token.",
+            result="Open mode has been replaced by HMAC signed ops requests.",
             output="",
-            ok=True,
-            set_session=set_session,
-            unlocked=True,
-        )
-
-    if action == "disable_open":
-        try:
-            set_ops_open_mode(False)
-        except OSError as exc:
-            return render_ops_page(
-                result="Could not disable open mode.",
-                output=str(exc),
-                ok=False,
-                status=500,
-                set_session=set_session,
-                unlocked=set_session,
-            )
-        return render_ops_page(
-            result="Open mode disabled. Token or browser unlock is required again.",
-            output="",
-            ok=True,
+            ok=False,
+            status=410,
             set_session=set_session,
             unlocked=set_session,
         )

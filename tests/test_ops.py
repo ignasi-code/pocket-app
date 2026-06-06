@@ -1,4 +1,7 @@
 import unittest
+import hashlib
+import hmac
+import time
 from unittest.mock import patch
 
 import app as pocket
@@ -7,11 +10,28 @@ import app as pocket
 class OpsPageTest(unittest.TestCase):
     def setUp(self):
         self.original_token = pocket.POCKET_ACCESS_TOKEN
+        self.original_hmac_secret = pocket.OPS_HMAC_SECRET
         pocket.POCKET_ACCESS_TOKEN = "secret"
+        pocket.OPS_HMAC_SECRET = "ops-hmac-secret"
         self.client = pocket.app.test_client()
 
     def tearDown(self):
         pocket.POCKET_ACCESS_TOKEN = self.original_token
+        pocket.OPS_HMAC_SECRET = self.original_hmac_secret
+
+    def signed_ops_headers(self, body, timestamp=None, secret="ops-hmac-secret"):
+        timestamp = str(timestamp or int(time.time()))
+        message = b"\n".join([
+            b"POST",
+            b"/ops",
+            timestamp.encode("utf-8"),
+            body,
+        ])
+        signature = hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
+        return {
+            "X-Pocket-Ops-Timestamp": timestamp,
+            "X-Pocket-Ops-Signature": f"sha256={signature}",
+        }
 
     def test_ops_page_shows_unlock_when_token_is_configured(self):
         response = self.client.get("/ops")
@@ -51,21 +71,28 @@ class OpsPageTest(unittest.TestCase):
         run_git_pull.assert_called_once_with()
         self.assertIn("Already up to date.", response.get_data(as_text=True))
 
-    def test_ops_open_mode_allows_pull_then_restart_without_manual_token(self):
-        with patch.dict(pocket.os.environ, {"POCKET_OPS_OPEN": "1"}):
-            with patch(
-                "app.run_git_pull",
-                create=True,
-                return_value={
-                    "elapsed": 0.01,
-                    "message": "Pull completed in 0.01s.",
-                    "ok": True,
-                    "output": "Fast-forward",
-                    "returncode": 0,
-                },
-            ) as run_git_pull:
-                with patch("app.restart_current_process", return_value="python run_pocket.py") as restart:
-                    response = self.client.post("/ops", data={"action": "pull_restart"})
+    def test_ops_hmac_allows_pull_then_restart_without_manual_token(self):
+        body = b"action=pull_restart"
+        headers = self.signed_ops_headers(body)
+
+        with patch(
+            "app.run_git_pull",
+            create=True,
+            return_value={
+                "elapsed": 0.01,
+                "message": "Pull completed in 0.01s.",
+                "ok": True,
+                "output": "Fast-forward",
+                "returncode": 0,
+            },
+        ) as run_git_pull:
+            with patch("app.restart_current_process", return_value="python run_pocket.py") as restart:
+                response = self.client.post(
+                    "/ops",
+                    data=body,
+                    content_type="application/x-www-form-urlencoded",
+                    headers=headers,
+                )
 
         self.assertEqual(response.status_code, 200)
         run_git_pull.assert_called_once_with()
@@ -74,44 +101,49 @@ class OpsPageTest(unittest.TestCase):
         self.assertIn("Pull completed in 0.01s.", html)
         self.assertIn("Restart requested", html)
 
-    def test_ops_can_enable_open_mode_after_valid_unlock(self):
-        with patch.dict(pocket.os.environ, {"POCKET_OPS_OPEN": "0"}):
-            with patch("app.write_env_updates") as write_env_updates:
-                response = self.client.post(
-                    "/ops",
-                    data={"action": "enable_open", "token": "secret"},
-                )
+    def test_ops_hmac_rejects_stale_timestamp(self):
+        body = b"action=pull"
+        headers = self.signed_ops_headers(body, timestamp=int(time.time()) - 600)
 
-            self.assertEqual(response.status_code, 200)
-            write_env_updates.assert_called_once_with({"POCKET_OPS_OPEN": "1"})
-            self.assertEqual(pocket.os.environ["POCKET_OPS_OPEN"], "1")
-            self.assertIn("Open mode enabled", response.get_data(as_text=True))
+        response = self.client.post(
+            "/ops",
+            data=body,
+            content_type="application/x-www-form-urlencoded",
+            headers=headers,
+        )
 
-            with patch(
-                "app.run_git_pull",
-                create=True,
-                return_value={
-                    "elapsed": 0.01,
-                    "message": "Pull completed in 0.01s.",
-                    "ok": True,
-                    "output": "Already up to date.",
-                    "returncode": 0,
-                },
-            ) as run_git_pull:
-                pull = self.client.post("/ops", data={"action": "pull"})
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("Invalid ops signature", response.get_data(as_text=True))
 
-        self.assertEqual(pull.status_code, 200)
-        run_git_pull.assert_called_once_with()
+    def test_ops_hmac_rejects_bad_signature(self):
+        body = b"action=pull"
+        headers = self.signed_ops_headers(body, secret="wrong-secret")
 
-    def test_ops_can_disable_open_mode_without_manual_token(self):
+        response = self.client.post(
+            "/ops",
+            data=body,
+            content_type="application/x-www-form-urlencoded",
+            headers=headers,
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("Invalid ops signature", response.get_data(as_text=True))
+
+    def test_ops_open_mode_no_longer_allows_public_actions(self):
         with patch.dict(pocket.os.environ, {"POCKET_OPS_OPEN": "1"}):
-            with patch("app.write_env_updates") as write_env_updates:
-                response = self.client.post("/ops", data={"action": "disable_open"})
+            response = self.client.post("/ops", data={"action": "pull"})
 
-            self.assertEqual(response.status_code, 200)
-            write_env_updates.assert_called_once_with({"POCKET_OPS_OPEN": "0"})
-            self.assertEqual(pocket.os.environ["POCKET_OPS_OPEN"], "0")
-            self.assertIn("Open mode disabled", response.get_data(as_text=True))
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("Invalid ops signature", response.get_data(as_text=True))
+
+    def test_ops_rejects_legacy_open_mode_actions_after_unlock(self):
+        response = self.client.post(
+            "/ops",
+            data={"action": "enable_open", "token": "secret"},
+        )
+
+        self.assertEqual(response.status_code, 410)
+        self.assertIn("Open mode has been replaced by HMAC", response.get_data(as_text=True))
 
 
 if __name__ == "__main__":

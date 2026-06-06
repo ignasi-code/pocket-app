@@ -29,14 +29,15 @@ Then open `/setup` in a browser to paste your Gemini API key and save `.env`.
 
 Control pages:
 
-- `/`: BODY POWER landing page.
+- `/`: Pocket Arkanoid HTML5 game.
+- `/bp`: BODY POWER landing page.
 - `/stats`: Dashboard for battery, storage, RAM, and system info.
 - `/fast`: Pocket Fast speed test for the Termux tunnel.
 - `/gpt`: Gemini CLI prompt bridge.
 - `/store`: Public static-first Shopify storefront prototype with home, collection, product, cart, and mock checkout.
 - `/terminal`: Token-protected browser terminal for pasted shell commands.
 - `/setup`: Save local `.env` config from the browser.
-- `/ops`: Unlock once, then run pull, restart, or pull then restart from one page.
+- `/ops`: Unlock once in the browser, or use signed HMAC requests, then run pull, restart, or pull then restart.
 - `/pull`: Run `git pull origin master`.
 - `/restart`: Start a fresh Pocket Server process in the background, then stop the old one.
 
@@ -67,7 +68,8 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_STORE_CURRENCY`: Currency label for the mock checkout response. Default: `usd`.
 - `POCKET_RESTART_COMMAND`: Optional command used by `/restart`. Default runs `python run_pocket.py`.
 - `POCKET_OPS_SESSION_SECONDS`: How long `/ops` stays unlocked in one browser after a valid token. Default: `43200`.
-- `POCKET_OPS_OPEN`: Set to `1` only when you intentionally want `/ops` pull/restart actions to work without a token through the public tunnel.
+- `POCKET_OPS_HMAC_SECRET`: Optional dedicated secret for signed `/ops` automation requests. If unset, `/ops` uses `POCKET_ACCESS_TOKEN` for HMAC signing.
+- `POCKET_OPS_HMAC_MAX_AGE_SECONDS`: Maximum accepted signed `/ops` timestamp age. Default: `300`.
 
 ## Store prototype
 
@@ -87,7 +89,39 @@ The browser owns cart state in `localStorage`. The mock checkout endpoint verifi
 /store/api/checkout
 ```
 
-Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`. Leave `POCKET_OPS_OPEN` unset or `0` unless you are deliberately allowing unattended tunnel operations for a short window.
+Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`. Unattended `/ops` automation should use HMAC headers instead of open mode. The HMAC message is:
+
+```text
+METHOD
+PATH
+TIMESTAMP
+BODY
+```
+
+Example for `action=pull_restart`:
+
+```bash
+BODY='action=pull_restart'
+TS="$(date +%s)"
+SIG="$(BODY="$BODY" TS="$TS" python - <<'PY'
+import hashlib, hmac, os
+secret = os.environ["POCKET_OPS_HMAC_SECRET"].encode()
+message = b"\n".join([
+    b"POST",
+    b"/ops",
+    os.environ["TS"].encode(),
+    os.environ["BODY"].encode(),
+])
+print(hmac.new(secret, message, hashlib.sha256).hexdigest())
+PY
+)"
+
+curl -X POST "$POCKET_TUNNEL_URL/ops" \
+  -H "X-Pocket-Ops-Timestamp: $TS" \
+  -H "X-Pocket-Ops-Signature: sha256=$SIG" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "$BODY"
+```
 
 To let Gemini CLI auto-approve tool calls from `/gpt`, set `POCKET_GEMINI_ARGS` to:
 
