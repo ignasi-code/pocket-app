@@ -32,6 +32,7 @@ class StaticExportTest(unittest.TestCase):
         )
         self.assertIn(self.output_dir / "store" / "catalog.json", written)
         self.assertIn(self.output_dir / "_headers", written)
+        self.assertIn(self.output_dir / "robots.txt", written)
 
         html = (self.output_dir / "store" / "index.html").read_text(encoding="utf-8")
         self.assertIn("Pocket Store", html)
@@ -39,6 +40,11 @@ class StaticExportTest(unittest.TestCase):
         self.assertIn('data-store-base-url="https://roxanneassoulin.com"', html)
         self.assertIn('href="https://roxanneassoulin.com/cart" data-checkout', html)
         self.assertNotIn('data-checkout-endpoint="/store/api/checkout"', html)
+
+        robots = (self.output_dir / "robots.txt").read_text(encoding="utf-8")
+        self.assertIn("User-agent: *", robots)
+        self.assertIn("Allow: /", robots)
+        self.assertNotIn("<html", robots.lower())
 
     def test_build_dist_exports_store_assets_for_pages(self):
         written = build_dist(self.output_dir)
@@ -56,6 +62,8 @@ class StaticExportTest(unittest.TestCase):
         headers = (self.output_dir / "_headers").read_text(encoding="utf-8")
         self.assertIn("/store/assets/*", headers)
         self.assertIn("Cache-Control: public, max-age=31536000, immutable", headers)
+        self.assertIn("/robots.txt", headers)
+        self.assertIn("Cache-Control: public, max-age=86400", headers)
         self.assertIn("/store/products/*", headers)
         self.assertNotIn("/*", headers.splitlines())
 

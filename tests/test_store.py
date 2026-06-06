@@ -33,6 +33,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("Pocket Store", html)
         self.assertIn("data-quickshop-open", html)
         self.assertIn("/store/cart", html)
+        self.assertIn('aria-label="Open bag, 0 items"', html)
 
     def assert_edge_cache_headers(self, response, browser_max_age, edge_max_age):
         cache_control = response.headers.get("Cache-Control", "")
@@ -1259,6 +1260,10 @@ class StoreTest(unittest.TestCase):
         source = self.store_css_source()
 
         self.assertIn(".collection-hero {\n      position: relative;\n      padding: 0;", source)
+        collection_response = self.client.get("/store/collections/new-arrivals")
+        collection_html = collection_response.get_data(as_text=True)
+        self.addCleanup(collection_response.close)
+        self.assertIn(".collection-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:0 0 1px 1px}", collection_html)
         self.assertIn(".collection-filter-bar button", source)
         self.assertIn("height: 74px", source)
         self.assertIn("font-size: 1rem", source)
@@ -1550,11 +1555,15 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
+        source = self.store_css_source()
         self.assertIn("data-gallery-dot", html)
         self.assertIn("data-pdp-variant-select", html)
         self.assertIn("data-product-qty", html)
         self.assertIn("data-qty-inc", html)
         self.assertIn("data-qty-dec", html)
+        self.assertIn(".gallery-dots button::before", source)
+        self.assertIn("height: 24px", source)
+        self.assertIn("width: 24px", source)
 
     def test_product_page_uses_live_pdp_structure_and_buy_options(self):
         product, _variant = self.first_available_variant()
@@ -2143,6 +2152,7 @@ class StoreTest(unittest.TestCase):
         ]
 
         self.assertIn("updateCount();", startup_source)
+        self.assertIn('cartLink.setAttribute("aria-label", `Open bag, ${count} ${itemLabel}`);', source)
         self.assertNotIn("renderCartDrawer();", startup_source)
         self.assertIn("await renderCartDrawer();", open_drawer_source)
         self.assertIn("saveCart(cart, { renderDrawer: false });", cart_page_source)

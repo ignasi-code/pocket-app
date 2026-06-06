@@ -205,8 +205,11 @@
 
   function updateCount() {
     const count = loadCart().reduce((total, item) => total + Number(item.qty || 0), 0);
+    const itemLabel = count === 1 ? "item" : "items";
     document.querySelectorAll("[data-cart-count]").forEach(node => {
       node.textContent = String(count);
+      const cartLink = node.closest(".header__cart--page");
+      if (cartLink) cartLink.setAttribute("aria-label", `Open bag, ${count} ${itemLabel}`);
     });
   }
 

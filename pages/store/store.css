@@ -252,7 +252,7 @@
     }
 
     .shipping-promo__close {
-      background: transparent;
+      background: none;
       border: 0;
       cursor: pointer;
       height: 50px;
@@ -1048,7 +1048,6 @@
     .gallery-dots {
       bottom: 13px;
       display: flex;
-      gap: 8px;
       justify-content: center;
       left: 0;
       position: absolute;
@@ -1056,12 +1055,24 @@
     }
 
     .gallery-dots button {
+      background: transparent;
+      border: 0;
+      height: 24px;
+      padding: 0;
+      position: relative;
+      width: 24px;
+    }
+
+    .gallery-dots button::before {
       background: #fff;
       border: 1px solid #000;
       border-radius: 50%;
+      content: "";
       height: 8px;
-      opacity: .75;
-      padding: 0;
+      left: 50%;
+      margin: -5px 0 0 -5px;
+      position: absolute;
+      top: 50%;
       width: 8px;
     }
 

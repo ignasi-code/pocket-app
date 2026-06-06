@@ -31,6 +31,10 @@ STATIC_PAGE_ROUTES = {
     "/bp": "bp/index.html",
 }
 
+ROBOTS_TXT = """User-agent: *
+Allow: /
+"""
+
 
 def clean_output_dir(output_dir: Path) -> None:
     if output_dir.exists():
@@ -150,6 +154,9 @@ def headers_file() -> str:
         "/store/collections/*/products-fragment",
         "  Cache-Control: public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400",
         "",
+        "/robots.txt",
+        "  Cache-Control: public, max-age=86400, stale-while-revalidate=3600, stale-if-error=86400",
+        "",
     ])
 
 
@@ -185,6 +192,7 @@ def build_dist(output_dir: Path | str = ROOT_DIR / "dist") -> set[Path]:
             written.add(export_route(client, output_path, route, asset_path(route)))
 
     written.add(write_text(output_path, "_headers", headers_file()))
+    written.add(write_text(output_path, "robots.txt", ROBOTS_TXT))
     return written
 
 
