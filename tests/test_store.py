@@ -90,6 +90,25 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.headers.get("Cache-Control"), "no-store")
         self.assertNotIn("CDN-Cache-Control", response.headers)
 
+    def test_store_pulse_receiver_is_first_party_and_never_cacheable(self):
+        check_response = self.client.get("/store/pulse?check=1")
+        self.addCleanup(check_response.close)
+
+        self.assertEqual(check_response.status_code, 200)
+        self.assertEqual(check_response.headers.get("Cache-Control"), "no-store")
+        self.assertEqual(check_response.get_json()["ok"], True)
+        self.assertEqual(check_response.get_json()["receiver"], "flask-store-pulse")
+
+        post_response = self.client.post(
+            "/store/pulse",
+            json={"event": "page_view", "path": "/store", "anon_id": "anon_test"},
+        )
+        self.addCleanup(post_response.close)
+
+        self.assertEqual(post_response.status_code, 204)
+        self.assertEqual(post_response.headers.get("Cache-Control"), "no-store")
+        self.assertEqual(post_response.get_data(as_text=True), "")
+
     def test_store_base_declares_inline_favicon_to_avoid_browser_404(self):
         response = self.client.get("/store")
 
@@ -2037,7 +2056,25 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260606-direct-checkout" defer fetchpriority="low"></script>', html)
+        self.assertIn('data-store-pulse-url="/store/pulse"', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260606-pulse-events" defer fetchpriority="low"></script>', html)
+
+    def test_store_frontend_sends_tiny_first_party_pulse_events(self):
+        source = self.store_js_source()
+
+        self.assertIn("const PULSE_ENDPOINT", source)
+        self.assertIn("function sendPulse", source)
+        self.assertIn("navigator.sendBeacon", source)
+        self.assertIn("keepalive: true", source)
+        self.assertIn("new Blob([body], { type: \"application/json\" })", source)
+        self.assertIn("page_view", source)
+        self.assertIn("view_item", source)
+        self.assertIn("view_collection", source)
+        self.assertIn("add_to_cart", source)
+        self.assertIn("begin_checkout", source)
+        self.assertNotIn("facebook.com", source)
+        self.assertNotIn("google-analytics.com", source)
+        self.assertNotIn("googletagmanager.com", source)
 
     def test_footer_logo_is_deferred_until_scroll_for_lighthouse(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")

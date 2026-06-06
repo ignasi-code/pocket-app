@@ -2884,6 +2884,21 @@ def store_mock_checkout():
     }, no_store=True)
 
 
+@app.route("/store/pulse", methods=["GET", "POST"])
+def store_pulse():
+    if request.method == "GET":
+        if request.args.get("check") == "1":
+            return store_json_response({"ok": True, "receiver": "flask-store-pulse"}, no_store=True)
+        return store_json_response({"ok": False, "error": "not_found"}, 404, no_store=True)
+
+    if request.content_length and request.content_length > 16 * 1024:
+        return store_json_response({"ok": False, "error": "payload_too_large"}, 413, no_store=True)
+
+    request.get_json(silent=True)
+    response = Response(status=204)
+    return apply_no_store_headers(response)
+
+
 @app.route("/stats")
 @app.route("/stats/")
 def stats_page():

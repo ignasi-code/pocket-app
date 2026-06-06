@@ -58,3 +58,14 @@ class StaticExportTest(unittest.TestCase):
         self.assertIn("Cache-Control: public, max-age=31536000, immutable", headers)
         self.assertIn("/store/products/*", headers)
         self.assertNotIn("/*", headers.splitlines())
+
+    def test_cloudflare_pages_pulse_function_is_declared(self):
+        function_path = pocket.BASE_DIR / "functions" / "store" / "pulse.js"
+
+        self.assertTrue(function_path.exists())
+        source = function_path.read_text(encoding="utf-8")
+        self.assertIn("export async function onRequestGet", source)
+        self.assertIn("export async function onRequestPost", source)
+        self.assertIn("receiver: \"cloudflare-pages-pulse\"", source)
+        self.assertIn("status: 204", source)
+        self.assertIn("Cache-Control", source)

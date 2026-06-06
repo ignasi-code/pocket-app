@@ -1,6 +1,10 @@
 (function () {
   const CART_KEY = "pocket_store_cart";
+  const ANON_ID_KEY = "pocket_store_anon_id";
+  const ATTRIBUTION_KEY = "pocket_store_attribution";
+  const SESSION_ID_KEY = "pocket_store_session_id";
   const SHIPPING_PROMO_DISMISSED_KEY = "pocket_store_shipping_promo_dismissed";
+  const PULSE_ENDPOINT = document.body?.dataset.storePulseUrl || "/store/pulse";
   const storeBaseUrl = (document.body?.dataset.storeBaseUrl || "https://roxanneassoulin.com").replace(/\/+$/, "");
   const displayCurrency = document.body?.dataset.storeDisplayCurrency || "eur";
   const displayEurRate = Number.parseFloat(document.body?.dataset.storeDisplayEurRate || "0.875");
@@ -14,6 +18,132 @@
   let cartDrawerUpsellsPromise = null;
   let variants = new Map();
   let deferredMonoFontLoaded = false;
+
+  function randomId(prefix) {
+    let value = "";
+    try {
+      value = crypto.randomUUID();
+    } catch {
+      value = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    }
+    return `${prefix}_${value}`;
+  }
+
+  function getStoredValue(storage, key, createValue) {
+    try {
+      const existing = storage.getItem(key);
+      if (existing) return existing;
+      const value = createValue();
+      storage.setItem(key, value);
+      return value;
+    } catch {
+      return createValue();
+    }
+  }
+
+  function readCookie(name) {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : "";
+  }
+
+  function anonId() {
+    return getStoredValue(localStorage, ANON_ID_KEY, () => randomId("anon"));
+  }
+
+  function sessionId() {
+    return getStoredValue(sessionStorage, SESSION_ID_KEY, () => randomId("sess"));
+  }
+
+  function currentAttribution() {
+    const url = new URL(window.location.href);
+    const fields = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "gclid"];
+    let saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem(ATTRIBUTION_KEY) || "{}") || {};
+    } catch {
+      saved = {};
+    }
+
+    const next = { ...saved };
+    fields.forEach(field => {
+      const value = url.searchParams.get(field);
+      if (value) next[field] = value;
+    });
+    const fbp = readCookie("_fbp");
+    const fbc = readCookie("_fbc");
+    if (fbp) next.fbp = fbp;
+    if (fbc) next.fbc = fbc;
+
+    try {
+      localStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(next));
+    } catch {}
+    return next;
+  }
+
+  function pulsePageType() {
+    const declared = document.querySelector("[data-view]")?.dataset.view;
+    if (declared) return declared;
+    if (window.location.pathname.includes("/store/products/")) return "product";
+    if (window.location.pathname.includes("/store/collections/")) return "collection";
+    return "page";
+  }
+
+  function pulseBasePayload(eventName, data = {}) {
+    return {
+      event: eventName,
+      event_id: randomId("evt"),
+      anon_id: anonId(),
+      session_id: sessionId(),
+      url: window.location.href,
+      path: window.location.pathname,
+      title: document.title,
+      referrer: document.referrer || "",
+      page_type: pulsePageType(),
+      attribution: currentAttribution(),
+      ts: Date.now(),
+      ...data,
+    };
+  }
+
+  function sendPulse(eventName, data = {}) {
+    const body = JSON.stringify(pulseBasePayload(eventName, data));
+    const blob = new Blob([body], { type: "application/json" });
+    if (navigator.sendBeacon && navigator.sendBeacon(PULSE_ENDPOINT, blob)) return;
+    fetch(PULSE_ENDPOINT, {
+      method: "POST",
+      body,
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+    }).catch(() => {});
+  }
+
+  function schedulePulse(eventName, data = {}) {
+    const run = () => sendPulse(eventName, data);
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(run, { timeout: 2000 });
+    } else {
+      window.setTimeout(run, 0);
+    }
+  }
+
+  function sendInitialViewPulse() {
+    const pageType = pulsePageType();
+    if (pageType === "product") {
+      schedulePulse("view_item", {
+        handle: window.location.pathname.split("/").filter(Boolean).pop() || "",
+        name: document.querySelector(".product-details-top__name")?.textContent?.trim() || "",
+      });
+      return;
+    }
+    if (pageType === "collection") {
+      schedulePulse("view_collection", {
+        handle: window.location.pathname.split("/").filter(Boolean).pop() || "",
+        name: document.querySelector("h1")?.textContent?.trim() || "",
+      });
+      return;
+    }
+    schedulePulse("page_view");
+  }
 
   function loadCart() {
     try {
@@ -92,6 +222,7 @@
       cart.push({ id: variantId, qty: quantity });
     }
     saveCart(cart);
+    sendPulse("add_to_cart", { variant_id: variantId, quantity });
   }
 
   function changeQty(id, delta) {
@@ -1123,6 +1254,8 @@
     const output = root.querySelector("[data-checkout-output]");
     const url = shopifyCartPermalink();
     if (url) {
+      const itemCount = loadCart().reduce((total, item) => total + Number(item.qty || 0), 0);
+      sendPulse("begin_checkout", { item_count: itemCount, cart_url: url });
       window.location.href = url;
       return;
     }
@@ -1308,4 +1441,5 @@
   bindDeferredFooterImageHydration();
   bindDeferredMonoFont();
   renderCartPage();
+  sendInitialViewPulse();
 })();

@@ -22,7 +22,7 @@
   <link rel="preload" href="{{ store_css_asset }}" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">
   <noscript><link rel="stylesheet" href="{{ store_css_asset }}"></noscript>
 </head>
-<body data-store-base-url="{{ store_base_url }}" data-store-display-currency="{{ store_display_currency }}" data-store-display-eur-rate="{{ store_display_eur_rate }}">
+<body data-store-base-url="{{ store_base_url }}" data-store-pulse-url="/store/pulse" data-store-display-currency="{{ store_display_currency }}" data-store-display-eur-rate="{{ store_display_eur_rate }}">
   {% set store_logo_src = "https://roxanneassoulin.com/cdn/shop/t/147/assets/roxane-assoulin-logo.png?v=157219181899558921191761553533" %}
   <div class="announcement">free US shipping over $250</div>
   <header class="site-header header">
@@ -179,6 +179,6 @@
     </div>
   </footer>
 
-  <script src="/store/assets/store.min.js?v=20260606-direct-checkout" defer fetchpriority="low"></script>
+  <script src="/store/assets/store.min.js?v=20260606-pulse-events" defer fetchpriority="low"></script>
 </body>
 </html>
