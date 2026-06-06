@@ -1698,12 +1698,16 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("data-cart-page", html)
-        self.assertIn("/store/api/checkout", html)
+        self.assertIn('data-store-base-url="https://roxanneassoulin.com"', html)
+        self.assertIn('href="https://roxanneassoulin.com/cart" data-checkout', html)
+        self.assertNotIn('data-checkout-endpoint="/store/api/checkout"', html)
 
     def test_checkout_success_redirects_directly_to_shopify_cart(self):
         source = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
 
-        self.assertIn("window.location.href = data.shopify_cart_url", source)
+        self.assertIn("function shopifyCartPermalink", source)
+        self.assertIn("window.location.href = url", source)
+        self.assertNotIn("fetch(endpoint", source)
         self.assertNotIn("Open Shopify cart", source)
 
     def test_cart_page_uses_live_cart_structure(self):
@@ -1715,7 +1719,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-page", html)
         self.assertIn("cart-page__items", html)
         self.assertIn("cart-page__summary", html)
-        self.assertIn('<a class="cart-page__checkout" href="/checkout" data-checkout>Checkout</a>', html)
+        self.assertIn('<a class="cart-page__checkout" href="https://roxanneassoulin.com/cart" data-checkout>Checkout</a>', html)
         self.assertNotIn("<button class=\"cart-page__checkout\"", html)
 
     def test_cart_page_renders_live_selected_for_u_upsells(self):
@@ -1821,7 +1825,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("cart-drawer__content js-cartContent", html)
         self.assertIn("data-cart-drawer-title", html)
         self.assertIn("cart-drawer__items__container", html)
-        self.assertIn('<a class="cart-drawer__checkout button button--blue" href="/store/cart">Checkout</a>', html)
+        self.assertIn('<a class="cart-drawer__checkout button button--blue" href="https://roxanneassoulin.com/cart" data-checkout>Checkout</a>', html)
         self.assertNotIn("cart-drawer__view-cart", html)
 
     def test_cart_drawer_renders_live_upsell_carousel_shell(self):
@@ -2033,7 +2037,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260606-drawer-restore-3" defer fetchpriority="low"></script>', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260606-direct-checkout" defer fetchpriority="low"></script>', html)
 
     def test_footer_logo_is_deferred_until_scroll_for_lighthouse(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")

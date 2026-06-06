@@ -36,7 +36,9 @@ class StaticExportTest(unittest.TestCase):
         html = (self.output_dir / "store" / "index.html").read_text(encoding="utf-8")
         self.assertIn("Pocket Store", html)
         self.assertIn("/store/assets/store.home.min.css", html)
-        self.assertIn('data-checkout-endpoint="/store/api/checkout"', html)
+        self.assertIn('data-store-base-url="https://roxanneassoulin.com"', html)
+        self.assertIn('href="https://roxanneassoulin.com/cart" data-checkout', html)
+        self.assertNotIn('data-checkout-endpoint="/store/api/checkout"', html)
 
     def test_build_dist_exports_store_assets_for_pages(self):
         written = build_dist(self.output_dir)

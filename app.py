@@ -943,6 +943,7 @@ def store_template_context(**kwargs):
         "placeholder_image": STORE_PLACEHOLDER_IMAGE,
         "search_query": request.args.get("q", "").strip(),
         "store_query_url": store_query_url,
+        "store_base_url": STORE_BASE_URL,
         "store_display_currency": STORE_DISPLAY_CURRENCY,
         "store_display_eur_rate": STORE_DISPLAY_EUR_RATE,
         "cart_upsells": store_cart_upsell_products(),

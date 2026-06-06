@@ -1,6 +1,7 @@
 (function () {
   const CART_KEY = "pocket_store_cart";
   const SHIPPING_PROMO_DISMISSED_KEY = "pocket_store_shipping_promo_dismissed";
+  const storeBaseUrl = (document.body?.dataset.storeBaseUrl || "https://roxanneassoulin.com").replace(/\/+$/, "");
   const displayCurrency = document.body?.dataset.storeDisplayCurrency || "eur";
   const displayEurRate = Number.parseFloat(document.body?.dataset.storeDisplayEurRate || "0.875");
   const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -1105,26 +1106,27 @@
     input.value = String(value);
   }
 
-  async function checkout(scope = document) {
+  function shopifyCartPermalink(cart = loadCart()) {
+    const lines = cart
+      .map(item => {
+        const id = Number(item.id);
+        const qty = Math.max(0, Math.min(99, Number(item.qty || 0)));
+        if (!Number.isFinite(id) || id <= 0 || qty <= 0) return null;
+        return `${Math.trunc(id)}:${Math.trunc(qty)}`;
+      })
+      .filter(Boolean);
+    return lines.length ? `${storeBaseUrl}/cart/${lines.join(",")}` : "";
+  }
+
+  function checkout(scope = document) {
     const root = scope || document;
     const output = root.querySelector("[data-checkout-output]");
-    if (output) output.textContent = "Verifying cart...";
-    const endpoint = root.dataset.checkoutEndpoint || "/store/api/checkout";
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cartItems: loadCart() })
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      if (output) output.textContent = data.error || "Checkout failed.";
+    const url = shopifyCartPermalink();
+    if (url) {
+      window.location.href = url;
       return;
     }
-    if (data.shopify_cart_url) {
-      window.location.href = data.shopify_cart_url;
-      return;
-    }
-    if (output) output.textContent = "Checkout failed.";
+    if (output) output.textContent = "Your shopping bag is empty.";
   }
 
   document.addEventListener("click", event => {
