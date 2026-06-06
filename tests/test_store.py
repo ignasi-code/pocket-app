@@ -66,7 +66,7 @@ class StoreTest(unittest.TestCase):
             ("/store/catalog.json", 3600, 86400),
             ("/store/cart-index.json", 3600, 86400),
             ("/store/assets/store.min.js?v=20260605-js-min", 31536000, 31536000),
-            ("/store/assets/store.home.min.css?v=20260605-scope-css-menu-drawer", 31536000, 31536000),
+            ("/store/assets/store.home.min.css?v=20260606-scope-css-drawer-restore", 31536000, 31536000),
             ("/store/assets/fonts/SupremeLLWeb-Regular-store-latin.woff2", 31536000, 31536000),
         )
 
@@ -123,8 +123,8 @@ class StoreTest(unittest.TestCase):
         self.assertIn('<style data-critical-store-css>', html)
         self.assertIn(".site-header", html)
         self.assertIn(".hero__image", html)
-        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260605-scope-css-menu-drawer" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
-        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260605-scope-css-menu-drawer"></noscript>', html)
+        self.assertIn('<link rel="preload" href="/store/assets/store.home.min.css?v=20260606-scope-css-drawer-restore" as="style" fetchpriority="low" onload="this.onload=null;this.rel=&#39;stylesheet&#39;">', html)
+        self.assertIn('<noscript><link rel="stylesheet" href="/store/assets/store.home.min.css?v=20260606-scope-css-drawer-restore"></noscript>', html)
         self.assertNotIn("20260605-scope-css-cart-cls", html)
         self.assertNotIn('<link rel="stylesheet" href="/store/assets/store.css', html)
 
@@ -239,7 +239,7 @@ class StoreTest(unittest.TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
                 html = response.get_data(as_text=True)
-                href = f"/store/assets/store.{scope}.min.css?v=20260605-scope-css-menu-drawer"
+                href = f"/store/assets/store.{scope}.min.css?v=20260606-scope-css-drawer-restore"
                 self.assertIn(href, html)
                 self.assertNotIn("/store/assets/store.min.css?v=20260605-cart-cls", html)
 
@@ -1089,6 +1089,18 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn('data-variant-select', html)
         self.assertNotIn('class="product-tile__add js-quickshopOpen" type="button" data-store-add', html)
 
+    def test_product_tile_quickshop_button_is_not_nested_inside_product_link(self):
+        response = self.client.get("/store")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        button_index = html.index("data-quickshop-open")
+        article_index = html.rfind("<article", 0, button_index)
+        last_link_open = html.rfind("<a ", article_index, button_index)
+        last_link_close = html.rfind("</a>", article_index, button_index)
+
+        self.assertGreater(last_link_close, last_link_open)
+
     def test_product_tile_desktop_copy_band_matches_live_overlay_geometry(self):
         source = self.store_css_source()
 
@@ -1116,15 +1128,40 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-quickshop-close", html)
         self.assertIn("openQuickshopDrawer", source)
         self.assertIn("renderQuickshop", source)
+        self.assertIn('drawer.style.setProperty("transition", "none", "important")', source)
+        self.assertIn('drawer.style.setProperty("transform", "translateY(0)", "important")', source)
         self.assertIn("[data-quickshop-open]", source)
         self.assertIn("[data-quickshop-add]", source)
         self.assertIn("quickshop-is-open", source)
 
     def test_quickshop_open_state_has_body_scoped_transform_override(self):
         source = self.store_css_source()
+        quickshop_drawer_source = source[
+            source.index("    .quickshop__drawer {"):
+            source.index("    .quickshop__drawer[aria-hidden=\"false\"]")
+        ]
 
+        self.assertIn("height: auto;", quickshop_drawer_source)
+        self.assertIn("opacity: 1;", quickshop_drawer_source)
+        self.assertIn("top: auto;", quickshop_drawer_source)
         self.assertIn('.quickshop-is-open .quickshop__drawer[aria-hidden="false"]', source)
         self.assertIn("transform: translateY(0) !important", source)
+        self.assertIn("opacity: 1 !important", source)
+
+    def test_cart_drawer_restores_hidden_critical_geometry(self):
+        source = self.store_css_source()
+        script = (pocket.BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
+        cart_drawer_source = source[
+            source.index("    .cart-drawer {"):
+            source.index("    .cart-drawer.is-open,")
+        ]
+
+        self.assertIn("height: auto;", cart_drawer_source)
+        self.assertIn("left: auto;", cart_drawer_source)
+        self.assertIn("opacity: 1;", cart_drawer_source)
+        self.assertIn("overflow: visible;", cart_drawer_source)
+        self.assertIn('drawer.style.setProperty("left", "auto", "important")', script)
+        self.assertIn('drawer.style.setProperty("transition", "none", "important")', script)
 
     def test_store_price_labels_match_live_euro_market(self):
         product = pocket.store_product_by_handle("the-cylinder-cord-necklace-cloud-blue")
@@ -1996,7 +2033,7 @@ class StoreTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('<script src="/store/assets/store.min.js?v=20260605-cart-a11y" defer fetchpriority="low"></script>', html)
+        self.assertIn('<script src="/store/assets/store.min.js?v=20260606-drawer-restore-3" defer fetchpriority="low"></script>', html)
 
     def test_footer_logo_is_deferred_until_scroll_for_lighthouse(self):
         response = self.client.get("/store/products/the-cylinder-cord-necklace-cloud-blue")

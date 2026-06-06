@@ -2088,8 +2088,11 @@
     }
 
     .cart-drawer {
+      height: auto;
+      left: auto;
       max-width: 355px;
       opacity: 1;
+      overflow: visible;
       position: fixed;
       right: -400px;
       top: 12px;
@@ -2604,10 +2607,13 @@
       border-radius: 5px 5px 0 0;
       bottom: 0;
       box-sizing: border-box;
+      height: auto;
       min-height: 420px;
+      opacity: 1;
       overflow: hidden;
       padding: 0;
       position: fixed;
+      top: auto;
       transform: translateY(100%);
       transition: transform .35s cubic-bezier(.165,.84,.44,1), visibility 0s .35s;
       visibility: hidden;
@@ -2616,12 +2622,14 @@
     }
 
     .quickshop__drawer[aria-hidden="false"] {
+      opacity: 1;
       transform: translateY(0);
       transition: transform .35s cubic-bezier(.165,.84,.44,1);
       visibility: visible;
     }
 
     .quickshop-is-open .quickshop__drawer[aria-hidden="false"] {
+      opacity: 1 !important;
       transform: translateY(0) !important;
       visibility: visible !important;
     }

@@ -24,20 +24,20 @@
       <img class="product-tile__image__hover is-loading" data-src="{{ image_url(hover_image, 540) }}" data-srcset="{{ image_srcset(hover_image, [240, 360, 540]) }}" data-sizes="(min-width: 1024px) 25vw, 50vw" alt="" width="760" height="912" loading="lazy" decoding="async">
     </div>
     <div class="product-tile__top"></div>
-    <div class="product-card__body product-tile__details product-tile__copy__wrapper">
-      <div class="product-tile__copy">
-        <h3 class="product-card__title product-tile__title">{{ product.title }}</h3>
-        <div class="price product-tile__price">{{ price_label(product) }}</div>
-      </div>
-      {% set variant = first_variant(product) %}
-      <div class="quick-row">
-        <button class="product-tile__add js-quickshopOpen" type="button" name="add" data-quickshop-open data-handle="{{ product.handle }}" data-variant-id="{{ variant.id }}">
-          <span class="visually-hidden">open quick shop</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M12.4699 12.4697H23.4688V11.4697H12.4699V0.471011H11.4699V11.4697H0.468749V12.4697H11.4699V23.471H12.4699V12.4697Z" fill="black"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
   </a>
+  <div class="product-card__body product-tile__details product-tile__copy__wrapper">
+    <a href="/store/products/{{ product.handle }}" class="product-tile__copy">
+      <h3 class="product-card__title product-tile__title">{{ product.title }}</h3>
+      <div class="price product-tile__price">{{ price_label(product) }}</div>
+    </a>
+    {% set variant = first_variant(product) %}
+    <div class="quick-row">
+      <button class="product-tile__add js-quickshopOpen" type="button" name="add" data-quickshop-open data-handle="{{ product.handle }}" data-variant-id="{{ variant.id }}">
+        <span class="visually-hidden">open quick shop</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12.4699 12.4697H23.4688V11.4697H12.4699V0.471011H11.4699V11.4697H0.468749V12.4697H11.4699V23.471H12.4699V12.4697Z" fill="black"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
 </article>

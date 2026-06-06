@@ -763,12 +763,22 @@
     if (!drawer) return;
     drawer.classList.toggle("is-open", visible);
     if (visible) {
+      drawer.style.setProperty("height", "auto", "important");
+      drawer.style.setProperty("left", "auto", "important");
+      drawer.style.setProperty("opacity", "1", "important");
+      drawer.style.setProperty("overflow", "visible", "important");
       drawer.style.setProperty("right", cartDrawerOpenRight(), "important");
+      drawer.style.setProperty("transition", "none", "important");
       drawer.style.setProperty("transform", "none", "important");
       drawer.style.setProperty("visibility", "visible", "important");
       return;
     }
+    drawer.style.removeProperty("height");
+    drawer.style.removeProperty("left");
+    drawer.style.removeProperty("opacity");
+    drawer.style.removeProperty("overflow");
     drawer.style.removeProperty("right");
+    drawer.style.removeProperty("transition");
     drawer.style.removeProperty("transform");
     drawer.style.removeProperty("visibility");
   }
@@ -848,7 +858,24 @@
   function setQuickshopVisibility(visible) {
     const drawer = document.querySelector(".js-quickshopDrawer");
     const overlay = document.querySelector(".js-quickshopClose.quickshop__overlay");
-    if (drawer) drawer.setAttribute("aria-hidden", visible ? "false" : "true");
+    if (drawer) {
+      drawer.setAttribute("aria-hidden", visible ? "false" : "true");
+      if (visible) {
+        drawer.style.setProperty("height", "auto", "important");
+        drawer.style.setProperty("opacity", "1", "important");
+        drawer.style.setProperty("top", "auto", "important");
+        drawer.style.setProperty("transition", "none", "important");
+        drawer.style.setProperty("transform", "translateY(0)", "important");
+        drawer.style.setProperty("visibility", "visible", "important");
+      } else {
+        drawer.style.removeProperty("height");
+        drawer.style.removeProperty("opacity");
+        drawer.style.removeProperty("top");
+        drawer.style.removeProperty("transition");
+        drawer.style.removeProperty("transform");
+        drawer.style.removeProperty("visibility");
+      }
+    }
     if (overlay) overlay.setAttribute("aria-expanded", visible ? "true" : "false");
     document.body.classList.toggle("quickshop-is-open", visible);
   }
