@@ -3,3 +3,5 @@ __pycache__/
 .DS_Store
 .env
 pocket-restart.log
+dist/
+tmp-test-dist/

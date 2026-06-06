@@ -89,6 +89,22 @@ The browser owns cart state in `localStorage`. The mock checkout endpoint verifi
 /store/api/checkout
 ```
 
+## Cloudflare Pages static export
+
+The public static shell can be exported for Cloudflare Pages with:
+
+```bash
+.venv/bin/python scripts/export_pages.py
+```
+
+This writes a generated `dist/` folder with `/`, `/bp`, store pages, store assets, catalog JSON, cart JSON, fragments, and a Pages `_headers` file. Configure Cloudflare Pages with:
+
+```text
+Build command: python3 -m pip install -r requirements.txt && python3 scripts/export_pages.py
+Build output directory: dist
+Production branch: master
+```
+
 Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`. Unattended `/ops` automation should use HMAC headers instead of open mode. The HMAC message is:
 
 ```text
