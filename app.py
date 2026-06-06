@@ -85,6 +85,11 @@ STORE_DISPLAY_CURRENCY = os.environ.get("POCKET_STORE_DISPLAY_CURRENCY", "eur").
 STORE_DISPLAY_EUR_RATE = float(os.environ.get("POCKET_STORE_DISPLAY_EUR_RATE", "0.875"))
 STORE_COLLECTION_INITIAL_PRODUCT_LIMIT = 12
 STORE_IMAGE_QUALITY = 60
+STORE_HTML_BROWSER_CACHE_SECONDS = 300
+STORE_HTML_EDGE_CACHE_SECONDS = 86400
+STORE_DATA_BROWSER_CACHE_SECONDS = 3600
+STORE_DATA_EDGE_CACHE_SECONDS = 86400
+STORE_ASSET_CACHE_SECONDS = 31536000
 STORE_CART_UPSELL_HANDLES = [
     "the-salt-pepper-cylinder-bracelet-stack",
     "the-pearl-branch-bracelet",
@@ -951,8 +956,44 @@ def minify_store_html(html):
     return re.sub(r">\s+<", "><", html.strip())
 
 
+def apply_cache_headers(response, browser_max_age, edge_max_age=None, immutable=False):
+    browser_directives = ["public", f"max-age={browser_max_age}"]
+    edge_directives = ["public", f"max-age={edge_max_age if edge_max_age is not None else browser_max_age}"]
+    if immutable:
+        browser_directives.append("immutable")
+        edge_directives.append("immutable")
+    else:
+        browser_directives.extend(["stale-while-revalidate=3600", "stale-if-error=86400"])
+    edge_directives.extend(["stale-while-revalidate=604800", "stale-if-error=604800"])
+    edge_value = ", ".join(edge_directives)
+
+    response.headers["Cache-Control"] = ", ".join(browser_directives)
+    response.headers["CDN-Cache-Control"] = edge_value
+    response.headers["Cloudflare-CDN-Cache-Control"] = edge_value
+    return response
+
+
+def apply_no_store_headers(response):
+    response.headers["Cache-Control"] = "no-store"
+    response.headers.pop("CDN-Cache-Control", None)
+    response.headers.pop("Cloudflare-CDN-Cache-Control", None)
+    return response
+
+
+def store_json_response(payload, status=200, no_store=False):
+    response = jsonify(payload)
+    if no_store:
+        apply_no_store_headers(response)
+    return response, status
+
+
 def render_store_template(template_name, **context):
-    return minify_store_html(render_template(template_name, **context))
+    response = Response(minify_store_html(render_template(template_name, **context)), mimetype="text/html")
+    return apply_cache_headers(
+        response,
+        STORE_HTML_BROWSER_CACHE_SECONDS,
+        STORE_HTML_EDGE_CACHE_SECONDS,
+    )
 
 
 def store_variant_lookup():
@@ -2444,8 +2485,11 @@ def store_collection_products_fragment(handle):
         ),
     ))
     response = Response(html, mimetype="text/html")
-    response.headers["Cache-Control"] = "public, max-age=3600"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_DATA_BROWSER_CACHE_SECONDS,
+        STORE_DATA_EDGE_CACHE_SECONDS,
+    )
 
 
 @app.route("/store/products/<handle>")
@@ -2482,8 +2526,11 @@ def store_cart_upsells_fragment():
         **store_template_context(cart_upsells=store_cart_upsell_products()),
     ))
     response = Response(html, mimetype="text/html")
-    response.headers["Cache-Control"] = "public, max-age=3600"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_DATA_BROWSER_CACHE_SECONDS,
+        STORE_DATA_EDGE_CACHE_SECONDS,
+    )
 
 
 @app.route("/store/cart-drawer-upsells-fragment")
@@ -2493,8 +2540,11 @@ def store_cart_drawer_upsells_fragment():
         **store_template_context(cart_upsells=store_cart_upsell_products()),
     ))
     response = Response(html, mimetype="text/html")
-    response.headers["Cache-Control"] = "public, max-age=3600"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_DATA_BROWSER_CACHE_SECONDS,
+        STORE_DATA_EDGE_CACHE_SECONDS,
+    )
 
 
 @app.route("/store/assets/store.js")
@@ -2502,10 +2552,14 @@ def store_asset_js():
     response = send_file(
         BASE_DIR / "pages" / "store" / "store.js",
         mimetype="text/javascript",
-        max_age=31536000,
+        max_age=STORE_ASSET_CACHE_SECONDS,
     )
-    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_ASSET_CACHE_SECONDS,
+        STORE_ASSET_CACHE_SECONDS,
+        immutable=True,
+    )
 
 
 def minify_store_js(js):
@@ -2520,8 +2574,12 @@ def minify_store_js(js):
 def store_asset_min_js():
     js = (BASE_DIR / "pages" / "store" / "store.js").read_text(encoding="utf-8")
     response = Response(minify_store_js(js), mimetype="text/javascript")
-    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_ASSET_CACHE_SECONDS,
+        STORE_ASSET_CACHE_SECONDS,
+        immutable=True,
+    )
 
 
 @app.route("/store/assets/store.css")
@@ -2529,10 +2587,14 @@ def store_asset_css():
     response = send_file(
         BASE_DIR / "pages" / "store" / "store.css",
         mimetype="text/css",
-        max_age=31536000,
+        max_age=STORE_ASSET_CACHE_SECONDS,
     )
-    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_ASSET_CACHE_SECONDS,
+        STORE_ASSET_CACHE_SECONDS,
+        immutable=True,
+    )
 
 
 STORE_FONT_ASSETS = {
@@ -2598,10 +2660,14 @@ def store_asset_font(filename):
     response = send_file(
         BASE_DIR / "pages" / "store" / "fonts" / filename,
         mimetype="font/woff2",
-        max_age=31536000,
+        max_age=STORE_ASSET_CACHE_SECONDS,
     )
-    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_ASSET_CACHE_SECONDS,
+        STORE_ASSET_CACHE_SECONDS,
+        immutable=True,
+    )
 
 
 def minify_store_css(css):
@@ -2689,8 +2755,12 @@ def filter_store_css_for_scope(css, scope):
 def store_asset_min_css():
     css = (BASE_DIR / "pages" / "store" / "store.css").read_text(encoding="utf-8")
     response = Response(minify_store_css(css), mimetype="text/css")
-    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_ASSET_CACHE_SECONDS,
+        STORE_ASSET_CACHE_SECONDS,
+        immutable=True,
+    )
 
 
 @app.route("/store/assets/store.<scope>.min.css")
@@ -2700,15 +2770,22 @@ def store_asset_scoped_min_css(scope):
     css = (BASE_DIR / "pages" / "store" / "store.css").read_text(encoding="utf-8")
     scoped_css = filter_store_css_for_scope(css, scope)
     response = Response(minify_store_css(scoped_css), mimetype="text/css")
-    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_ASSET_CACHE_SECONDS,
+        STORE_ASSET_CACHE_SECONDS,
+        immutable=True,
+    )
 
 
 @app.route("/store/catalog.json")
 def store_catalog():
-    response = send_file(STORE_CATALOG_PATH, mimetype="application/json", max_age=3600)
-    response.headers["Cache-Control"] = "public, max-age=3600"
-    return response
+    response = send_file(STORE_CATALOG_PATH, mimetype="application/json", max_age=STORE_DATA_BROWSER_CACHE_SECONDS)
+    return apply_cache_headers(
+        response,
+        STORE_DATA_BROWSER_CACHE_SECONDS,
+        STORE_DATA_EDGE_CACHE_SECONDS,
+    )
 
 
 @app.route("/store/cart-index.json")
@@ -2717,8 +2794,11 @@ def store_cart_index():
         json.dumps(store_cart_index_payload(), separators=(",", ":")),
         mimetype="application/json",
     )
-    response.headers["Cache-Control"] = "public, max-age=3600"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_DATA_BROWSER_CACHE_SECONDS,
+        STORE_DATA_EDGE_CACHE_SECONDS,
+    )
 
 
 @app.route("/store/cart-items.json")
@@ -2730,8 +2810,11 @@ def store_cart_items():
         ),
         mimetype="application/json",
     )
-    response.headers["Cache-Control"] = "public, max-age=3600"
-    return response
+    return apply_cache_headers(
+        response,
+        STORE_DATA_BROWSER_CACHE_SECONDS,
+        STORE_DATA_EDGE_CACHE_SECONDS,
+    )
 
 
 @app.route("/store/api/checkout", methods=["POST"])
@@ -2740,18 +2823,18 @@ def store_mock_checkout():
     cart_items = data.get("cartItems")
 
     if not isinstance(cart_items, list):
-        return jsonify({"error": "cartItems must be an array."}), 400
+        return store_json_response({"error": "cartItems must be an array."}, 400, no_store=True)
     if not cart_items:
-        return jsonify({"error": "Cart is empty."}), 400
+        return store_json_response({"error": "Cart is empty."}, 400, no_store=True)
     if len(cart_items) > 100:
-        return jsonify({"error": "Cart has too many lines."}), 400
+        return store_json_response({"error": "Cart has too many lines."}, 400, no_store=True)
 
     try:
         variants = store_variant_lookup()
     except OSError as exc:
-        return jsonify({"error": f"Store catalog is unavailable: {exc}"}), 500
+        return store_json_response({"error": f"Store catalog is unavailable: {exc}"}, 500, no_store=True)
     except json.JSONDecodeError as exc:
-        return jsonify({"error": f"Store catalog is invalid: {exc}"}), 500
+        return store_json_response({"error": f"Store catalog is invalid: {exc}"}, 500, no_store=True)
 
     verified_items = []
     subtotal_cents = 0
@@ -2787,9 +2870,9 @@ def store_mock_checkout():
                 "line_total": format_price(line_total_cents),
             })
     except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
+        return store_json_response({"error": str(exc)}, 400, no_store=True)
 
-    return jsonify({
+    return store_json_response({
         "mode": "mock",
         "currency": STORE_CURRENCY,
         "item_count": sum(item["qty"] for item in verified_items),
@@ -2797,7 +2880,7 @@ def store_mock_checkout():
         "subtotal": format_price(subtotal_cents),
         "line_items": verified_items,
         "shopify_cart_url": f"{STORE_BASE_URL}/cart/{','.join(permalink_parts)}",
-    })
+    }, no_store=True)
 
 
 @app.route("/stats")

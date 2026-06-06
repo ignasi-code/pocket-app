@@ -34,6 +34,62 @@ class StoreTest(unittest.TestCase):
         self.assertIn("data-quickshop-open", html)
         self.assertIn("/store/cart", html)
 
+    def assert_edge_cache_headers(self, response, browser_max_age, edge_max_age):
+        cache_control = response.headers.get("Cache-Control", "")
+        cdn_cache_control = response.headers.get("CDN-Cache-Control", "")
+        cloudflare_cache_control = response.headers.get("Cloudflare-CDN-Cache-Control", "")
+
+        self.assertIn("public", cache_control)
+        self.assertIn(f"max-age={browser_max_age}", cache_control)
+        self.assertIn(f"max-age={edge_max_age}", cdn_cache_control)
+        self.assertIn("stale-while-revalidate", cdn_cache_control)
+        self.assertEqual(cdn_cache_control, cloudflare_cache_control)
+
+    def test_store_browsing_routes_are_explicitly_edge_cacheable(self):
+        cases = (
+            "/store",
+            "/store/collections/new-arrivals",
+            "/store/products/the-cylinder-cord-necklace-cloud-blue",
+            "/store/cart",
+        )
+
+        for path in cases:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.addCleanup(response.close)
+
+                self.assertEqual(response.status_code, 200)
+                self.assert_edge_cache_headers(response, browser_max_age=300, edge_max_age=86400)
+
+    def test_store_data_and_assets_expose_edge_cache_headers(self):
+        cases = (
+            ("/store/catalog.json", 3600, 86400),
+            ("/store/cart-index.json", 3600, 86400),
+            ("/store/assets/store.min.js?v=20260605-js-min", 31536000, 31536000),
+            ("/store/assets/store.home.min.css?v=20260605-scope-css-menu-drawer", 31536000, 31536000),
+            ("/store/assets/fonts/SupremeLLWeb-Regular-store-latin.woff2", 31536000, 31536000),
+        )
+
+        for path, browser_max_age, edge_max_age in cases:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.addCleanup(response.close)
+
+                self.assertEqual(response.status_code, 200)
+                self.assert_edge_cache_headers(response, browser_max_age, edge_max_age)
+
+    def test_store_checkout_api_is_never_cacheable(self):
+        _product, variant = self.first_available_variant()
+        response = self.client.post(
+            "/store/api/checkout",
+            json={"cartItems": [{"id": int(variant["id"]), "qty": 1}]},
+        )
+        self.addCleanup(response.close)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("Cache-Control"), "no-store")
+        self.assertNotIn("CDN-Cache-Control", response.headers)
+
     def test_store_base_declares_inline_favicon_to_avoid_browser_404(self):
         response = self.client.get("/store")
 
