@@ -2228,6 +2228,12 @@ def home():
     return send_file(BASE_DIR / "pages" / "index.html")
 
 
+@app.route("/bp")
+@app.route("/bp/")
+def bp_home():
+    return send_file(BASE_DIR / "pages" / "bp" / "index.html")
+
+
 @app.route("/terminal")
 def terminal_page():
     return render_template_string(
