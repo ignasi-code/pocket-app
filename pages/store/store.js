@@ -307,6 +307,23 @@
     return cartCatalogPromise;
   }
 
+  function waitForCartStyles() {
+    const link = Array.from(document.querySelectorAll('link[href*="store.cart.min.css"]'))
+      .find(node => node.href);
+    if (!link || link.rel === "stylesheet" || link.sheet) return Promise.resolve();
+    return new Promise(resolve => {
+      let resolved = false;
+      const done = () => {
+        if (resolved) return;
+        resolved = true;
+        resolve();
+      };
+      link.addEventListener("load", done, { once: true });
+      link.addEventListener("error", done, { once: true });
+      window.setTimeout(done, 500);
+    });
+  }
+
   async function productByHandle(handle) {
     const data = await loadCatalog();
     return (data.products || []).find(product => product.handle === handle);
@@ -770,7 +787,7 @@
       return;
     }
 
-    await loadCartCatalog(rawCart);
+    await Promise.all([loadCartCatalog(rawCart), waitForCartStyles()]);
     const cart = rawCart.filter(item => variants.has(Number(item.id)));
     saveCart(cart, { renderDrawer: false });
 
@@ -797,7 +814,7 @@
           <div class="cart-page__item__copy">
             <div class="cart-page__item__details">
               <a class="cart-page__item__image-mobile cart-page__item__image-mobile--top" href="${productUrl}" aria-label="${escapeHtml(meta.product.title)}">
-                <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant, 180)}" alt="">
+                <img class="cart-page__item__image" src="${productImage(meta.product, meta.variant, 180)}" alt="" width="180" height="216">
               </a>
               <a class="cart-page__item__title" href="${productUrl}">${escapeHtml(meta.product.title)}</a>
               <strong class="cart-page__item__line-price">${formatDisplayAmount(lineTotal)}</strong>

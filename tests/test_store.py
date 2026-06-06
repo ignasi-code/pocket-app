@@ -1808,6 +1808,17 @@ class StoreTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn('<div class="cart-page__items" data-cart-lines style="min-height: 497px"></div>', html)
 
+    def test_cart_runtime_waits_for_cart_styles_before_inserting_lines(self):
+        source = self.store_js_source()
+        cart_page_source = source[
+            source.index("async function renderCartPage()"):
+            source.index("async function renderCartDrawer()")
+        ]
+
+        self.assertIn("function waitForCartStyles", source)
+        self.assertIn("await Promise.all([loadCartCatalog(rawCart), waitForCartStyles()]);", cart_page_source)
+        self.assertIn('width="180" height="216"', cart_page_source)
+
     def test_cart_empty_state_keeps_centered_live_treatment(self):
         source = self.store_css_source()
 
@@ -2172,7 +2183,7 @@ class StoreTest(unittest.TestCase):
         self.assertIn("function cartCatalogUrl(cart)", source)
         self.assertIn('return `/store/cart-items.json?ids=${ids.join(",")}`;', source)
         self.assertIn('return "/store/cart-index.json";', source)
-        self.assertIn("await loadCartCatalog(rawCart);", cart_page_source)
+        self.assertIn("await Promise.all([loadCartCatalog(rawCart), waitForCartStyles()]);", cart_page_source)
         self.assertIn("await loadCartCatalog(rawCart);", cart_drawer_source)
         self.assertNotIn("await loadCatalog();", cart_page_source)
         self.assertNotIn("await loadCatalog();", cart_drawer_source)
