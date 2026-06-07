@@ -1,0 +1,217 @@
+{
+  "sourceUrl": "https://www.methodiq.com/clarixa",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "type": "verified-dom-screenshots",
+  "captures": [
+    {
+      "file": "source-header.png",
+      "box": {
+        "height": 59,
+        "width": 430,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "file": "source-hero-copy.png",
+      "box": {
+        "height": 342,
+        "width": 430,
+        "x": 0,
+        "y": 59
+      }
+    },
+    {
+      "file": "source-media-carousel.png",
+      "box": {
+        "height": 408,
+        "width": 430,
+        "x": 0,
+        "y": 401
+      }
+    },
+    {
+      "file": "source-hero-cta.png",
+      "box": {
+        "height": 80,
+        "width": 398,
+        "x": 16,
+        "y": 809
+      }
+    },
+    {
+      "file": "source-attribute-summary.png",
+      "box": {
+        "height": 209,
+        "width": 398,
+        "x": 16,
+        "y": 929
+      }
+    },
+    {
+      "file": "source-treatment-banner.png",
+      "box": {
+        "height": 102,
+        "width": 398,
+        "x": 16,
+        "y": 1194
+      }
+    },
+    {
+      "file": "source-subscription-card.png",
+      "box": {
+        "height": 323,
+        "width": 398,
+        "x": 16,
+        "y": 1352
+      }
+    },
+    {
+      "file": "source-one-time-add.png",
+      "box": {
+        "x": 16,
+        "y": 1352,
+        "width": 398,
+        "height": 456
+      }
+    },
+    {
+      "file": "source-benefits-icons.png",
+      "box": {
+        "height": 155,
+        "width": 430,
+        "x": 0,
+        "y": 1808
+      }
+    },
+    {
+      "file": "source-accordion-expanded.png",
+      "box": {
+        "height": 287,
+        "width": 398,
+        "x": 16,
+        "y": 1963
+      }
+    },
+    {
+      "file": "source-accordion-stack.png",
+      "box": {
+        "x": 16,
+        "y": 2250,
+        "width": 398,
+        "height": 170
+      }
+    },
+    {
+      "file": "source-results-diagnostics.png",
+      "box": {
+        "height": 986,
+        "width": 430,
+        "x": 0,
+        "y": 2500
+      }
+    },
+    {
+      "file": "source-review-highlights.png",
+      "box": {
+        "height": 694.203125,
+        "width": 430,
+        "x": 0,
+        "y": 3566
+      }
+    },
+    {
+      "file": "source-power-of-clarixa.png",
+      "box": {
+        "height": 1096,
+        "width": 430,
+        "x": 0,
+        "y": 4340.203125
+      }
+    },
+    {
+      "file": "source-metabolism-effectiveness.png",
+      "box": {
+        "height": 1044,
+        "width": 430,
+        "x": 0,
+        "y": 5516.203125
+      }
+    },
+    {
+      "file": "source-root-cause-difference.png",
+      "box": {
+        "height": 792,
+        "width": 430,
+        "x": 0,
+        "y": 6640.203125
+      }
+    },
+    {
+      "file": "source-comparison-and-process.png",
+      "box": {
+        "height": 934,
+        "width": 430,
+        "x": 0,
+        "y": 7512.203125
+      }
+    },
+    {
+      "file": "source-assessment-and-faq.png",
+      "box": {
+        "height": 631.5,
+        "width": 430,
+        "x": 0,
+        "y": 8526.203125
+      }
+    },
+    {
+      "file": "source-related-products-and-review-header.png",
+      "box": {
+        "height": 612.5,
+        "width": 430,
+        "x": 0,
+        "y": 9237.703125
+      }
+    },
+    {
+      "file": "source-review-list-first.png",
+      "box": {
+        "x": 0,
+        "y": 9910,
+        "width": 430,
+        "height": 1103
+      }
+    },
+    {
+      "file": "source-review-list-middle.png",
+      "box": {
+        "x": 16,
+        "y": 11053,
+        "width": 398,
+        "height": 1001
+      }
+    },
+    {
+      "file": "source-review-list-last.png",
+      "box": {
+        "x": 16,
+        "y": 12094,
+        "width": 398,
+        "height": 938
+      }
+    },
+    {
+      "file": "source-final-cta-footer.png",
+      "box": {
+        "height": 801,
+        "width": 430,
+        "x": 0,
+        "y": 13112.2421875
+      }
+    }
+  ]
+}

@@ -7,18 +7,18 @@
     "height": 932
   },
   "sourceCapture": {
-    "type": "verified-scroll-slices",
-    "manifest": "../assets/source-clarixa-slices/manifest.json"
+    "type": "verified-dom-screenshots",
+    "manifest": "../assets/source-clarixa-dom/manifest.json"
   },
   "coverage": {
     "mode": "full-scroll",
     "sourceHeight": 13913,
     "skeletonHeight": 13173,
-    "coveredBy": "source-clarixa-slices",
+    "coveredBy": "source-clarixa-dom",
     "skeletonCoveredBy": "work/skeleton-shots/clarixa-slices",
     "skeletonCaptureMode": "stitched-scroll-slices",
     "skeletonCoverage": "component-specific",
-    "sourceCropMode": "component-boundary-sticky-suppressed",
+    "sourceCaptureMode": "dom-element-screenshots",
     "stickyChromeSuppressed": true,
     "uncoveredRanges": []
   },
@@ -29,15 +29,15 @@
       "sourceFile": "source-header.jpg",
       "skeletonFile": "skeleton-header.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-00.png",
+            "image": "assets/source-clarixa-dom/source-header.png",
             "box": [
               0,
               0,
-              430,
-              59
+              9999,
+              9999
             ]
           }
         ],
@@ -59,15 +59,15 @@
       "sourceFile": "source-hero-copy.jpg",
       "skeletonFile": "skeleton-hero-copy.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-00.png",
+            "image": "assets/source-clarixa-dom/source-hero-copy.png",
             "box": [
               0,
-              59,
-              430,
-              342
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -89,15 +89,15 @@
       "sourceFile": "source-media-carousel.jpg",
       "skeletonFile": "skeleton-media-carousel.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-00.png",
+            "image": "assets/source-clarixa-dom/source-media-carousel.png",
             "box": [
               0,
-              401,
-              430,
-              408
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -119,15 +119,15 @@
       "sourceFile": "source-hero-cta.jpg",
       "skeletonFile": "skeleton-hero-cta.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-00.png",
+            "image": "assets/source-clarixa-dom/source-hero-cta.png",
             "box": [
               0,
-              809,
-              430,
-              120
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -149,15 +149,15 @@
       "sourceFile": "source-attribute-summary.jpg",
       "skeletonFile": "skeleton-attribute-summary.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-01.png",
+            "image": "assets/source-clarixa-dom/source-attribute-summary.png",
             "box": [
               0,
               0,
-              430,
-              265
+              9999,
+              9999
             ]
           }
         ],
@@ -179,15 +179,15 @@
       "sourceFile": "source-treatment-banner.jpg",
       "skeletonFile": "skeleton-treatment-banner.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-01.png",
+            "image": "assets/source-clarixa-dom/source-treatment-banner.png",
             "box": [
               0,
-              270,
-              430,
-              112
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -209,15 +209,15 @@
       "sourceFile": "source-subscription-card.jpg",
       "skeletonFile": "skeleton-subscription-card.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-01.png",
+            "image": "assets/source-clarixa-dom/source-subscription-card.png",
             "box": [
-              16,
-              405,
-              398,
-              325
+              0,
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -239,24 +239,15 @@
       "sourceFile": "source-one-time-add.jpg",
       "skeletonFile": "skeleton-one-time-add.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-01.png",
+            "image": "assets/source-clarixa-dom/source-one-time-add.png",
             "box": [
               0,
-              745,
-              430,
-              187
-            ]
-          },
-          {
-            "image": "assets/source-clarixa-slices/source-clarixa-02.png",
-            "box": [
               0,
-              59,
-              430,
-              90
+              9999,
+              9999
             ]
           }
         ],
@@ -278,15 +269,15 @@
       "sourceFile": "source-benefits-icons.jpg",
       "skeletonFile": "skeleton-benefits-icons.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-02.png",
+            "image": "assets/source-clarixa-dom/source-benefits-icons.png",
             "box": [
               0,
-              70,
-              430,
-              155
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -308,15 +299,15 @@
       "sourceFile": "source-accordion-expanded.jpg",
       "skeletonFile": "skeleton-accordion-expanded.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-02.png",
+            "image": "assets/source-clarixa-dom/source-accordion-expanded.png",
             "box": [
               0,
-              225,
-              430,
-              360
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -338,15 +329,15 @@
       "sourceFile": "source-accordion-stack.jpg",
       "skeletonFile": "skeleton-accordion-stack.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-02.png",
+            "image": "assets/source-clarixa-dom/source-accordion-stack.png",
             "box": [
               0,
-              585,
-              430,
-              280
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -368,15 +359,15 @@
       "sourceFile": "source-results-diagnostics.jpg",
       "skeletonFile": "skeleton-results-diagnostics.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-03.png",
+            "image": "assets/source-clarixa-dom/source-results-diagnostics.png",
             "box": [
               0,
-              59,
-              430,
-              873
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -398,15 +389,15 @@
       "sourceFile": "source-review-highlights.jpg",
       "skeletonFile": "skeleton-review-highlights.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-04.png",
+            "image": "assets/source-clarixa-dom/source-review-highlights.png",
             "box": [
               0,
-              185,
-              430,
-              630
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -428,24 +419,15 @@
       "sourceFile": "source-power-of-clarixa.jpg",
       "skeletonFile": "skeleton-power-of-clarixa.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-05.png",
+            "image": "assets/source-clarixa-dom/source-power-of-clarixa.png",
             "box": [
               0,
-              112,
-              430,
-              820
-            ]
-          },
-          {
-            "image": "assets/source-clarixa-slices/source-clarixa-06.png",
-            "box": [
               0,
-              60,
-              430,
-              300
+              9999,
+              9999
             ]
           }
         ],
@@ -467,15 +449,15 @@
       "sourceFile": "source-metabolism-effectiveness.jpg",
       "skeletonFile": "skeleton-metabolism-effectiveness.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-06.png",
+            "image": "assets/source-clarixa-dom/source-metabolism-effectiveness.png",
             "box": [
               0,
-              390,
-              430,
-              542
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -497,15 +479,15 @@
       "sourceFile": "source-root-cause-difference.jpg",
       "skeletonFile": "skeleton-root-cause-difference.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-07.png",
+            "image": "assets/source-clarixa-dom/source-root-cause-difference.png",
             "box": [
               0,
-              60,
-              430,
-              820
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -527,33 +509,15 @@
       "sourceFile": "source-comparison-and-process.jpg",
       "skeletonFile": "skeleton-comparison-and-process.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-07.png",
+            "image": "assets/source-clarixa-dom/source-comparison-and-process.png",
             "box": [
               0,
-              880,
-              430,
-              52
-            ]
-          },
-          {
-            "image": "assets/source-clarixa-slices/source-clarixa-08.png",
-            "box": [
               0,
-              60,
-              430,
-              540
-            ]
-          },
-          {
-            "image": "assets/source-clarixa-slices/source-clarixa-08.png",
-            "box": [
-              0,
-              690,
-              430,
-              242
+              9999,
+              9999
             ]
           }
         ],
@@ -575,24 +539,15 @@
       "sourceFile": "source-assessment-and-faq.jpg",
       "skeletonFile": "skeleton-assessment-and-faq.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-09.png",
+            "image": "assets/source-clarixa-dom/source-assessment-and-faq.png",
             "box": [
               0,
-              100,
-              430,
-              832
-            ]
-          },
-          {
-            "image": "assets/source-clarixa-slices/source-clarixa-10.png",
-            "box": [
               0,
-              60,
-              430,
-              620
+              9999,
+              9999
             ]
           }
         ],
@@ -614,24 +569,15 @@
       "sourceFile": "source-related-products-and-review-header.jpg",
       "skeletonFile": "skeleton-related-products-and-review-header.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-10.png",
+            "image": "assets/source-clarixa-dom/source-related-products-and-review-header.png",
             "box": [
               0,
-              700,
-              430,
-              232
-            ]
-          },
-          {
-            "image": "assets/source-clarixa-slices/source-clarixa-11.png",
-            "box": [
               0,
-              60,
-              430,
-              840
+              9999,
+              9999
             ]
           }
         ],
@@ -653,15 +599,15 @@
       "sourceFile": "source-review-list-first.jpg",
       "skeletonFile": "skeleton-review-list-first.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-12.png",
+            "image": "assets/source-clarixa-dom/source-review-list-first.png",
             "box": [
               0,
-              60,
-              430,
-              872
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -683,15 +629,15 @@
       "sourceFile": "source-review-list-middle.jpg",
       "skeletonFile": "skeleton-review-list-middle.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-13.png",
+            "image": "assets/source-clarixa-dom/source-review-list-middle.png",
             "box": [
               0,
-              60,
-              430,
-              872
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -713,15 +659,15 @@
       "sourceFile": "source-review-list-last.jpg",
       "skeletonFile": "skeleton-review-list-last.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-14.png",
+            "image": "assets/source-clarixa-dom/source-review-list-last.png",
             "box": [
               0,
-              60,
-              430,
-              872
+              0,
+              9999,
+              9999
             ]
           }
         ],
@@ -743,15 +689,15 @@
       "sourceFile": "source-final-cta-footer.jpg",
       "skeletonFile": "skeleton-final-cta-footer.jpg",
       "sourceCapture": {
-        "type": "verified-scroll-slices",
+        "type": "verified-dom-screenshots",
         "parts": [
           {
-            "image": "assets/source-clarixa-slices/source-clarixa-16.png",
+            "image": "assets/source-clarixa-dom/source-final-cta-footer.png",
             "box": [
               0,
-              60,
-              430,
-              872
+              0,
+              9999,
+              9999
             ]
           }
         ],
