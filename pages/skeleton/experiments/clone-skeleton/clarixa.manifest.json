@@ -1,0 +1,126 @@
+{
+  "url": "https://www.methodiq.com/clarixa",
+  "capturedUrl": "https://www.methodiq.com/clarixa",
+  "title": "METHODIQ",
+  "generatedAt": "2026-06-07T22:34:06.935Z",
+  "viewport": {
+    "height": 932,
+    "width": 430
+  },
+  "page": {
+    "width": 430,
+    "height": 13913
+  },
+  "technique": "clone-dom-computed-rectangles",
+  "items": 376,
+  "sections": [
+    {
+      "h": 13854.2,
+      "id": "section-00",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 59
+    },
+    {
+      "h": 2361,
+      "id": "section-01",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 59
+    },
+    {
+      "h": 986,
+      "id": "section-02",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 2500
+    },
+    {
+      "h": 694.2,
+      "id": "section-03",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 3566
+    },
+    {
+      "h": 1096,
+      "id": "section-04",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 4340.2
+    },
+    {
+      "h": 1044,
+      "id": "section-05",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 5516.2
+    },
+    {
+      "h": 792,
+      "id": "section-06",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 6640.2
+    },
+    {
+      "h": 934,
+      "id": "section-07",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 7512.2
+    },
+    {
+      "h": 631.5,
+      "id": "section-08",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 8526.2
+    },
+    {
+      "h": 612.5,
+      "id": "section-09",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 9237.7
+    },
+    {
+      "h": 3102,
+      "id": "section-10",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 9930.2
+    },
+    {
+      "h": 801,
+      "id": "section-11",
+      "sticky": false,
+      "tag": "div",
+      "w": 430,
+      "x": 0,
+      "y": 13112.2
+    }
+  ]
+}

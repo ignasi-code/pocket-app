@@ -1,0 +1,13 @@
+{
+  "url": "https://www.methodiq.com/clarixa",
+  "capturedUrl": "https://www.methodiq.com/clarixa",
+  "generatedAt": "2026-06-07T23:08:44.167Z",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "renderedHeight": 13875,
+  "textLineCount": 337,
+  "mediaBoxCount": 81,
+  "technique": "headful-cdp-dom-clone-then-skeleton"
+}

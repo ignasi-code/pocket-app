@@ -1,0 +1,13 @@
+{
+  "captureMode": "headful-cdp-fullpage",
+  "capturedAt": "2026-06-07T22:57:11.392Z",
+  "url": "https://www.methodiq.com/clarixa",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "renderedHeight": 13875,
+  "blocked": false,
+  "title": "METHODIQ",
+  "output": "/Users/ignasi/Documents/Codex/2026-06-07/do-you-know-how-react-and/outputs/assets/source-clarixa.png"
+}
