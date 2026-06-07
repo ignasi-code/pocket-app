@@ -18,6 +18,8 @@
     "skeletonCoveredBy": "work/skeleton-shots/clarixa-slices",
     "skeletonCaptureMode": "stitched-scroll-slices",
     "skeletonCoverage": "component-specific",
+    "sourceCropMode": "component-boundary-sticky-suppressed",
+    "stickyChromeSuppressed": true,
     "uncoveredRanges": []
   },
   "components": [
@@ -372,9 +374,9 @@
             "image": "assets/source-clarixa-slices/source-clarixa-03.png",
             "box": [
               0,
-              0,
+              59,
               430,
-              932
+              873
             ]
           }
         ],
@@ -402,9 +404,9 @@
             "image": "assets/source-clarixa-slices/source-clarixa-04.png",
             "box": [
               0,
-              0,
+              185,
               430,
-              932
+              630
             ]
           }
         ],
@@ -432,9 +434,18 @@
             "image": "assets/source-clarixa-slices/source-clarixa-05.png",
             "box": [
               0,
-              0,
+              112,
               430,
-              932
+              820
+            ]
+          },
+          {
+            "image": "assets/source-clarixa-slices/source-clarixa-06.png",
+            "box": [
+              0,
+              60,
+              430,
+              300
             ]
           }
         ],
@@ -462,9 +473,9 @@
             "image": "assets/source-clarixa-slices/source-clarixa-06.png",
             "box": [
               0,
-              0,
+              390,
               430,
-              932
+              542
             ]
           }
         ],
@@ -492,9 +503,9 @@
             "image": "assets/source-clarixa-slices/source-clarixa-07.png",
             "box": [
               0,
-              0,
+              60,
               430,
-              932
+              820
             ]
           }
         ],
@@ -519,12 +530,30 @@
         "type": "verified-scroll-slices",
         "parts": [
           {
+            "image": "assets/source-clarixa-slices/source-clarixa-07.png",
+            "box": [
+              0,
+              880,
+              430,
+              52
+            ]
+          },
+          {
             "image": "assets/source-clarixa-slices/source-clarixa-08.png",
             "box": [
               0,
-              0,
+              60,
               430,
-              932
+              540
+            ]
+          },
+          {
+            "image": "assets/source-clarixa-slices/source-clarixa-08.png",
+            "box": [
+              0,
+              690,
+              430,
+              242
             ]
           }
         ],
@@ -552,18 +581,18 @@
             "image": "assets/source-clarixa-slices/source-clarixa-09.png",
             "box": [
               0,
-              0,
+              100,
               430,
-              932
+              832
             ]
           },
           {
             "image": "assets/source-clarixa-slices/source-clarixa-10.png",
             "box": [
               0,
-              0,
+              60,
               430,
-              700
+              620
             ]
           }
         ],
@@ -588,12 +617,21 @@
         "type": "verified-scroll-slices",
         "parts": [
           {
+            "image": "assets/source-clarixa-slices/source-clarixa-10.png",
+            "box": [
+              0,
+              700,
+              430,
+              232
+            ]
+          },
+          {
             "image": "assets/source-clarixa-slices/source-clarixa-11.png",
             "box": [
               0,
-              0,
+              60,
               430,
-              932
+              840
             ]
           }
         ],
@@ -621,9 +659,9 @@
             "image": "assets/source-clarixa-slices/source-clarixa-12.png",
             "box": [
               0,
-              0,
+              60,
               430,
-              932
+              872
             ]
           }
         ],
@@ -651,9 +689,9 @@
             "image": "assets/source-clarixa-slices/source-clarixa-13.png",
             "box": [
               0,
-              0,
+              60,
               430,
-              932
+              872
             ]
           }
         ],
@@ -681,9 +719,9 @@
             "image": "assets/source-clarixa-slices/source-clarixa-14.png",
             "box": [
               0,
-              0,
+              60,
               430,
-              932
+              872
             ]
           }
         ],
@@ -711,9 +749,9 @@
             "image": "assets/source-clarixa-slices/source-clarixa-16.png",
             "box": [
               0,
-              0,
+              60,
               430,
-              932
+              872
             ]
           }
         ],

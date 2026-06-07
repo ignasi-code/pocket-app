@@ -52,14 +52,13 @@
     {
       "component": "results-diagnostics",
       "anatomy": [
-        "diagnostics-sticky-context",
         "diagnostics-title-panel",
         "before-after-pair",
         "diagnostics-carousel-rule",
         "stat-result-list with three stat-result-row children",
         "diagnostics-footnote"
       ],
-      "rule": "preserve source order, child type, and repeated row count"
+      "rule": "preserve source order, child type, and repeated row count; suppress sticky/global chrome unless this row is the header component"
     },
     {
       "component": "review-highlights",
@@ -83,7 +82,7 @@
     },
     {
       "component": "comparison-and-process",
-      "anatomy": ["comparison-card-pair with two dense comparison-card children", "each card preserves media, title, labels, separators, and multiple check/x rows", "process-title-panel"],
+      "anatomy": ["comparison-card-pair with two dense comparison-card children", "each card preserves media, title, labels, separators, and at least four detail rows", "process-title-panel"],
       "rule": "preserve comparison card count, content density, and source card chrome exactly; do not add borders to the following process panel unless source shows them"
     },
     {
@@ -93,8 +92,8 @@
     },
     {
       "component": "source-cropping",
-      "anatomy": ["detect sticky header/global chrome", "crop component content on true component boundaries", "label continuations when unavoidable"],
-      "rule": "sticky headers should not repeat in non-header component rows, and source components should not be split half in one row and half in another"
+      "anatomy": ["component-boundary-sticky-suppressed source crops", "crop component content on true component boundaries", "label continuations when unavoidable"],
+      "rule": "sticky headers should not repeat in non-header source or skeleton rows, and source components should not be split half in one row and half in another"
     },
     {
       "component": "related-products-and-review-header",
