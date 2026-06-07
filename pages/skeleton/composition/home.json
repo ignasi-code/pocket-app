@@ -1,0 +1,34 @@
+{
+  "pageType": "home",
+  "sourceUrl": "https://www.methodiq.com/",
+  "skeleton": "../pages/home.html",
+  "compare": "../compare/home.html",
+  "sourceHeight": 14980,
+  "sections": [
+    {
+      "name": "header",
+      "components": ["logo-link", "cart-link", "account-icon", "menu-icon"],
+      "links": [{ "from": "logo-link", "to": "home.html" }, { "from": "cart-link", "to": "cart.html" }]
+    },
+    {
+      "name": "hero",
+      "components": ["stateful-media-block", "headline-block", "overlay-labels", "metric-cards", "primary-cta"],
+      "state": {
+        "type": "animated-evolving-hero",
+        "rule": "Capture as one hero component with representative visual states, not as separate sections.",
+        "representativeStates": ["initial-yellow-copy-face", "later-diagnostic-face-overlay"]
+      },
+      "links": [{ "from": "primary-cta", "to": "category.html" }]
+    },
+    {
+      "name": "marketing-sections",
+      "components": ["section-heading", "media-tile", "copy-stack", "cta"],
+      "repeats": "content-band",
+      "links": [{ "from": "cta", "to": "category.html" }]
+    },
+    {
+      "name": "footer-depth",
+      "components": ["footer-links", "legal-lines", "social-icons"]
+    }
+  ]
+}

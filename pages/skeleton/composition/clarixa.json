@@ -1,0 +1,110 @@
+{
+  "pageType": "pdp",
+  "sourceUrl": "https://www.methodiq.com/clarixa",
+  "skeleton": "../pages/clarixa.html",
+  "compare": "../compare/clarixa.html",
+  "sourceHeight": 13913,
+  "template": "pdp",
+  "sections": [
+    {
+      "name": "header",
+      "components": ["logo-link", "cart-link-with-count", "account-icon", "menu-icon"],
+      "links": [{ "from": "logo-link", "to": "home.html" }, { "from": "cart-link", "to": "cart.html" }]
+    },
+    {
+      "name": "product-hero-copy",
+      "components": ["meta-row", "title-block"]
+    },
+    {
+      "name": "product-media-carousel",
+      "components": ["product-media", "slide-indicators"]
+    },
+    {
+      "name": "primary-action",
+      "components": ["primary-cta"],
+      "links": [{ "from": "primary-cta", "to": "cart.html" }]
+    },
+    {
+      "name": "purchase-options",
+      "components": ["find-treatment-banner", "subscription-card", "gift-rating", "one-time-purchase-card", "add-to-bag-cta", "benefits-icon-row", "accordion-stack"],
+      "layoutContract": "same PDP purchase structure as Collatin; keep selected subscription state, one-time option, gift card review/rating pair, add-to-bag, benefit row, and expanded first accordion"
+    },
+    {
+      "name": "deep-content-sections",
+      "components": [
+        "results-diagnostics",
+        "review-highlights",
+        "power-of-clarixa",
+        "metabolism-effectiveness",
+        "root-cause-difference",
+        "comparison-and-process",
+        "assessment-and-faq",
+        "related-products-and-review-header",
+        "review-list-first",
+        "review-list-middle",
+        "review-list-last",
+        "final-cta-footer"
+      ],
+      "purpose": "preserve source section rhythm and full scroll depth with matched skeleton component rows"
+    }
+  ],
+  "componentContracts": [
+    {
+      "component": "results-diagnostics",
+      "anatomy": [
+        "diagnostics-sticky-context",
+        "diagnostics-title-panel",
+        "before-after-pair",
+        "diagnostics-carousel-rule",
+        "stat-result-list with three stat-result-row children",
+        "diagnostics-footnote"
+      ],
+      "rule": "preserve source order, child type, and repeated row count"
+    },
+    {
+      "component": "review-highlights",
+      "anatomy": ["review-section-meta", "title", "review-carousel-strip with three review-highlight-pane children", "verified chip", "review-highlight-copy"],
+      "rule": "preserve review carousel, active/ghost panes, badge, and quote block"
+    },
+    {
+      "component": "power-of-clarixa",
+      "anatomy": ["power-section-meta", "title", "subtitle", "ingredient-callout-diagram with six ingredient-callout labels", "ingredient-benefit-grid with four ingredient-benefit cells"],
+      "rule": "preserve diagram and ingredient/benefit count"
+    },
+    {
+      "component": "metabolism-effectiveness",
+      "anatomy": ["tail benefit copy", "supplement-disclaimer", "effectiveness-title-panel", "scan-media-start"],
+      "rule": "preserve disclaimer, large yellow title panel, and scan media start"
+    },
+    {
+      "component": "root-cause-difference",
+      "anatomy": ["scan-media-continuation", "root-cause-carousel", "root-cause-copy", "difference-title-panel"],
+      "rule": "preserve scan continuation, carousel rhythm, copy block, and yellow next-section panel"
+    },
+    {
+      "component": "comparison-and-process",
+      "anatomy": ["comparison-card-pair with two comparison-card children", "process-title-panel"],
+      "rule": "preserve comparison card count before process heading"
+    },
+    {
+      "component": "assessment-and-faq",
+      "anatomy": ["process-carousel-media", "process-step-copy", "faq-heading", "faq-stack with seven faq-row children"],
+      "rule": "preserve process media carousel and FAQ row stack"
+    },
+    {
+      "component": "related-products-and-review-header",
+      "anatomy": ["related-product-carousel with two related-product-card children", "product-reviews-title-panel", "review-summary-search"],
+      "rule": "preserve product carousel, yellow review header, summary rating, and search control"
+    },
+    {
+      "component": "review-list",
+      "anatomy": ["review-entry-row repeated across list views", "review-meta with rating", "optional review image row", "title/body/date lines"],
+      "rule": "preserve review entry rhythm and image rows across the scroll"
+    },
+    {
+      "component": "final-cta-footer",
+      "anatomy": ["final-yellow-cta", "footer-link-grid", "footer-certification", "footer-copyright-social"],
+      "rule": "preserve yellow CTA/footer layout instead of generic media block"
+    }
+  ]
+}

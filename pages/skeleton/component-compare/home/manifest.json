@@ -1,0 +1,317 @@
+{
+  "pageType": "home",
+  "sourceUrl": "https://www.methodiq.com/",
+  "skeletonUrl": "../pages/home.html",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "sourceCapture": {
+    "type": "verified-scroll-slices",
+    "manifest": "../assets/source-home-slices/manifest.json",
+    "note": "Animated hero sampled across representative source states."
+  },
+  "coverage": null,
+  "components": [
+    {
+      "id": "header",
+      "label": "Header",
+      "sourceFile": "source-header.jpg",
+      "skeletonFile": "skeleton-header.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-00.png",
+            "box": [
+              0,
+              0,
+              430,
+              59
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          0,
+          430,
+          59
+        ]
+      }
+    },
+    {
+      "id": "hero-initial-state",
+      "label": "Animated Hero - Initial State",
+      "sourceFile": "source-hero-initial-state.jpg",
+      "skeletonFile": "skeleton-hero-initial-state.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-hero-initial.png",
+            "box": [
+              0,
+              59,
+              430,
+              873
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          59,
+          430,
+          873
+        ]
+      }
+    },
+    {
+      "id": "hero-diagnostic-state",
+      "label": "Animated Hero - Diagnostic State",
+      "sourceFile": "source-hero-diagnostic-state.jpg",
+      "skeletonFile": "skeleton-hero-diagnostic-state.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-05.png",
+            "box": [
+              0,
+              59,
+              430,
+              873
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          59,
+          430,
+          873
+        ]
+      }
+    },
+    {
+      "id": "hero-results-state",
+      "label": "Animated Hero - Results State",
+      "sourceFile": "source-hero-results-state.jpg",
+      "skeletonFile": "skeleton-hero-results-state.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-09.png",
+            "box": [
+              0,
+              59,
+              430,
+              690
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          59,
+          430,
+          690
+        ]
+      }
+    },
+    {
+      "id": "prescription-ingredients",
+      "label": "Prescription Ingredients Section",
+      "sourceFile": "source-prescription-ingredients.jpg",
+      "skeletonFile": "skeleton-prescription-ingredients.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-10.png",
+            "box": [
+              0,
+              0,
+              430,
+              932
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          991,
+          430,
+          932
+        ]
+      }
+    },
+    {
+      "id": "doctors-data-section",
+      "label": "Doctors And Dataset Section",
+      "sourceFile": "source-doctors-data-section.jpg",
+      "skeletonFile": "skeleton-doctors-data-section.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-11.png",
+            "box": [
+              0,
+              0,
+              430,
+              932
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          2311,
+          430,
+          932
+        ]
+      }
+    },
+    {
+      "id": "health-platform-section",
+      "label": "Health Platform Section",
+      "sourceFile": "source-health-platform-section.jpg",
+      "skeletonFile": "skeleton-health-platform-section.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-12.png",
+            "box": [
+              0,
+              0,
+              430,
+              932
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          3871,
+          430,
+          932
+        ]
+      }
+    },
+    {
+      "id": "app-download-section",
+      "label": "App Download Section",
+      "sourceFile": "source-app-download-section.jpg",
+      "skeletonFile": "skeleton-app-download-section.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-13.png",
+            "box": [
+              0,
+              0,
+              430,
+              932
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          5551,
+          430,
+          932
+        ]
+      }
+    },
+    {
+      "id": "doctor-credentials-section",
+      "label": "Doctor Credentials Section",
+      "sourceFile": "source-doctor-credentials-section.jpg",
+      "skeletonFile": "skeleton-doctor-credentials-section.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-14.png",
+            "box": [
+              0,
+              0,
+              430,
+              932
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          7531,
+          430,
+          932
+        ]
+      }
+    },
+    {
+      "id": "final-cta-footer",
+      "label": "Final CTA And Footer",
+      "sourceFile": "source-final-cta-footer.jpg",
+      "skeletonFile": "skeleton-final-cta-footer.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-home-slices/source-home-17.png",
+            "box": [
+              0,
+              0,
+              430,
+              932
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/home.png",
+        "box": [
+          0,
+          11191,
+          430,
+          932
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,442 @@
+{
+  "pageType": "pdp",
+  "sourceUrl": "https://www.methodiq.com/collatin",
+  "skeletonUrl": "../pages/pdp.html",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "components": [
+    {
+      "id": "header",
+      "label": "Header",
+      "source": {
+        "y": 0,
+        "h": 59
+      },
+      "skeletonSelector": ".topbar",
+      "sourceFile": "source-header.png",
+      "skeletonFile": "skeleton-header.png",
+      "skeletonBox": {
+        "height": 59,
+        "width": 430,
+        "x": 0,
+        "y": 0
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 59
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-00.png",
+            "box": [
+              0,
+              0,
+              430,
+              59
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "hero-copy",
+      "label": "Hero Copy",
+      "source": {
+        "y": 59,
+        "h": 342
+      },
+      "skeletonSelector": ".hero-copy",
+      "sourceFile": "source-hero-copy.png",
+      "skeletonFile": "skeleton-hero-copy.png",
+      "skeletonBox": {
+        "height": 342,
+        "width": 430,
+        "x": 0,
+        "y": 59
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 59,
+        "width": 430,
+        "height": 342
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-00.png",
+            "box": [
+              0,
+              59,
+              430,
+              342
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "media-carousel",
+      "label": "Media Carousel",
+      "source": {
+        "y": 401,
+        "h": 408
+      },
+      "skeletonSelector": ".media-hero",
+      "sourceFile": "source-media-carousel.png",
+      "skeletonFile": "skeleton-media-carousel.png",
+      "skeletonBox": {
+        "height": 408,
+        "width": 430,
+        "x": 0,
+        "y": 401
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 401,
+        "width": 430,
+        "height": 408
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-00.png",
+            "box": [
+              0,
+              401,
+              430,
+              408
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "hero-cta",
+      "label": "Hero CTA",
+      "source": {
+        "y": 809,
+        "h": 120
+      },
+      "skeletonSelector": ".cta-wrap",
+      "sourceFile": "source-hero-cta.png",
+      "skeletonFile": "skeleton-hero-cta.png",
+      "skeletonBox": {
+        "height": 120,
+        "width": 430,
+        "x": 0,
+        "y": 809
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 809,
+        "width": 430,
+        "height": 120
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-00.png",
+            "box": [
+              0,
+              809,
+              430,
+              120
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "attribute-summary",
+      "label": "Attribute Summary",
+      "source": {
+        "y": 929,
+        "h": 241
+      },
+      "skeletonSelector": ".details",
+      "sourceFile": "source-attribute-summary.png",
+      "skeletonFile": "skeleton-attribute-summary.png",
+      "skeletonBox": {
+        "height": 274,
+        "width": 430,
+        "x": 0,
+        "y": 930
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 929,
+        "width": 430,
+        "height": 241
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-01.png",
+            "box": [
+              0,
+              59,
+              430,
+              300
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "treatment-banner",
+      "label": "Treatment Banner",
+      "source": {
+        "y": 1226,
+        "h": 102
+      },
+      "skeletonSelector": "[data-component=\"treatment-banner\"]",
+      "sourceFile": "source-treatment-banner.png",
+      "skeletonFile": "skeleton-treatment-banner.png",
+      "skeletonBox": {
+        "height": 102,
+        "width": 398,
+        "x": 16,
+        "y": 1204
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 1226,
+        "width": 430,
+        "height": 102
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-01.png",
+            "box": [
+              16,
+              375,
+              398,
+              102
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "subscription-card",
+      "label": "Subscription Card",
+      "source": {
+        "y": 1384,
+        "h": 456
+      },
+      "skeletonSelector": "[data-component=\"subscription-card\"]",
+      "sourceFile": "source-subscription-card.png",
+      "skeletonFile": "skeleton-subscription-card.png",
+      "skeletonBox": {
+        "height": 323,
+        "width": 398,
+        "x": 16,
+        "y": 1362
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 1384,
+        "width": 430,
+        "height": 456
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-01.png",
+            "box": [
+              16,
+              535,
+              398,
+              325
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "one-time-add",
+      "label": "One-time + Add Bag",
+      "source": {
+        "y": 1723,
+        "h": 117
+      },
+      "skeletonSelector": ".one-time-card",
+      "sourceFile": "source-one-time-add.png",
+      "skeletonFile": "skeleton-one-time-add.png",
+      "skeletonBox": {
+        "height": 49,
+        "width": 398,
+        "x": 16,
+        "y": 1701
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 1723,
+        "width": 430,
+        "height": 117
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-01.png",
+            "box": [
+              16,
+              883,
+              398,
+              49
+            ]
+          },
+          {
+            "slice": "source-pdp-02.png",
+            "box": [
+              16,
+              89,
+              398,
+              54
+            ]
+          }
+        ],
+        "gap": 22
+      }
+    },
+    {
+      "id": "benefits-icons",
+      "label": "Benefits Icon Row",
+      "source": {
+        "y": 1840,
+        "h": 155
+      },
+      "skeletonSelector": "[data-component=\"benefits-icons\"]",
+      "sourceFile": "source-benefits-icons.png",
+      "skeletonFile": "skeleton-benefits-icons.png",
+      "skeletonBox": {
+        "height": 155,
+        "width": 430,
+        "x": 0,
+        "y": 1844
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 1840,
+        "width": 430,
+        "height": 155
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-02.png",
+            "box": [
+              0,
+              154,
+              430,
+              135
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "accordion-expanded",
+      "label": "Expanded Accordion",
+      "source": {
+        "y": 1995,
+        "h": 267
+      },
+      "skeletonSelector": "[data-accordion=\"expanded\"]",
+      "sourceFile": "source-accordion-expanded.png",
+      "skeletonFile": "skeleton-accordion-expanded.png",
+      "skeletonBox": {
+        "height": 204,
+        "width": 398,
+        "x": 16,
+        "y": 1974
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 1995,
+        "width": 430,
+        "height": 267
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-02.png",
+            "box": [
+              0,
+              296,
+              430,
+              268
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    },
+    {
+      "id": "accordion-stack",
+      "label": "Accordion Stack",
+      "source": {
+        "y": 1995,
+        "h": 437
+      },
+      "skeletonSelector": "[data-component=\"accordion-stack\"]",
+      "sourceFile": "source-accordion-stack.png",
+      "skeletonFile": "skeleton-accordion-stack.png",
+      "skeletonBox": {
+        "height": 437,
+        "width": 430,
+        "x": 0,
+        "y": 1973
+      },
+      "sourceClip": {
+        "x": 0,
+        "y": 1995,
+        "width": 430,
+        "height": 437
+      },
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "slice": "source-pdp-02.png",
+            "box": [
+              0,
+              563,
+              430,
+              174
+            ]
+          }
+        ],
+        "gap": 0
+      }
+    }
+  ],
+  "sourceCapture": {
+    "type": "verified-scroll-slices",
+    "manifest": "../../assets/source-pdp-slices/manifest.json"
+  }
+}

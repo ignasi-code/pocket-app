@@ -1,0 +1,227 @@
+{
+  "pageType": "cart",
+  "sourceUrl": "https://www.methodiq.com/clarixa",
+  "skeletonUrl": "../pages/cart.html",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "sourceCapture": {
+    "type": "verified-source-screenshot",
+    "manifest": "../assets/source-cart.png",
+    "state": "populated cart drawer open"
+  },
+  "coverage": null,
+  "components": [
+    {
+      "id": "header",
+      "label": "Header With Cart Count",
+      "sourceFile": "source-header.jpg",
+      "skeletonFile": "skeleton-header.jpg",
+      "sourceCapture": {
+        "type": "verified-source-screenshot",
+        "parts": [
+          {
+            "image": "assets/source-cart.png",
+            "box": [
+              0,
+              0,
+              430,
+              65
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/cart.png",
+        "box": [
+          0,
+          0,
+          430,
+          65
+        ]
+      }
+    },
+    {
+      "id": "drawer-shell",
+      "label": "Open Cart Drawer Shell",
+      "sourceFile": "source-drawer-shell.jpg",
+      "skeletonFile": "skeleton-drawer-shell.jpg",
+      "sourceCapture": {
+        "type": "verified-source-screenshot",
+        "parts": [
+          {
+            "image": "assets/source-cart.png",
+            "box": [
+              0,
+              65,
+              430,
+              867
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/cart.png",
+        "box": [
+          0,
+          65,
+          430,
+          867
+        ]
+      }
+    },
+    {
+      "id": "shipping-status",
+      "label": "Free Shipping Status",
+      "sourceFile": "source-shipping-status.jpg",
+      "skeletonFile": "skeleton-shipping-status.jpg",
+      "sourceCapture": {
+        "type": "verified-source-screenshot",
+        "parts": [
+          {
+            "image": "assets/source-cart.png",
+            "box": [
+              16,
+              128,
+              398,
+              58
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/cart.png",
+        "box": [
+          16,
+          87,
+          398,
+          86
+        ]
+      }
+    },
+    {
+      "id": "cart-items-list",
+      "label": "Cart Items List",
+      "sourceFile": "source-cart-items-list.jpg",
+      "skeletonFile": "skeleton-cart-items-list.jpg",
+      "sourceCapture": {
+        "type": "verified-source-screenshot",
+        "parts": [
+          {
+            "image": "assets/source-cart.png",
+            "box": [
+              16,
+              202,
+              398,
+              529
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/cart.png",
+        "box": [
+          16,
+          165,
+          398,
+          529
+        ]
+      }
+    },
+    {
+      "id": "paid-line-item",
+      "label": "Paid Product Line Item",
+      "sourceFile": "source-paid-line-item.jpg",
+      "skeletonFile": "skeleton-paid-line-item.jpg",
+      "sourceCapture": {
+        "type": "verified-source-screenshot",
+        "parts": [
+          {
+            "image": "assets/source-cart.png",
+            "box": [
+              16,
+              218,
+              398,
+              185
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/cart.png",
+        "box": [
+          16,
+          175,
+          398,
+          185
+        ]
+      }
+    },
+    {
+      "id": "gift-line-item",
+      "label": "Subscription Gift Line",
+      "sourceFile": "source-gift-line-item.jpg",
+      "skeletonFile": "skeleton-gift-line-item.jpg",
+      "sourceCapture": {
+        "type": "verified-source-screenshot",
+        "parts": [
+          {
+            "image": "assets/source-cart.png",
+            "box": [
+              16,
+              600,
+              398,
+              125
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/cart.png",
+        "box": [
+          16,
+          457,
+          398,
+          125
+        ]
+      }
+    },
+    {
+      "id": "total-payment-checkout",
+      "label": "Total, Payment, And Checkout CTA",
+      "sourceFile": "source-total-payment-checkout.jpg",
+      "skeletonFile": "skeleton-total-payment-checkout.jpg",
+      "sourceCapture": {
+        "type": "verified-source-screenshot",
+        "parts": [
+          {
+            "image": "assets/source-cart.png",
+            "box": [
+              16,
+              742,
+              398,
+              180
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/cart.png",
+        "box": [
+          16,
+          742,
+          398,
+          180
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compare Clarixa PDP</title>
+    <link rel="stylesheet" href="compare.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <a href="../index.html">Inventory</a>
+      <label><input type="checkbox" data-sync-toggle checked /> linked scroll</label>
+      <button type="button" data-reset>Reset</button>
+    </header>
+    <main class="compare">
+      <section class="pane" data-source-pane><img src="../assets/source-clarixa.png" alt="source screenshot" /></section>
+      <section class="pane"><iframe data-skeleton-frame src="../pages/clarixa.html" title="skeleton"></iframe></section>
+    </main>
+    <script src="compare.js"></script>
+  </body>
+</html>

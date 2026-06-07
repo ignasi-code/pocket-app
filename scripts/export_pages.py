@@ -31,6 +31,10 @@ STATIC_PAGE_ROUTES = {
     "/bp": "bp/index.html",
 }
 
+STATIC_TREE_EXPORTS = {
+    ROOT_DIR / "pages" / "skeleton": "skeleton",
+}
+
 ROBOTS_TXT = """User-agent: *
 Allow: /
 """
@@ -85,6 +89,17 @@ def export_clean_html_route(client, output_dir: Path, route: str) -> Path:
     return export_route(client, output_dir, route, clean_index_path(route))
 
 
+def export_static_tree(output_dir: Path, source_dir: Path, destination_root: str) -> set[Path]:
+    written: set[Path] = set()
+    if not source_dir.exists():
+        return written
+    destination_dir = output_dir / destination_root
+    if destination_dir.exists():
+        shutil.rmtree(destination_dir)
+    shutil.copytree(source_dir, destination_dir)
+    return {path for path in destination_dir.rglob("*") if path.is_file()}
+
+
 def store_collection_routes() -> list[str]:
     return [
         f"/store/collections/{handle}"
@@ -125,6 +140,9 @@ def headers_file() -> str:
         f"  {html_cache}",
         "",
         "/bp/*",
+        f"  {html_cache}",
+        "",
+        "/skeleton/*",
         f"  {html_cache}",
         "",
         "/store/",
@@ -190,6 +208,9 @@ def build_dist(output_dir: Path | str = ROOT_DIR / "dist") -> set[Path]:
 
         for route in STORE_ASSET_ROUTES:
             written.add(export_route(client, output_path, route, asset_path(route)))
+
+    for source_dir, destination_root in STATIC_TREE_EXPORTS.items():
+        written.update(export_static_tree(output_path, source_dir, destination_root))
 
     written.add(write_text(output_path, "_headers", headers_file()))
     written.add(write_text(output_path, "robots.txt", ROBOTS_TXT))

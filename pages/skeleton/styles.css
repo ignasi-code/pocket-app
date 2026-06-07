@@ -1,0 +1,223 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: #fff;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+.screen {
+  width: min(100%, 430px);
+  margin: 0 auto;
+  background: #fff;
+}
+
+.bone {
+  display: block;
+  background: #e8e8e6;
+  border-radius: 2px;
+}
+
+.bone-soft {
+  background: #f0f0ef;
+}
+
+.black {
+  background: #050505;
+}
+
+.topbar {
+  height: 59px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid #d5d5d5;
+}
+
+.logo {
+  width: 128px;
+  height: 22px;
+}
+
+.icons {
+  display: flex;
+  gap: 12px;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+}
+
+.cta {
+  display: block;
+  width: 100%;
+  height: 48px;
+  border-radius: 4px;
+  background: #050505;
+}
+
+a.cta {
+  display: block;
+}
+
+.cta-link {
+  display: block;
+  width: 100%;
+  height: 48px;
+}
+
+.line {
+  height: 12px;
+}
+
+.small {
+  height: 9px;
+}
+
+.rule {
+  height: 1px;
+  background: #242424;
+}
+
+.section {
+  padding: 40px 16px;
+  border-top: 1px solid #242424;
+}
+
+.stack {
+  display: grid;
+  gap: 8px;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.panel {
+  border: 1px solid #dedede;
+  border-radius: 4px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.media {
+  background: #f1f1f1;
+}
+
+.marks {
+  display: flex;
+  gap: 5px;
+}
+
+.mark {
+  width: 10px;
+  height: 10px;
+  background: #050505;
+  border-radius: 1px;
+}
+
+.deep {
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+
+.hub {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+.hub h1 {
+  margin: 0 0 12px;
+  font-size: 34px;
+  letter-spacing: 0;
+}
+
+.hub p {
+  max-width: 760px;
+  line-height: 1.45;
+  color: #444;
+}
+
+.inventory {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 28px;
+}
+
+.inventory th,
+.inventory td {
+  border-top: 1px solid #ddd;
+  padding: 14px 10px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.inventory th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+}
+
+.inventory a {
+  color: #111;
+  font-weight: 700;
+}
+
+.status {
+  display: inline-block;
+  border: 1px solid #bbb;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.folder-tree {
+  margin: 28px 0;
+  padding: 18px;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  background: #fafafa;
+  overflow-x: auto;
+}
+
+.folder-tree pre {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.folder-tree a {
+  color: #111;
+  font-weight: 700;
+}
+
+.sop section {
+  border-top: 1px solid #ddd;
+  padding: 24px 0;
+}
+
+.sop h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.sop li {
+  margin: 8px 0;
+  line-height: 1.45;
+}

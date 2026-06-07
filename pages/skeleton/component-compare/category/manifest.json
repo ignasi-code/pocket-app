@@ -1,0 +1,256 @@
+{
+  "pageType": "category",
+  "sourceUrl": "https://www.methodiq.com/shop-all",
+  "skeletonUrl": "../pages/category.html",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "sourceCapture": {
+    "type": "verified-scroll-slices",
+    "manifest": "../assets/source-category-slices/manifest.json"
+  },
+  "coverage": null,
+  "components": [
+    {
+      "id": "header",
+      "label": "Header",
+      "sourceFile": "source-header.jpg",
+      "skeletonFile": "skeleton-header.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-category-slices/source-category-00.png",
+            "box": [
+              0,
+              0,
+              430,
+              59
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/category.png",
+        "box": [
+          0,
+          0,
+          430,
+          59
+        ]
+      }
+    },
+    {
+      "id": "collection-hero",
+      "label": "Collection Hero",
+      "sourceFile": "source-collection-hero.jpg",
+      "skeletonFile": "skeleton-collection-hero.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-category-slices/source-category-00.png",
+            "box": [
+              0,
+              59,
+              430,
+              316
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/category.png",
+        "box": [
+          0,
+          59,
+          430,
+          120
+        ]
+      }
+    },
+    {
+      "id": "section-heading",
+      "label": "Treatment Section Heading",
+      "sourceFile": "source-section-heading.jpg",
+      "skeletonFile": "skeleton-section-heading.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-category-slices/source-category-00.png",
+            "box": [
+              0,
+              375,
+              430,
+              127
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/category.png",
+        "box": [
+          0,
+          85,
+          430,
+          78
+        ]
+      }
+    },
+    {
+      "id": "product-card-template",
+      "label": "Product Card Template",
+      "sourceFile": "source-product-card-template.jpg",
+      "skeletonFile": "skeleton-product-card-template.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-category-slices/source-category-00.png",
+            "box": [
+              16,
+              502,
+              183,
+              393
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/category.png",
+        "box": [
+          16,
+          183,
+          183,
+          357
+        ]
+      }
+    },
+    {
+      "id": "product-row-template",
+      "label": "Product Row Template",
+      "sourceFile": "source-product-row-template.jpg",
+      "skeletonFile": "skeleton-product-row-template.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-category-slices/source-category-00.png",
+            "box": [
+              0,
+              502,
+              430,
+              393
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/category.png",
+        "box": [
+          0,
+          183,
+          430,
+          357
+        ]
+      }
+    },
+    {
+      "id": "acne-section",
+      "label": "Acne Section",
+      "sourceFile": "source-acne-section.jpg",
+      "skeletonFile": "skeleton-acne-section.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-category-slices/source-category-02.png",
+            "box": [
+              0,
+              0,
+              430,
+              932
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/category.png",
+        "box": [
+          0,
+          4660,
+          430,
+          932
+        ]
+      }
+    },
+    {
+      "id": "body-treatments-section",
+      "label": "Body Treatments Section",
+      "sourceFile": "source-body-treatments-section.jpg",
+      "skeletonFile": "skeleton-body-treatments-section.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-category-slices/source-category-07.png",
+            "box": [
+              0,
+              0,
+              430,
+              932
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/category.png",
+        "box": [
+          0,
+          5592,
+          430,
+          932
+        ]
+      }
+    },
+    {
+      "id": "category-footer-cta",
+      "label": "Category Footer CTA",
+      "sourceFile": "source-category-footer-cta.jpg",
+      "skeletonFile": "skeleton-category-footer-cta.jpg",
+      "sourceCapture": {
+        "type": "verified-scroll-slices",
+        "parts": [
+          {
+            "image": "assets/source-category-slices/source-category-10.png",
+            "box": [
+              0,
+              180,
+              430,
+              752
+            ]
+          }
+        ],
+        "gap": 0
+      },
+      "skeletonCapture": {
+        "image": "work/skeleton-shots/category.png",
+        "box": [
+          0,
+          8388,
+          430,
+          752
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #111;
+  color: #fff;
+}
+
+.toolbar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 14px;
+  border-bottom: 1px solid #333;
+  background: #171717;
+}
+
+.toolbar a,
+.toolbar button,
+.toolbar label {
+  color: #fff;
+  font-size: 13px;
+}
+
+.toolbar button {
+  border: 1px solid #666;
+  background: #222;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: calc(100vh - 48px);
+}
+
+.pane {
+  min-width: 0;
+  overflow: auto;
+  background: #fff;
+  border-right: 1px solid #333;
+}
+
+.pane img {
+  display: block;
+  width: 430px;
+  max-width: none;
+  margin: 0 auto;
+}
+
+.source-stack {
+  width: 430px;
+  margin: 0 auto;
+}
+
+.source-stack img {
+  width: 430px;
+  margin: 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.pane iframe {
+  display: block;
+  width: 430px;
+  height: 100%;
+  margin: 0 auto;
+  border: 0;
+  background: #fff;
+}

@@ -1,0 +1,37 @@
+{
+  "pageType": "category",
+  "sourceUrl": "https://www.methodiq.com/shop-all",
+  "skeleton": "../pages/category.html",
+  "compare": "../compare/category.html",
+  "sourceHeight": 9246,
+  "sections": [
+    {
+      "name": "header",
+      "components": ["logo-link", "cart-link", "account-icon", "menu-icon"],
+      "links": [{ "from": "logo-link", "to": "home.html" }, { "from": "cart-link", "to": "cart.html" }]
+    },
+    {
+      "name": "category-heading",
+      "components": ["section-label-block", "heading-block", "divider"]
+    },
+    {
+      "name": "product-grid",
+      "components": ["product-card"],
+      "repeats": "product-card",
+      "links": [{ "from": "product-card", "to": "pdp.html" }, { "from": "product-card", "to": "clarixa.html" }]
+    },
+    {
+      "name": "remaining-sections",
+      "components": ["section-start-block", "full-depth-placeholder"],
+      "purpose": "preserve full source scroll depth"
+    }
+  ],
+  "componentContracts": {
+    "product-card": {
+      "width": 183,
+      "media": "square",
+      "actionAlignment": "same y within row",
+      "gapMap": ["media", "meta", "rating", "copy", "secondary-link", "primary-cta"]
+    }
+  }
+}

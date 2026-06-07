@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cart Drawer Skeleton</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .screen {
+        position: relative;
+        min-height: 932px;
+        overflow: hidden;
+      }
+
+      .cart-badge {
+        position: relative;
+        width: 24px;
+        height: 25px;
+      }
+
+      .cart-count {
+        position: absolute;
+        right: -5px;
+        bottom: -4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: #050505;
+      }
+
+      .page-underlay {
+        height: 867px;
+        background: #f4f4f4;
+        opacity: 0.32;
+      }
+
+      .cart-drawer {
+        position: absolute;
+        top: 65px;
+        left: 0;
+        width: 100%;
+        height: 867px;
+        padding: 22px 16px 20px;
+        background: #fff;
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 18px;
+      }
+
+      .drawer-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .shipping {
+        display: grid;
+        gap: 10px;
+      }
+
+      .progress {
+        height: 7px;
+        border-radius: 999px;
+        background: #e8e8e6;
+        overflow: hidden;
+      }
+
+      .progress::before {
+        content: "";
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #050505;
+      }
+
+      .cart-list {
+        border: 1px solid #050505;
+        border-radius: 4px;
+        padding: 16px;
+        display: grid;
+        align-content: start;
+      }
+
+      .cart-item {
+        display: grid;
+        grid-template-columns: 76px 1fr 34px;
+        gap: 14px;
+        padding-bottom: 16px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #d8d8d8;
+      }
+
+      .cart-item:last-child {
+        margin-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .thumb {
+        height: 88px;
+        background: #e8e8e6;
+      }
+
+      .gift-thumb {
+        height: 70px;
+      }
+
+      .qty-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .qty-box {
+        width: 78px;
+        height: 30px;
+        border: 1px solid #d8d8d8;
+        border-radius: 2px;
+      }
+
+      .summary {
+        display: grid;
+        gap: 12px;
+      }
+
+      .promo {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 0;
+        border-top: 1px solid #d8d8d8;
+        border-bottom: 1px solid #d8d8d8;
+      }
+
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .cart-footer {
+        display: grid;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px solid #d8d8d8;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screen" aria-busy="true">
+      <header class="topbar">
+        <a class="bone logo" href="home.html"></a>
+        <div class="icons">
+          <span class="cart-badge"><span class="bone icon"></span><span class="cart-count"></span></span>
+          <span class="bone icon"></span>
+          <span class="bone icon"></span>
+        </div>
+      </header>
+
+      <main class="page-underlay"></main>
+
+      <aside class="cart-drawer" data-component="populated-cart-drawer" data-state="open">
+        <div class="drawer-head">
+          <span class="bone line" style="width:96px; height:24px"></span>
+          <span class="bone icon"></span>
+        </div>
+
+        <div class="shipping" data-component="free-shipping-status">
+          <span class="bone line" style="width:228px"></span>
+          <span class="progress"></span>
+        </div>
+
+        <ul class="cart-list" data-component="cart-items">
+          <li class="cart-item">
+            <span class="thumb"></span>
+            <div class="stack">
+              <span class="bone line" style="width:92px; height:18px"></span>
+              <span class="bone line" style="width:96%"></span>
+              <span class="bone line" style="width:82%"></span>
+              <span class="bone line" style="width:74%"></span>
+              <span class="qty-row"><span class="qty-box"></span><span class="bone icon"></span></span>
+            </div>
+            <span class="bone line" style="width:32px"></span>
+          </li>
+          <li class="cart-item">
+            <span class="thumb"></span>
+            <div class="stack">
+              <span class="bone line" style="width:86px; height:18px"></span>
+              <span class="bone line" style="width:94%"></span>
+              <span class="bone line" style="width:86%"></span>
+              <span class="bone line" style="width:70%"></span>
+              <span class="qty-row"><span class="qty-box"></span><span class="bone icon"></span></span>
+            </div>
+            <span class="bone line" style="width:32px"></span>
+          </li>
+          <li class="cart-item" data-component="subscription-gift-line">
+            <span class="thumb gift-thumb"></span>
+            <div class="stack">
+              <span class="bone line" style="width:132px; height:13px"></span>
+              <span class="bone line" style="width:48px"></span>
+              <span class="bone line" style="width:128px; height:18px"></span>
+              <span class="bone line" style="width:86%"></span>
+            </div>
+            <span class="bone line" style="width:28px"></span>
+          </li>
+        </ul>
+
+        <section class="summary" data-component="cart-summary">
+          <div class="promo">
+            <span class="bone line" style="width:128px"></span>
+            <span class="bone icon"></span>
+          </div>
+          <div class="summary-row"><span class="bone line" style="width:74px"></span><span class="bone line" style="width:58px"></span></div>
+          <div class="summary-row"><span class="bone line" style="width:138px"></span><span class="bone line" style="width:34px"></span></div>
+          <div class="summary-row"><span class="bone line" style="width:166px"></span><span class="bone line" style="width:22px"></span></div>
+        </section>
+
+        <footer class="cart-footer">
+          <div class="summary-row"><span class="bone line" style="width:126px; height:20px"></span><span class="bone line" style="width:42px; height:20px"></span></div>
+          <a class="cta-link" href="home.html"><div class="cta" data-component="checkout-cta"></div></a>
+        </footer>
+      </aside>
+    </div>
+  </body>
+</html>

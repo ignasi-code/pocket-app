@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Skeleton Inventory</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="hub">
+      <h1>#SkeletonSiteMapSOP Inventory</h1>
+      <p>
+        Canonical page-type inventory for METHODIQ at viewport 430x932. Each row
+        links to a standalone skeleton page, compare page, and composition map.
+        The folder tree below is the output shape.
+      </p>
+      <p><a href="sop.html">Open #SkeletonSOP</a> · <a href="composition/sop.json">JSON SOP</a></p>
+
+      <section class="folder-tree" aria-label="Output folder tree">
+        <pre>outputs/
+├── <a href="index.html">index.html</a>
+├── <a href="sop.html">sop.html</a>
+├── <a href="playground.html">playground.html</a>
+├── styles.css
+├── pages/
+│   ├── <a href="pages/home.html">home.html</a>
+│   ├── <a href="pages/category.html">category.html</a>
+│   ├── <a href="pages/pdp.html">pdp.html</a>
+│   ├── <a href="pages/clarixa.html">clarixa.html</a>
+│   └── <a href="pages/cart.html">cart.html</a>
+├── compare/
+│   ├── <a href="compare/home.html">home.html</a>
+│   ├── <a href="compare/category.html">category.html</a>
+│   ├── <a href="compare/pdp.html">pdp.html</a>
+│   ├── <a href="compare/clarixa.html">clarixa.html</a>
+│   ├── <a href="compare/cart.html">cart.html</a>
+│   ├── compare.css
+│   └── compare.js
+├── component-compare/
+│   ├── <a href="component-compare/home.html">home.html</a>
+│   ├── <a href="component-compare/category.html">category.html</a>
+│   ├── <a href="component-compare/pdp.html">pdp.html</a>
+│   ├── <a href="component-compare/clarixa.html">clarixa.html</a>
+│   ├── <a href="component-compare/cart.html">cart.html</a>
+│   ├── home/
+│   │   ├── <a href="component-compare/home/manifest.json">manifest.json</a>
+│   │   └── source/skeleton component crops
+│   ├── category/
+│   │   ├── <a href="component-compare/category/manifest.json">manifest.json</a>
+│   │   └── source/skeleton component crops
+│   ├── pdp/
+│   │   ├── <a href="component-compare/pdp/manifest.json">manifest.json</a>
+│   │   └── source/skeleton component crops
+│   ├── clarixa/
+│   │   ├── <a href="component-compare/clarixa/manifest.json">manifest.json</a>
+│   │   └── source/skeleton component crops
+│   └── cart/
+│       ├── <a href="component-compare/cart/manifest.json">manifest.json</a>
+│       └── source/skeleton component crops
+├── composition/
+│   ├── <a href="composition/sop.json">sop.json</a>
+│   ├── <a href="composition/site-map.json">site-map.json</a>
+│   ├── <a href="composition/home.json">home.json</a>
+│   ├── <a href="composition/category.json">category.json</a>
+│   ├── <a href="composition/pdp.json">pdp.json</a>
+│   ├── <a href="composition/clarixa.json">clarixa.json</a>
+│   └── <a href="composition/cart.json">cart.json</a>
+└── assets/
+    ├── <a href="assets/source-home.png">source-home.png</a>
+    ├── source-home-slices/
+    │   └── <a href="assets/source-home-slices/manifest.json">manifest.json</a>
+    ├── <a href="assets/source-category.png">source-category.png</a>
+    ├── source-category-slices/
+    │   └── <a href="assets/source-category-slices/manifest.json">manifest.json</a>
+    ├── <a href="assets/source-pdp.png">source-pdp.png</a>
+    ├── <a href="assets/source-clarixa.png">source-clarixa.png</a>
+    └── <a href="assets/source-cart.png">source-cart.png</a></pre>
+      </section>
+
+      <table class="inventory">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Source</th>
+            <th>Skeleton</th>
+            <th>Compare</th>
+            <th>Components</th>
+            <th>Composition</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Home</td>
+            <td>https://www.methodiq.com/</td>
+            <td><a href="pages/home.html">pages/home.html</a></td>
+            <td><a href="compare/home.html">compare/home.html</a></td>
+            <td><a href="component-compare/home.html">component-compare/home.html</a></td>
+            <td><a href="composition/home.json">composition/home.json</a></td>
+            <td><span class="status">captured</span></td>
+            <td>Homepage / marketing template. Source height 14980px. Animated hero is one evolving media component.</td>
+          </tr>
+          <tr>
+            <td>Category</td>
+            <td>https://www.methodiq.com/shop-all</td>
+            <td><a href="pages/category.html">pages/category.html</a></td>
+            <td><a href="compare/category.html">compare/category.html</a></td>
+            <td><a href="component-compare/category.html">component-compare/category.html</a></td>
+            <td><a href="composition/category.json">composition/category.json</a></td>
+            <td><span class="status">captured</span></td>
+            <td>Product listing template. Source height 9246px.</td>
+          </tr>
+          <tr>
+            <td>PDP</td>
+            <td>https://www.methodiq.com/collatin</td>
+            <td><a href="pages/pdp.html">pages/pdp.html</a></td>
+            <td><a href="compare/pdp.html">compare/pdp.html</a></td>
+            <td><a href="component-compare/pdp.html">component-compare/pdp.html</a></td>
+            <td><a href="composition/pdp.json">composition/pdp.json</a></td>
+            <td><span class="status">captured</span></td>
+            <td>Product detail template. Source height 13173px.</td>
+          </tr>
+          <tr>
+            <td>PDP</td>
+            <td>https://www.methodiq.com/clarixa</td>
+            <td><a href="pages/clarixa.html">pages/clarixa.html</a></td>
+            <td><a href="compare/clarixa.html">compare/clarixa.html</a></td>
+            <td><a href="component-compare/clarixa.html">component-compare/clarixa.html</a></td>
+            <td><a href="composition/clarixa.json">composition/clarixa.json</a></td>
+            <td><span class="status">captured</span></td>
+            <td>Second product-detail URL using the same PDP template. Source height 13913px.</td>
+          </tr>
+          <tr>
+            <td>Cart drawer</td>
+            <td>https://www.methodiq.com/clarixa with populated cart open</td>
+            <td><a href="pages/cart.html">pages/cart.html</a></td>
+            <td><a href="compare/cart.html">compare/cart.html</a></td>
+            <td><a href="component-compare/cart.html">component-compare/cart.html</a></td>
+            <td><a href="composition/cart.json">composition/cart.json</a></td>
+            <td><span class="status">captured</span></td>
+            <td>Populated cart drawer state with two paid subscription items and one gift line.</td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>

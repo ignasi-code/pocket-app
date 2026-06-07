@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Skeleton SOP</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="hub sop">
+      <h1>#SkeletonSOP</h1>
+      <p>
+        Fast process for turning source pages into navigable static skeletons at
+        430x932, with page compare, component compare, composition maps, and
+        verifier checks.
+      </p>
+
+      <p><a href="index.html">Back to inventory</a> · <a href="composition/sop.json">JSON SOP</a></p>
+
+      <section>
+        <h2>Master Flow</h2>
+        <ol>
+          <li>Inventory page types and canonical URLs.</li>
+          <li>Capture source at 430x932.</li>
+          <li>If full-page capture is suspect, use scroll-by-scroll slices.</li>
+          <li>Map sections, components, states, repeated patterns, and links.</li>
+          <li>Create the component-by-component atlas for the page.</li>
+          <li>Build the skeleton page with internal navigation.</li>
+          <li>Create side-by-side page compare.</li>
+          <li>Create component-by-component compare for risky pages.</li>
+          <li>Run verifier checks before accepting the output.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Core Rules</h2>
+        <ul>
+          <li><strong>Real-source gate:</strong> source crops must prove they came from the original page.</li>
+          <li><strong>Scroll slices:</strong> use slices plus a manifest when full-page screenshots repeat, clip, or miss sections.</li>
+          <li><strong>Capture both sides:</strong> the scroll-slice fallback applies to source and skeleton screenshots; hide capture scrollbars or crop them out before atlas generation.</li>
+          <li><strong>Stateful media:</strong> animated or evolving heroes remain one component with representative states.</li>
+          <li><strong>Function first:</strong> preserve CTAs, options, accordions, ratings, icon rows, bullets, forms, tabs, and selected states.</li>
+          <li><strong>Component anatomy contract:</strong> before skeletonizing a component, lock the ordered child structure: context/chrome, title or media, repeated units, controls, and footnotes.</li>
+          <li><strong>No invented structures:</strong> do not convert source rows into cards, paired media into generic panels, or lists into paragraphs just because the height is similar.</li>
+          <li><strong>Row count gate:</strong> repeated semantic units must match count and rhythm; three result rows become three result rows.</li>
+          <li><strong>Uniform repeats:</strong> repeated items in one family share one component template.</li>
+          <li><strong>Local gaps:</strong> lock important vertical gaps inside cards, banners, CTAs, and option groups.</li>
+          <li><strong>Navigation:</strong> page-to-page behavior is baked into the skeleton site.</li>
+          <li><strong>Atlas first:</strong> every page type gets <code>component-compare/{page}.html</code> before the standalone skeleton is treated as final.</li>
+          <li><strong>Full-scroll coverage:</strong> every atlas must keep adding rows until the source scroll depth is covered top to bottom; broad deep-section rows are allowed when the exact component template is still being learned.</li>
+          <li><strong>Matched skeleton coverage:</strong> the skeleton side must use matching named component rows through the full scroll; repeated generic placeholders fail the atlas even when height roughly matches.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Animated Home Hero Note</h2>
+        <p>
+          When a hero animates but remains one layout block, capture it as one
+          stateful media component. Use at least the first state and one later
+          state. Skeletonize the persistent structure: media area, overlays,
+          metric chips/cards, label/status bars, and CTA. Do not split animation
+          frames into unrelated page sections.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

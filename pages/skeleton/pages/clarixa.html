@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Product PDP Skeleton</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      html, body { scrollbar-width: none; }
+      html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+      .screen { min-height: 13173px; }
+      .hero-copy { height: 342px; padding: 25px 16px 0; background: #f0f0ef; }
+      .hero-meta { display: flex; justify-content: space-between; align-items: center; height: 20px; border-bottom: 1px solid #242424; }
+      .media-hero { position: relative; height: 408px; background: #f4f4f4; overflow: hidden; }
+      .product-a { position: absolute; left: 103px; top: 72px; width: 104px; height: 262px; background: #e2e2df; }
+      .product-b { position: absolute; left: 279px; top: 90px; width: 100px; height: 244px; border-radius: 20px 20px 6px 6px; background: #dededc; }
+      .slider { position: absolute; left: 126px; bottom: 20px; display: flex; gap: 16px; }
+      .slide { width: 48px; height: 2px; background: #e8e8e6; }
+      .active { background: #050505; }
+      .cta-wrap { height: 120px; padding: 16px 16px 0; }
+      .details { padding: 24px 16px 80px; }
+      .deep-section { display: grid; align-content: start; gap: 24px; padding: 40px 16px; border-top: 1px solid #242424; }
+      .deep-section.soft { background: #f0f0ef; }
+      .heading { width: 300px; height: 44px; }
+      .media-panel { height: 300px; background: #e8e8e6; }
+      .review-card { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid #d8d8d8; }
+      .purchase-flow {
+        position: relative;
+        height: 769px;
+        padding: 0 16px;
+      }
+      .treatment-banner {
+        position: absolute;
+        top: 0;
+        left: 16px;
+        width: 398px;
+        height: 102px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #f0f0ef;
+      }
+      .banner-copy {
+        padding: 16px;
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        border-right: 1px solid #dedede;
+      }
+      .banner-media {
+        background: #e4e4e2;
+      }
+      .subscription-card {
+        position: absolute;
+        top: 158px;
+        left: 16px;
+        width: 398px;
+        height: 323px;
+        border: 1px solid #8d8d8d;
+        border-radius: 4px;
+        padding: 16px;
+        display: grid;
+        align-content: start;
+        gap: 14px;
+      }
+      .purchase-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .check-lines {
+        display: grid;
+        gap: 10px;
+        margin-left: 16px;
+      }
+      .gift-card {
+        height: 111px;
+        border: 1px solid #b9b9b9;
+        border-radius: 4px;
+        display: grid;
+        grid-template-columns: 1fr 130px;
+        overflow: hidden;
+      }
+      .gift-copy {
+        padding: 16px;
+        display: grid;
+        gap: 10px;
+      }
+      .gift-rating {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .gift-media {
+        background: #eeeeec;
+      }
+      .one-time-card {
+        position: absolute;
+        top: 497px;
+        left: 16px;
+        width: 398px;
+        height: 49px;
+        border: 1px solid #8d8d8d;
+        border-radius: 4px;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .add-bag {
+        position: absolute;
+        top: 568px;
+        left: 16px;
+        width: 398px;
+        height: 48px;
+      }
+      .benefits-icons {
+        position: absolute;
+        top: 640px;
+        left: 0;
+        width: 430px;
+        height: 155px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        align-content: start;
+        gap: 8px;
+        padding: 20px 16px 0;
+      }
+      .benefit {
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+      }
+      .benefit-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 4px;
+      }
+      .accordion-stack {
+        height: 437px;
+        padding: 0 16px;
+        border-top: 1px solid #eeeeee;
+      }
+      .accordion-row {
+        border-bottom: 1px solid #eeeeee;
+        padding: 18px 0;
+      }
+      .accordion-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .accordion-body {
+        display: grid;
+        gap: 9px;
+        padding: 14px 0 8px;
+      }
+      .bullet-list {
+        display: grid;
+        gap: 8px;
+      }
+      .bullet {
+        display: grid;
+        grid-template-columns: 8px 1fr;
+        gap: 8px;
+        align-items: start;
+      }
+      .bullet::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        margin-top: 4px;
+        border-radius: 50%;
+        background: #050505;
+      }
+      .ingredient-icons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding-top: 12px;
+      }
+      .component-section {
+        display: grid;
+        align-content: start;
+        gap: 24px;
+        padding: 40px 16px;
+        border-top: 1px solid #242424;
+        overflow: hidden;
+      }
+      .component-section.soft {
+        background: #f0f0ef;
+      }
+      .yellow-field {
+        background: #f2f58e;
+        border-top: 1px solid #242424;
+        border-bottom: 1px solid #242424;
+      }
+      .split-media {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .diagnostic-panel {
+        height: 272px;
+        background: #e8e8e6;
+      }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .metric-card {
+        min-height: 112px;
+        border: 1px solid #d8d8d8;
+        border-radius: 8px;
+        padding: 18px;
+        display: grid;
+        align-content: start;
+        gap: 18px;
+        background: #fff;
+      }
+      .diagnostics-section {
+        padding: 0;
+        gap: 0;
+        background: #fff;
+      }
+      .diagnostics-sticky-context {
+        height: 59px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        border-bottom: 1px solid #d8d8d8;
+        background: #fff;
+      }
+      .diagnostics-title-panel {
+        height: 300px;
+        padding: 30px 16px 0;
+        background: #f2f58e;
+        border-bottom: 1px solid #242424;
+      }
+      .diagnostics-title {
+        width: 332px;
+        height: 50px;
+      }
+      .diagnostics-body {
+        padding: 14px 16px 0;
+      }
+      .diagnostics-label-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+      .diagnostics-label {
+        display: grid;
+        gap: 6px;
+      }
+      .diagnostic-face-panel {
+        height: 278px;
+        background: #e8e8e6;
+      }
+      .diagnostics-carousel-rule {
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        border-bottom: 1px solid #e1e1e1;
+      }
+      .diagnostics-carousel-rule .slide {
+        width: 46px;
+      }
+      .stat-result-list {
+        display: grid;
+      }
+      .stat-result-row {
+        min-height: 76px;
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 14px;
+        align-items: center;
+        border-bottom: 1px solid #e1e1e1;
+      }
+      .stat-number {
+        width: 62px;
+        height: 42px;
+      }
+      .diagnostics-footnote {
+        margin-top: 18px;
+        width: 332px;
+      }
+      .story-card {
+        min-height: 166px;
+        border: 1px solid #d8d8d8;
+        border-radius: 4px;
+        padding: 16px;
+        display: grid;
+        grid-template-columns: 112px 1fr;
+        gap: 14px;
+      }
+      .thumb {
+        background: #e8e8e6;
+        min-height: 132px;
+      }
+      .ingredient-map {
+        position: relative;
+        height: 430px;
+        background: #e8e8e6;
+      }
+      .ingredient-pill {
+        position: absolute;
+        height: 20px;
+        background: #f2f58e;
+        border: 1px solid #242424;
+      }
+      .ingredient-pill.a { left: 24px; top: 62px; width: 114px; }
+      .ingredient-pill.b { right: 32px; top: 142px; width: 132px; }
+      .ingredient-pill.c { left: 82px; bottom: 78px; width: 150px; }
+      .benefit-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .mini-panel {
+        min-height: 118px;
+        border: 1px solid #d8d8d8;
+        padding: 14px;
+        display: grid;
+        align-content: start;
+        gap: 10px;
+      }
+      .statement-band {
+        min-height: 202px;
+        padding: 28px 16px;
+        display: grid;
+        align-content: center;
+        gap: 18px;
+      }
+      .comparison-table {
+        border: 1px solid #d8d8d8;
+      }
+      .comparison-row {
+        min-height: 64px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        padding: 14px;
+        border-bottom: 1px solid #e5e5e5;
+      }
+      .comparison-row:last-child {
+        border-bottom: 0;
+      }
+      .assessment-card {
+        min-height: 360px;
+        border: 1px solid #d8d8d8;
+        border-radius: 4px;
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+      }
+      .faq-row {
+        min-height: 52px;
+        border-top: 1px solid #d8d8d8;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .related-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .related-card {
+        min-height: 284px;
+        color: inherit;
+        text-decoration: none;
+        display: grid;
+        align-content: start;
+        gap: 12px;
+      }
+      .related-media {
+        height: 178px;
+        background: #e8e8e6;
+      }
+      .review-toolbar {
+        display: grid;
+        grid-template-columns: 1fr 88px;
+        gap: 12px;
+        align-items: end;
+      }
+      .review-entry {
+        border-top: 1px solid #d8d8d8;
+        padding: 22px 0;
+        display: grid;
+        gap: 12px;
+      }
+      .review-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .footer-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+      }
+      .section-chrome {
+        height: 59px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        border-bottom: 1px solid #242424;
+        background: #fff;
+      }
+      .section-meta {
+        height: 34px;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        border-bottom: 1px solid #242424;
+      }
+      .section-title {
+        height: 48px;
+      }
+      .review-carousel-strip {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
+        overflow: hidden;
+      }
+      .review-highlight-pane {
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        min-height: 244px;
+      }
+      .review-highlight-pane.is-faded {
+        opacity: .28;
+      }
+      .review-photo {
+        height: 190px;
+        background: #e8e8e6;
+      }
+      .verified-chip {
+        width: 112px;
+        height: 28px;
+        background: #f2f58e;
+      }
+      .callout-diagram {
+        position: relative;
+        height: 360px;
+        background: #eeeeec;
+      }
+      .callout-product {
+        position: absolute;
+        left: 166px;
+        top: 80px;
+        width: 96px;
+        height: 210px;
+        border-radius: 28px 28px 8px 8px;
+        background: #dededc;
+      }
+      .callout-label {
+        position: absolute;
+        width: 92px;
+        height: 26px;
+        border: 1px solid #242424;
+        border-radius: 4px;
+        background: #f2f58e;
+      }
+      .callout-label.a { left: 30px; top: 38px; }
+      .callout-label.b { right: 30px; top: 38px; }
+      .callout-label.c { left: 48px; top: 182px; }
+      .callout-label.d { right: 48px; top: 182px; }
+      .callout-label.e { left: 30px; bottom: 34px; }
+      .callout-label.f { right: 30px; bottom: 34px; width: 116px; height: 42px; }
+      .scan-media {
+        background: #e8e8e6;
+      }
+      .carousel-bars {
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+      }
+      .comparison-card-pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .comparison-card {
+        border: 1px solid #d8d8d8;
+        display: grid;
+        align-content: start;
+        gap: 14px;
+        padding: 14px;
+        background: #fff;
+      }
+      .comparison-media {
+        height: 132px;
+        background: #e8e8e6;
+      }
+      .assessment-media {
+        position: relative;
+        height: 320px;
+        background: #e8e8e6;
+      }
+      .assessment-phone {
+        position: absolute;
+        left: 120px;
+        top: 28px;
+        width: 190px;
+        height: 268px;
+        border: 5px solid #242424;
+        border-radius: 28px;
+        background: #dededc;
+      }
+      .arrow-button {
+        position: absolute;
+        top: 150px;
+        width: 50px;
+        height: 50px;
+        background: #050505;
+        border-radius: 4px;
+      }
+      .arrow-button.left { left: 44px; }
+      .arrow-button.right { right: 44px; }
+      .product-review-search {
+        height: 52px;
+        border: 1px solid #bdbdbd;
+        border-radius: 4px;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .review-image-row {
+        display: flex;
+        gap: 8px;
+      }
+      .review-image {
+        width: 82px;
+        height: 82px;
+        border-radius: 3px;
+        background: #e8e8e6;
+      }
+      .final-footer {
+        background: #f2f58e;
+        padding: 36px 20px 0;
+        display: grid;
+        align-content: start;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screen" aria-busy="true">
+      <header class="topbar"><a class="bone logo" href="home.html"></a><div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div></header>
+      <section class="hero-copy"><div class="hero-meta"><span class="bone line" style="width:42px"></span><span class="bone line" style="width:66px"></span></div><span class="bone" style="width:170px; height:70px; margin-top:30px"></span></section>
+      <section class="media-hero"><span class="product-a"></span><span class="product-b"></span><div class="slider"><span class="slide active"></span><span class="slide"></span><span class="slide"></span></div></section>
+      <section class="cta-wrap"><a class="cta-link" href="cart.html"><div class="cta" data-component="hero-cta"></div></a></section>
+      <section class="two" style="padding:0 16px"><span class="rule"></span><span class="rule"></span></section>
+      <section class="details"><div class="two"><div class="stack"><span class="bone line"></span><span class="bone line" style="width:82%"></span><span class="bone line" style="width:62%"></span></div><div><div class="marks" style="margin-top:28px"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:72px; margin-top:10px"></span></div></div><div class="stack" style="margin-top:38px"><span class="bone line"></span><span class="bone line" style="width:94%"></span><span class="bone line" style="width:88%"></span><span class="bone line" style="width:76%"></span></div></section>
+      <section class="purchase-flow" data-component="purchase-flow">
+        <div class="treatment-banner" data-component="treatment-banner">
+          <div class="banner-copy">
+            <span class="rule"></span>
+            <span class="bone line" style="width:112px; height:18px"></span>
+            <a class="cta-link" href="cart.html" style="height:32px"><div class="cta" style="height:32px"></div></a>
+          </div>
+          <div class="banner-media"></div>
+        </div>
+
+        <div class="subscription-card" data-component="subscription-card">
+          <div class="purchase-row">
+            <span class="marks"><i class="mark" style="border-radius:999px"></i><i class="bone line" style="width:150px; height:22px"></i></span>
+            <span class="bone line" style="width:30px"></span>
+          </div>
+          <div class="check-lines">
+            <span class="bone line" style="width:78%"></span>
+            <span class="bone line" style="width:74%"></span>
+            <span class="bone line" style="width:58%"></span>
+            <span class="bone line" style="width:70%"></span>
+          </div>
+          <div class="gift-card">
+            <div class="gift-copy">
+              <span class="bone line" style="width:74%"></span>
+              <span class="bone line" style="width:58%"></span>
+              <span class="rule"></span>
+              <span class="gift-rating" data-component="gift-rating">
+                <span class="bone line" style="width:70px"></span>
+                <span class="marks"><i class="bone line" style="width:20px"></i><i class="mark"></i></span>
+              </span>
+            </div>
+            <div class="gift-media"></div>
+          </div>
+          <span class="bone line" style="width:84%"></span>
+          <span class="bone line" style="width:52%"></span>
+        </div>
+
+        <div class="one-time-card" data-component="one-time-card">
+          <span class="marks"><i class="bone mark" style="border-radius:999px; background:#e8e8e6"></i><i class="bone line" style="width:160px; height:20px"></i></span>
+          <span class="bone line" style="width:30px"></span>
+        </div>
+
+        <a class="add-bag" data-component="add-to-bag" href="cart.html"><div class="cta"></div></a>
+
+        <div class="benefits-icons" data-component="benefits-icons">
+          <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:86px"></span></div>
+          <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:80px"></span></div>
+          <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:96px"></span><span class="bone line" style="width:78px"></span></div>
+        </div>
+      </section>
+
+      <section class="accordion-stack" data-component="accordion-stack">
+        <div class="accordion-row" data-accordion="expanded">
+          <div class="accordion-head">
+            <span class="bone line" style="width:170px; height:16px"></span>
+            <span class="bone line" style="width:16px"></span>
+          </div>
+          <div class="accordion-body">
+            <div class="bullet-list" data-component="accordion-bullets">
+              <span class="bullet"><i class="bone line" style="width:100%"></i></span>
+              <span class="bullet"><i class="bone line" style="width:94%"></i></span>
+              <span class="bullet"><i class="bone line" style="width:86%"></i></span>
+            </div>
+            <div class="ingredient-icons">
+              <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:74px"></span></div>
+              <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:88px"></span></div>
+              <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:58px"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="accordion-row">
+          <div class="accordion-head"><span class="bone line" style="width:132px; height:16px"></span><span class="bone line" style="width:16px"></span></div>
+        </div>
+        <div class="accordion-row">
+          <div class="accordion-head"><span class="bone line" style="width:112px; height:16px"></span><span class="bone line" style="width:16px"></span></div>
+        </div>
+        <div class="accordion-row">
+          <div class="accordion-head"><span class="bone line" style="width:122px; height:16px"></span><span class="bone line" style="width:16px"></span></div>
+        </div>
+      </section>
+      <section class="component-section diagnostics-section" data-component="results-diagnostics" style="height:986px">
+        <div class="diagnostics-sticky-context" data-component="diagnostics-sticky-context">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="diagnostics-title-panel" data-component="diagnostics-title-panel">
+          <span class="bone diagnostics-title"></span>
+        </div>
+        <div class="diagnostics-body">
+          <div class="diagnostics-label-row">
+            <div class="diagnostics-label">
+              <span class="rule"></span>
+              <span class="bone small" style="width:48px"></span>
+            </div>
+            <div class="diagnostics-label">
+              <span class="rule"></span>
+              <span class="bone small" style="width:86px"></span>
+            </div>
+          </div>
+          <div class="split-media" data-component="before-after-pair">
+            <div class="diagnostic-face-panel"></div>
+            <div class="diagnostic-face-panel"></div>
+          </div>
+          <div class="diagnostics-carousel-rule" data-component="diagnostics-carousel-rule">
+            <span class="slide active"></span>
+            <span class="slide"></span>
+            <span class="slide"></span>
+          </div>
+          <div class="stat-result-list" data-component="stat-result-list">
+            <div class="stat-result-row" data-component="stat-result-row">
+              <span class="bone stat-number"></span>
+              <div class="stack"><span class="bone line" style="width:90%"></span><span class="bone line" style="width:78%"></span></div>
+            </div>
+            <div class="stat-result-row" data-component="stat-result-row">
+              <span class="bone stat-number"></span>
+              <div class="stack"><span class="bone line" style="width:82%"></span><span class="bone line" style="width:62%"></span></div>
+            </div>
+            <div class="stat-result-row" data-component="stat-result-row">
+              <span class="bone stat-number"></span>
+              <div class="stack"><span class="bone line" style="width:94%"></span><span class="bone line" style="width:72%"></span></div>
+            </div>
+          </div>
+          <span class="bone small diagnostics-footnote" data-component="diagnostics-footnote"></span>
+        </div>
+      </section>
+
+      <section class="component-section" data-component="review-highlights" style="height:694px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="section-meta" data-component="review-section-meta">
+          <span class="bone small" style="width:142px"></span>
+          <span class="bone small" style="width:22px"></span>
+        </div>
+        <span class="bone section-title" style="width:268px"></span>
+        <div class="review-carousel-strip" data-component="review-carousel-strip">
+          <div class="review-highlight-pane" data-component="review-highlight-pane">
+            <div class="review-photo"></div>
+            <span class="bone line" style="width:92px"></span>
+          </div>
+          <div class="review-highlight-pane" data-component="review-highlight-pane">
+            <div class="review-photo"></div>
+            <span class="bone line" style="width:86px"></span>
+          </div>
+          <div class="review-highlight-pane is-faded" data-component="review-highlight-pane">
+            <div class="review-photo"></div>
+            <span class="bone line" style="width:92px"></span>
+          </div>
+        </div>
+        <div class="review-highlight-copy" data-component="review-highlight-copy">
+          <span class="bone line" style="width:96px"></span>
+          <span class="bone verified-chip"></span>
+          <div class="stack" style="margin-top:18px">
+            <span class="bone line" style="width:88%"></span>
+            <span class="bone line" style="width:92%"></span>
+            <span class="bone line" style="width:78%"></span>
+            <span class="bone line" style="width:64%"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="component-section" data-component="power-of-clarixa" style="height:1136px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="section-meta" data-component="power-section-meta">
+          <span class="bone small" style="width:92px"></span>
+          <span class="bone small" style="width:22px"></span>
+        </div>
+        <span class="bone section-title" style="width:296px"></span>
+        <div class="stack">
+          <span class="bone line" style="width:94%"></span>
+          <span class="bone line" style="width:68%"></span>
+        </div>
+        <div class="callout-diagram" data-component="ingredient-callout-diagram">
+          <span class="callout-product"></span>
+          <span class="callout-label a" data-component="ingredient-callout"></span>
+          <span class="callout-label b" data-component="ingredient-callout"></span>
+          <span class="callout-label c" data-component="ingredient-callout"></span>
+          <span class="callout-label d" data-component="ingredient-callout"></span>
+          <span class="callout-label e" data-component="ingredient-callout"></span>
+          <span class="callout-label f" data-component="ingredient-callout"></span>
+        </div>
+        <div class="benefit-grid" data-component="ingredient-benefit-grid">
+          <div class="mini-panel" data-component="ingredient-benefit"><span class="bone line" style="width:68%"></span><span class="bone line"></span><span class="bone line" style="width:78%"></span></div>
+          <div class="mini-panel" data-component="ingredient-benefit"><span class="bone line" style="width:62%"></span><span class="bone line"></span><span class="bone line" style="width:70%"></span></div>
+          <div class="mini-panel" data-component="ingredient-benefit"><span class="bone line" style="width:72%"></span><span class="bone line"></span><span class="bone line" style="width:66%"></span></div>
+          <div class="mini-panel" data-component="ingredient-benefit"><span class="bone line" style="width:58%"></span><span class="bone line"></span><span class="bone line" style="width:82%"></span></div>
+        </div>
+      </section>
+
+      <section class="component-section soft" data-component="metabolism-effectiveness" style="height:1014px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="mini-panel" style="min-height:116px">
+          <span class="bone line" style="width:170px"></span>
+          <span class="bone line" style="width:62%"></span>
+          <span class="bone line" style="width:42%"></span>
+        </div>
+        <div class="mini-panel" data-component="supplement-disclaimer" style="min-height:84px; grid-template-columns:30px 1fr; align-items:center">
+          <span class="bone icon"></span>
+          <div class="stack"><span class="bone line"></span><span class="bone line" style="width:86%"></span></div>
+        </div>
+        <div class="yellow-field statement-band" data-component="effectiveness-title-panel" style="height:316px">
+          <div class="section-meta"><span class="bone small" style="width:172px"></span><span class="bone small" style="width:22px"></span></div>
+          <span class="bone heading" style="width:360px; height:120px"></span>
+        </div>
+        <div class="scan-media" data-component="scan-media-start" style="height:336px"></div>
+      </section>
+
+      <section class="component-section soft" data-component="root-cause-difference" style="height:810px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="scan-media" data-component="scan-media-continuation" style="height:322px"></div>
+        <div class="carousel-bars" data-component="root-cause-carousel">
+          <span class="slide active"></span><span class="slide"></span><span class="slide"></span><span class="slide"></span>
+        </div>
+        <div class="stack" data-component="root-cause-copy" style="padding:0 16px">
+          <span class="bone line" style="width:248px; height:20px"></span>
+          <span class="bone line" style="width:94%"></span>
+          <span class="bone line" style="width:78%"></span>
+        </div>
+        <div class="yellow-field statement-band" data-component="difference-title-panel" style="height:266px; align-content:start">
+          <div class="section-meta"><span class="bone small" style="width:126px"></span><span class="bone small" style="width:22px"></span></div>
+          <span class="bone heading" style="width:335px; height:82px"></span>
+        </div>
+      </section>
+
+      <section class="component-section" data-component="comparison-and-process" style="height:632px">
+        <div class="comparison-card-pair" data-component="comparison-card-pair">
+          <div class="comparison-card" data-component="comparison-card">
+            <div class="comparison-media"></div>
+            <span class="bone line" style="width:86px"></span>
+            <div class="comparison-row"><span class="bone line"></span><span class="bone line" style="width:68%"></span></div>
+            <div class="comparison-row"><span class="bone line"></span><span class="bone line" style="width:74%"></span></div>
+          </div>
+          <div class="comparison-card" data-component="comparison-card">
+            <div class="comparison-media"></div>
+            <span class="bone line" style="width:122px"></span>
+            <div class="comparison-row"><span class="bone line"></span><span class="bone line" style="width:62%"></span></div>
+            <div class="comparison-row"><span class="bone line"></span><span class="bone line" style="width:72%"></span></div>
+          </div>
+        </div>
+        <div class="yellow-field statement-band" data-component="process-title-panel" style="height:214px; align-content:start">
+          <div class="section-meta"><span class="bone small" style="width:70px"></span><span class="bone small" style="width:22px"></span></div>
+          <span class="bone heading" style="width:230px; height:58px"></span>
+        </div>
+      </section>
+
+      <section class="component-section" data-component="assessment-and-faq" style="height:801px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="assessment-media" data-component="process-carousel-media">
+          <span class="assessment-phone"></span>
+          <span class="arrow-button left"></span>
+          <span class="arrow-button right"></span>
+        </div>
+        <div class="carousel-bars"><span class="slide active"></span><span class="slide"></span><span class="slide"></span><span class="slide"></span></div>
+        <div class="stack" data-component="process-step-copy" style="padding:0 16px">
+          <span class="bone line" style="width:230px; height:20px"></span>
+          <span class="bone line" style="width:92%"></span>
+          <span class="bone line" style="width:80%"></span>
+        </div>
+        <div class="section-meta" data-component="faq-heading"><span class="bone small" style="width:220px"></span><span class="bone small" style="width:22px"></span></div>
+        <div data-component="faq-stack">
+          <div class="faq-row" data-component="faq-row"><span class="bone line" style="width:260px"></span><span class="bone line" style="width:16px"></span></div>
+          <div class="faq-row" data-component="faq-row"><span class="bone line" style="width:220px"></span><span class="bone line" style="width:16px"></span></div>
+          <div class="faq-row" data-component="faq-row"><span class="bone line" style="width:280px"></span><span class="bone line" style="width:16px"></span></div>
+          <div class="faq-row" data-component="faq-row"><span class="bone line" style="width:300px"></span><span class="bone line" style="width:16px"></span></div>
+          <div class="faq-row" data-component="faq-row"><span class="bone line" style="width:270px"></span><span class="bone line" style="width:16px"></span></div>
+          <div class="faq-row" data-component="faq-row"><span class="bone line" style="width:245px"></span><span class="bone line" style="width:16px"></span></div>
+          <div class="faq-row" data-component="faq-row"><span class="bone line" style="width:285px"></span><span class="bone line" style="width:16px"></span></div>
+        </div>
+      </section>
+
+      <section class="component-section soft" data-component="related-products-and-review-header" style="height:932px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="related-grid" data-component="related-product-carousel">
+          <a class="related-card" data-component="related-product-card" href="pdp.html">
+            <span class="related-media"></span>
+            <div class="marks"><span class="bone line" style="width:24px"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div>
+            <span class="bone line" style="width:78%"></span>
+            <span class="bone line" style="width:82%"></span>
+            <span class="bone line" style="width:52%"></span>
+          </a>
+          <a class="related-card" data-component="related-product-card" href="clarixa.html" style="opacity:.28">
+            <span class="related-media"></span>
+            <div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div>
+            <span class="bone line" style="width:72%"></span>
+            <span class="bone line" style="width:62%"></span>
+          </a>
+        </div>
+        <div class="yellow-field statement-band" data-component="product-reviews-title-panel" style="height:210px; align-content:start">
+          <div class="section-meta"><span class="bone small" style="width:92px"></span><span class="bone small" style="width:22px"></span></div>
+          <span class="bone heading" style="width:270px; height:54px"></span>
+        </div>
+        <div class="stack" data-component="review-summary-search">
+          <div class="review-meta">
+            <div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div>
+            <span class="bone line" style="width:86px"></span>
+          </div>
+          <div class="product-review-search"><span class="bone line" style="width:130px"></span><span class="bone icon"></span></div>
+          <span class="rule"></span>
+        </div>
+      </section>
+
+      <section class="component-section" data-component="review-list-first" style="height:932px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="review-entry" data-component="review-entry-row">
+          <div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:72px"></span></div>
+          <span class="bone line" style="width:52%"></span>
+          <div class="review-image-row"><span class="review-image"></span><span class="review-image"></span></div>
+          <span class="bone line"></span><span class="bone line" style="width:88%"></span><span class="bone line" style="width:74%"></span>
+        </div>
+        <div class="review-entry" data-component="review-entry-row">
+          <div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:66px"></span></div>
+          <span class="bone line" style="width:44%"></span>
+          <div class="review-image-row"><span class="review-image"></span><span class="review-image"></span></div>
+          <span class="bone line"></span><span class="bone line" style="width:76%"></span>
+        </div>
+        <div class="review-entry" data-component="review-entry-row">
+          <div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:64px"></span></div>
+          <span class="bone line" style="width:38%"></span>
+          <div class="review-image-row"><span class="review-image"></span><span class="review-image"></span></div>
+        </div>
+      </section>
+
+      <section class="component-section" data-component="review-list-middle" style="height:932px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="review-entry" data-component="review-entry-row"><div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:70px"></span></div><span class="bone line" style="width:46%"></span><div class="review-image-row"><span class="review-image"></span><span class="review-image"></span></div><span class="bone line"></span><span class="bone line" style="width:90%"></span></div>
+        <div class="review-entry" data-component="review-entry-row"><div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:74px"></span></div><span class="bone line" style="width:58%"></span><div class="review-image-row"><span class="review-image"></span><span class="review-image"></span></div><span class="bone line"></span><span class="bone line" style="width:82%"></span></div>
+        <div class="review-entry" data-component="review-entry-row"><div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:64px"></span></div><span class="bone line" style="width:40%"></span><div class="review-image-row"><span class="review-image"></span><span class="review-image"></span></div><span class="bone line"></span><span class="bone line" style="width:72%"></span></div>
+      </section>
+
+      <section class="component-section" data-component="review-list-last" style="height:932px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="review-entry" data-component="review-entry-row"><div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:76px"></span></div><span class="bone line" style="width:62%"></span><span class="bone line"></span><span class="bone line" style="width:86%"></span></div>
+        <div class="review-entry" data-component="review-entry-row"><div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:68px"></span></div><span class="bone line" style="width:54%"></span><div class="review-image-row"><span class="review-image"></span></div><span class="bone line"></span><span class="bone line" style="width:74%"></span></div>
+        <div class="review-entry" data-component="review-entry-row">
+          <div class="review-meta"><div class="marks"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:68px"></span></div>
+          <div class="review-image-row"><span class="review-image"></span></div>
+          <span class="bone line" style="width:210px; height:36px"></span>
+        </div>
+      </section>
+
+      <section class="component-section" data-component="final-cta-footer" style="height:936px">
+        <div class="section-chrome">
+          <a class="bone logo" href="home.html"></a>
+          <div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div>
+        </div>
+        <div class="final-footer" style="height:877px">
+          <div class="yellow-field statement-band" data-component="final-yellow-cta" style="height:192px; align-content:start; padding:18px 0 0">
+            <span class="rule"></span>
+            <span class="bone heading" style="width:300px; height:54px"></span>
+            <a class="cta" href="cart.html" style="height:52px"></a>
+          </div>
+          <div class="footer-grid" data-component="footer-link-grid" style="margin-top:252px">
+            <div class="stack"><span class="bone line" style="width:92px"></span><span class="bone line" style="width:136px"></span><span class="bone line" style="width:122px"></span><span class="bone line" style="width:104px"></span></div>
+            <div class="stack"><span class="bone line" style="width:82px"></span><span class="bone line" style="width:132px"></span><span class="bone line" style="width:118px"></span><span class="bone line" style="width:106px"></span></div>
+          </div>
+          <span class="bone" data-component="footer-certification" style="width:72px; height:72px; margin-top:48px; border-radius:12px"></span>
+          <div data-component="footer-copyright-social" style="margin-top:88px">
+            <span class="rule"></span>
+            <div class="review-meta" style="margin-top:22px">
+              <span class="bone line" style="width:260px"></span>
+              <div class="icons"><span class="bone icon"></span><span class="bone icon"></span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

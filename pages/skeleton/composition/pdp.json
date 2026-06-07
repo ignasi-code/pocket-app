@@ -1,0 +1,60 @@
+{
+  "pageType": "pdp",
+  "sourceUrl": "https://www.methodiq.com/collatin",
+  "skeleton": "../pages/pdp.html",
+  "compare": "../compare/pdp.html",
+  "sourceHeight": 13173,
+  "sections": [
+    {
+      "name": "header",
+      "components": ["logo-link", "cart-link", "account-icon", "menu-icon"],
+      "links": [{ "from": "logo-link", "to": "home.html" }, { "from": "cart-link", "to": "cart.html" }]
+    },
+    {
+      "name": "product-hero-copy",
+      "components": ["meta-row", "title-block"]
+    },
+    {
+      "name": "product-media-carousel",
+      "components": ["product-media", "slide-indicators"]
+    },
+    {
+      "name": "primary-action",
+      "components": ["primary-cta"],
+      "links": [{ "from": "primary-cta", "to": "cart.html" }]
+    },
+    {
+      "name": "product-details",
+      "components": ["attribute-columns", "rating-marks", "body-copy"]
+    },
+    {
+      "name": "find-treatment-banner",
+      "components": ["banner-copy", "secondary-cta", "banner-media"],
+      "links": [{ "from": "secondary-cta", "to": "cart.html" }],
+      "layoutContract": "two columns, CTA under heading/copy, media on the right"
+    },
+    {
+      "name": "purchase-options",
+      "components": ["subscription-card", "gift-rating", "one-time-purchase-card", "add-to-bag-cta"],
+      "links": [{ "from": "add-to-bag-cta", "to": "cart.html" }],
+      "layoutContract": "subscription and one-time options both present before add-to-bag; embedded gift/review rows preserve review count plus rating pair"
+    },
+    {
+      "name": "benefits-icon-row",
+      "components": ["benefit-icon", "benefit-label"],
+      "repeats": "benefit-icon",
+      "layoutContract": "three evenly spaced icon/label columns"
+    },
+    {
+      "name": "accordion-stack",
+      "components": ["accordion-row", "expanded-accordion-body", "bullet-list", "ingredient-icon-row"],
+      "repeats": "accordion-row",
+      "layoutContract": "first accordion expanded with bullet list before icon row; following rows collapsed"
+    },
+    {
+      "name": "deep-content-sections",
+      "components": ["offer-panel", "results-band", "review-card", "faq-row", "related-card", "reviews-list"],
+      "purpose": "preserve source section rhythm and full scroll depth"
+    }
+  ]
+}

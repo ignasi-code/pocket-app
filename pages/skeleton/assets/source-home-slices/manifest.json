@@ -1,0 +1,151 @@
+{
+  "sourceUrl": "https://www.methodiq.com/",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "docHeight": 14981,
+  "step": 850,
+  "slices": [
+    {
+      "file": "source-home-hero-initial.png",
+      "requestedY": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-hero-later.png",
+      "requestedY": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-00.png",
+      "requestedY": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-01.png",
+      "requestedY": 850,
+      "y": 850,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-02.png",
+      "requestedY": 1700,
+      "y": 1700,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-03.png",
+      "requestedY": 2550,
+      "y": 2550,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-04.png",
+      "requestedY": 3400,
+      "y": 3400,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-05.png",
+      "requestedY": 4250,
+      "y": 4250,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-06.png",
+      "requestedY": 5100,
+      "y": 5100,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-07.png",
+      "requestedY": 5950,
+      "y": 5950,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-08.png",
+      "requestedY": 6800,
+      "y": 6800,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-09.png",
+      "requestedY": 7650,
+      "y": 7650,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-10.png",
+      "requestedY": 8500,
+      "y": 8500,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-11.png",
+      "requestedY": 9350,
+      "y": 9350,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-12.png",
+      "requestedY": 10200,
+      "y": 10200,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-13.png",
+      "requestedY": 11050,
+      "y": 11050,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-14.png",
+      "requestedY": 11900,
+      "y": 11900,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-15.png",
+      "requestedY": 12750,
+      "y": 12750,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-16.png",
+      "requestedY": 13600,
+      "y": 13600,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-home-17.png",
+      "requestedY": 14450,
+      "y": 14048.5,
+      "width": 430,
+      "height": 932
+    }
+  ]
+}

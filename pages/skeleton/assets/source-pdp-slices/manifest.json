@@ -1,0 +1,123 @@
+{
+  "sourceUrl": "https://www.methodiq.com/collatin",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "docHeight": 13173,
+  "step": 850,
+  "slices": [
+    {
+      "file": "source-pdp-00.png",
+      "requestedY": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-01.png",
+      "requestedY": 850,
+      "y": 850,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-02.png",
+      "requestedY": 1700,
+      "y": 1700,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-03.png",
+      "requestedY": 2550,
+      "y": 2550,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-04.png",
+      "requestedY": 3400,
+      "y": 3400,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-05.png",
+      "requestedY": 4250,
+      "y": 4250,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-06.png",
+      "requestedY": 5100,
+      "y": 5100,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-07.png",
+      "requestedY": 5950,
+      "y": 5950,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-08.png",
+      "requestedY": 6800,
+      "y": 6800,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-09.png",
+      "requestedY": 7650,
+      "y": 7650,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-10.png",
+      "requestedY": 8500,
+      "y": 8500,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-11.png",
+      "requestedY": 9350,
+      "y": 9350,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-12.png",
+      "requestedY": 10200,
+      "y": 10200,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-13.png",
+      "requestedY": 11050,
+      "y": 11050,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-14.png",
+      "requestedY": 11900,
+      "y": 11900,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-pdp-15.png",
+      "requestedY": 12241,
+      "y": 12223,
+      "width": 430,
+      "height": 932
+    }
+  ]
+}

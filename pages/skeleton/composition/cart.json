@@ -1,0 +1,32 @@
+{
+  "pageType": "cart-drawer",
+  "sourceUrl": "https://www.methodiq.com/clarixa",
+  "sourceState": "populated cart drawer opened from header cart button after adding Collatin and Clarixa subscription items",
+  "skeleton": "../pages/cart.html",
+  "compare": "../compare/cart.html",
+  "sourceHeight": 932,
+  "status": "captured-populated-drawer",
+  "sections": [
+    {
+      "name": "header",
+      "components": ["logo-link", "cart-icon-with-count", "account-icon", "menu-icon"],
+      "links": [{ "from": "logo-link", "to": "home.html" }]
+    },
+    {
+      "name": "cart-drawer",
+      "state": "open",
+      "components": ["drawer-title", "close-button", "free-shipping-status", "cart-items", "promo-code-row", "cart-summary", "checkout-cta"]
+    },
+    {
+      "name": "cart-items",
+      "components": ["product-line-item", "product-line-item", "subscription-gift-line"],
+      "repeats": "product-line-item",
+      "layoutContract": "two paid subscription items followed by one gift item; product rows include image, title block, description lines, subscription cadence line, price, and quantity/remove controls"
+    },
+    {
+      "name": "cart-summary",
+      "components": ["subtotal-row", "shipping-row", "tax-row", "estimated-total-row", "checkout-cta"],
+      "layoutContract": "summary rows remain grouped above the checkout CTA"
+    }
+  ]
+}

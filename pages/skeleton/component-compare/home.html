@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Home Component Compare</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #111; color: #f7f7f7; font-family: Arial, Helvetica, sans-serif; }
+      header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border-bottom: 1px solid #333; background: #171717; }
+      a { color: #fff; font-weight: 700; }
+      main { width: min(100%, 980px); margin: 0 auto; padding: 18px 16px 80px; }
+      .component { margin-bottom: 28px; border: 1px solid #333; border-radius: 8px; overflow: hidden; background: #1a1a1a; }
+      .component h2 { margin: 0; padding: 12px 14px; border-bottom: 1px solid #333; font-size: 14px; text-transform: uppercase; letter-spacing: 0.03em; }
+      .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #333; }
+      figure { margin: 0; background: #fff; }
+      figcaption { padding: 8px 10px; background: #222; color: #fff; font-size: 12px; text-transform: uppercase; }
+      img { display: block; width: 430px; max-width: 100%; height: auto; margin: 0 auto; background: #fff; }
+      @media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="../index.html">Inventory</a>
+      <a href="../compare/home.html">Page Compare</a>
+    </header>
+    <main>
+      <section class="component"><h2>Header</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-header.jpg" alt="source header" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-header.jpg" alt="skeleton header" /></figure></div></section>
+      <section class="component"><h2>Animated Hero - Initial State</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-hero-initial-state.jpg" alt="source hero-initial-state" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-hero-initial-state.jpg" alt="skeleton hero-initial-state" /></figure></div></section>
+      <section class="component"><h2>Animated Hero - Diagnostic State</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-hero-diagnostic-state.jpg" alt="source hero-diagnostic-state" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-hero-diagnostic-state.jpg" alt="skeleton hero-diagnostic-state" /></figure></div></section>
+      <section class="component"><h2>Animated Hero - Results State</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-hero-results-state.jpg" alt="source hero-results-state" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-hero-results-state.jpg" alt="skeleton hero-results-state" /></figure></div></section>
+      <section class="component"><h2>Prescription Ingredients Section</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-prescription-ingredients.jpg" alt="source prescription-ingredients" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-prescription-ingredients.jpg" alt="skeleton prescription-ingredients" /></figure></div></section>
+      <section class="component"><h2>Doctors And Dataset Section</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-doctors-data-section.jpg" alt="source doctors-data-section" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-doctors-data-section.jpg" alt="skeleton doctors-data-section" /></figure></div></section>
+      <section class="component"><h2>Health Platform Section</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-health-platform-section.jpg" alt="source health-platform-section" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-health-platform-section.jpg" alt="skeleton health-platform-section" /></figure></div></section>
+      <section class="component"><h2>App Download Section</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-app-download-section.jpg" alt="source app-download-section" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-app-download-section.jpg" alt="skeleton app-download-section" /></figure></div></section>
+      <section class="component"><h2>Doctor Credentials Section</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-doctor-credentials-section.jpg" alt="source doctor-credentials-section" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-doctor-credentials-section.jpg" alt="skeleton doctor-credentials-section" /></figure></div></section>
+      <section class="component"><h2>Final CTA And Footer</h2><div class="pair"><figure><figcaption>Source</figcaption><img src="home/source-final-cta-footer.jpg" alt="source final-cta-footer" /></figure><figure><figcaption>Skeleton</figcaption><img src="home/skeleton-final-cta-footer.jpg" alt="skeleton final-cta-footer" /></figure></div></section>
+    </main>
+  </body>
+</html>

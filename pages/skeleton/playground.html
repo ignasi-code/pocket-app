@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Skeleton UI Playground</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .playground {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+      }
+
+      .playground h1 {
+        margin: 0 0 20px;
+        font-size: 32px;
+      }
+
+      .component-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+      }
+
+      .sample {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+        min-height: 180px;
+        background: #fff;
+      }
+
+      .sample h2 {
+        margin: 0;
+        font-size: 13px;
+        text-transform: uppercase;
+        color: #555;
+      }
+
+      .sample-card {
+        width: 183px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .sample-media {
+        width: 183px;
+        height: 183px;
+        background: #f1f1f1;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="playground">
+      <p><a href="index.html">Back to inventory</a></p>
+      <h1>Skeleton UI Playground</h1>
+      <section class="component-grid">
+        <article class="sample">
+          <h2>Header</h2>
+          <div class="topbar" style="padding:0; border:0">
+            <span class="bone logo"></span>
+            <span class="icons"><i class="bone icon"></i><i class="bone icon"></i><i class="bone icon"></i></span>
+          </div>
+        </article>
+        <article class="sample">
+          <h2>Product Card</h2>
+          <div class="sample-card">
+            <span class="sample-media"></span>
+            <span class="two"><i class="bone line"></i><i class="bone line"></i></span>
+            <span class="rule"></span>
+            <span class="marks"><i class="mark"></i><i class="mark"></i><i class="mark"></i><i class="mark"></i><i class="mark"></i></span>
+            <span class="bone line"></span>
+            <span class="bone line" style="width:80%"></span>
+            <span class="cta" style="height:32px"></span>
+          </div>
+        </article>
+        <article class="sample">
+          <h2>PDP Hero</h2>
+          <span class="bone" style="width:170px; height:70px"></span>
+          <span class="media" style="height:220px"></span>
+          <span class="cta"></span>
+        </article>
+        <article class="sample">
+          <h2>Content Band</h2>
+          <span class="bone" style="width:260px; height:42px"></span>
+          <span class="media" style="height:180px"></span>
+          <span class="bone line"></span>
+          <span class="bone line" style="width:78%"></span>
+        </article>
+        <article class="sample">
+          <h2>Review Card</h2>
+          <span class="bone line" style="width:42%"></span>
+          <span class="marks"><i class="mark"></i><i class="mark"></i><i class="mark"></i><i class="mark"></i><i class="mark"></i></span>
+          <span class="bone line"></span>
+          <span class="bone line" style="width:88%"></span>
+          <span class="bone line" style="width:70%"></span>
+        </article>
+        <article class="sample">
+          <h2>FAQ Rows</h2>
+          <span class="rule"></span>
+          <span class="two"><i class="bone line"></i><i class="bone icon"></i></span>
+          <span class="rule"></span>
+          <span class="two"><i class="bone line"></i><i class="bone icon"></i></span>
+          <span class="rule"></span>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

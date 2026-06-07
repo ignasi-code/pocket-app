@@ -1,0 +1,88 @@
+{
+  "sourceUrl": "https://www.methodiq.com/shop-all",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "docHeight": 9246,
+  "step": 850,
+  "slices": [
+    {
+      "file": "source-category-00.png",
+      "requestedY": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-01.png",
+      "requestedY": 850,
+      "y": 850,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-02.png",
+      "requestedY": 1700,
+      "y": 1700,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-03.png",
+      "requestedY": 2550,
+      "y": 2550,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-04.png",
+      "requestedY": 3400,
+      "y": 3400,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-05.png",
+      "requestedY": 4250,
+      "y": 4250,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-06.png",
+      "requestedY": 5100,
+      "y": 5100,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-07.png",
+      "requestedY": 5950,
+      "y": 5950,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-08.png",
+      "requestedY": 6800,
+      "y": 6800,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-09.png",
+      "requestedY": 7650,
+      "y": 7650,
+      "width": 430,
+      "height": 932
+    },
+    {
+      "file": "source-category-10.png",
+      "requestedY": 8500,
+      "y": 8314,
+      "width": 430,
+      "height": 932
+    }
+  ]
+}

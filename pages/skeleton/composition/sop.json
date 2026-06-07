@@ -1,0 +1,140 @@
+{
+  "tag": "#SkeletonSOP",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "sops": [
+    {
+      "tag": "#SkeletonSiteMapSOP",
+      "purpose": "Create a navigable index of page types before deep skeleton work.",
+      "steps": [
+        "Inventory page types and canonical URLs.",
+        "Create one standalone skeleton page per type.",
+        "Create one compare page per type.",
+        "Create one component-compare atlas per type.",
+        "Create one composition map per type.",
+        "Make index.html show the folder-style output tree and links."
+      ]
+    },
+    {
+      "tag": "#SkeletonSOP",
+      "purpose": "Turn a source URL into a static skeleton page fast without losing structure.",
+      "steps": [
+        "Capture the full source at the locked viewport.",
+        "If full-page capture repeats, clips, or misses sections, use scroll-by-scroll slices with a manifest.",
+        "Map sections first, then components, states, and links.",
+        "Create the component compare atlas before refining the final page skeleton.",
+        "Skeletonize visible content by default.",
+        "Preserve component function and state before decorative accuracy.",
+        "Build the skeleton page and internal links.",
+        "Review in side-by-side page compare.",
+        "Run verifier checks before accepting the output."
+      ]
+    },
+    {
+      "tag": "#SkeletonCompositionSOP",
+      "purpose": "Record what the page is made of so templates can be unified across pages.",
+      "steps": [
+        "List each section in scroll order.",
+        "List components inside each section.",
+        "Record repeated templates and card patterns.",
+        "Record selected, expanded, active, sticky, and disabled states.",
+        "Record links and expected navigation targets.",
+        "Call out special media behavior, such as animated or evolving blocks."
+      ]
+    },
+    {
+      "tag": "#SkeletonComponentCompareSOP",
+      "purpose": "Compare source and skeleton component by component.",
+      "steps": [
+        "Crop source components from verified original screenshots only.",
+        "Crop matching skeleton components from the skeleton page.",
+        "If either source or skeleton full-page capture repeats, clips, or includes capture-only scrollbars, switch that side to scroll-by-scroll slices before cropping.",
+        "Stack each source/skeleton pair in a component atlas.",
+        "Output component-compare/{page}.html for every page type.",
+        "Include source coverage metadata with covered ranges or an explicit no-gap full-scroll marker.",
+        "Continue adding component rows until the source scroll depth is covered from top to bottom.",
+        "Verify the skeleton side has matching named component rows for the same scroll coverage, not repeated generic placeholders.",
+        "Write a component anatomy contract for each risky crop before skeletonizing: context/chrome, title/media/list/forms, repeated units, controls, and footnotes in source order.",
+        "Verify source and skeleton crops are not the same pixels.",
+        "Use the atlas to find missing subcomponents, wrong states, and rhythm errors.",
+        "Feed misses back into the composition map, skeleton template, and verifier.",
+        "Use approved components as a reusable library for stitching future page templates."
+      ]
+    }
+  ],
+  "coreRules": [
+    {
+      "name": "viewport-lock",
+      "rule": "Use viewport 430x932 for mobile unless the user changes it."
+    },
+    {
+      "name": "real-source-gate",
+      "rule": "Before any compare output is accepted, prove source screenshots or crops came from the original page, not the skeleton, compare page, or stale local output."
+    },
+    {
+      "name": "scroll-slice-fallback",
+      "rule": "If source or skeleton full-page screenshots are incomplete, repeated, clipped, scrollbar-polluted, or visually suspect, switch that side to scroll-by-scroll slices and keep a manifest."
+    },
+    {
+      "name": "stateful-media-block",
+      "rule": "If a hero or media area animates, evolves, or changes visual state while remaining one layout block, model it as one component with representative source states rather than separate sections."
+    },
+    {
+      "name": "function-before-shape",
+      "rule": "Preserve function, state, and interaction groups before exact decorative shape."
+    },
+    {
+      "name": "semantic-structure",
+      "rule": "Bullets, checks, numbered steps, icons, option cards, accordions, tabs, ratings, and CTA groups must remain distinct skeleton structures."
+    },
+    {
+      "name": "component-anatomy-contract",
+      "rule": "For each risky component, record the ordered child anatomy before drawing the skeleton: context/chrome, title or media, paired media, lists or rows, controls, and footnotes. The skeleton must preserve that order."
+    },
+    {
+      "name": "no-invented-structures",
+      "rule": "No invented structures: do not convert rows into cards, paired media into generic panels, or lists into paragraphs unless the source actually does that."
+    },
+    {
+      "name": "row-count-gate",
+      "rule": "Row count gate: repeated semantic units must match source count and rhythm. Three stat rows, benefit rows, reviews, or FAQ rows become the same count unless intentionally grouped and labeled."
+    },
+    {
+      "name": "paired-micro-content",
+      "rule": "Preserve paired data groups as components, such as review count plus rating, price plus option label, or label plus value."
+    },
+    {
+      "name": "uniform-repeats",
+      "rule": "Repeated items in the same component family use one locked template, with variation only where the source pattern varies."
+    },
+    {
+      "name": "local-gap-map",
+      "rule": "For key components, capture vertical rhythm between labels, links, CTAs, cards, and section edges."
+    },
+    {
+      "name": "navigation-baked-in",
+      "rule": "Clickable skeleton elements should route to the matching internal skeleton page when the source has a clear page-to-page behavior."
+    },
+    {
+      "name": "component-atlas-first",
+      "rule": "For new pages, create the component compare atlas before treating the standalone skeleton page as final."
+    },
+    {
+      "name": "full-scroll-atlas-coverage",
+      "rule": "Component atlases must cover the whole source scroll depth. Use exact components where known; use named deep-section group components when a section is too large or not yet fully templated."
+    },
+    {
+      "name": "matched-skeleton-coverage",
+      "rule": "The skeleton side of a component atlas must expose matching named component rows for the same full-scroll composition. Reusing broad generic blocks after a major section is a process failure even when the approximate vertical length matches."
+    }
+  ],
+  "specialCases": [
+    {
+      "name": "animated-home-hero",
+      "appliesTo": "METHODIQ home page and similar pages",
+      "rule": "Treat the hero as one evolving media block. Capture at least the initial state and one later state, then skeletonize as a single hero component with media area, overlay/status chips if present, metric cards if present, and persistent CTA."
+    }
+  ]
+}

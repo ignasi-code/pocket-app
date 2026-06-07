@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDP Skeleton</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .screen { min-height: 13173px; }
+      .hero-copy { height: 342px; padding: 25px 16px 0; background: #f0f0ef; }
+      .hero-meta { display: flex; justify-content: space-between; align-items: center; height: 20px; border-bottom: 1px solid #242424; }
+      .media-hero { position: relative; height: 408px; background: #f4f4f4; overflow: hidden; }
+      .product-a { position: absolute; left: 103px; top: 72px; width: 104px; height: 262px; background: #e2e2df; }
+      .product-b { position: absolute; left: 279px; top: 90px; width: 100px; height: 244px; border-radius: 20px 20px 6px 6px; background: #dededc; }
+      .slider { position: absolute; left: 126px; bottom: 20px; display: flex; gap: 16px; }
+      .slide { width: 48px; height: 2px; background: #e8e8e6; }
+      .active { background: #050505; }
+      .cta-wrap { height: 120px; padding: 16px 16px 0; }
+      .details { padding: 24px 16px 80px; }
+      .deep-section { display: grid; align-content: start; gap: 24px; padding: 40px 16px; border-top: 1px solid #242424; }
+      .deep-section.soft { background: #f0f0ef; }
+      .heading { width: 300px; height: 44px; }
+      .media-panel { height: 300px; background: #e8e8e6; }
+      .review-card { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid #d8d8d8; }
+      .purchase-flow {
+        position: relative;
+        height: 769px;
+        padding: 0 16px;
+      }
+      .treatment-banner {
+        position: absolute;
+        top: 0;
+        left: 16px;
+        width: 398px;
+        height: 102px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #f0f0ef;
+      }
+      .banner-copy {
+        padding: 16px;
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        border-right: 1px solid #dedede;
+      }
+      .banner-media {
+        background: #e4e4e2;
+      }
+      .subscription-card {
+        position: absolute;
+        top: 158px;
+        left: 16px;
+        width: 398px;
+        height: 323px;
+        border: 1px solid #8d8d8d;
+        border-radius: 4px;
+        padding: 16px;
+        display: grid;
+        align-content: start;
+        gap: 14px;
+      }
+      .purchase-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .check-lines {
+        display: grid;
+        gap: 10px;
+        margin-left: 16px;
+      }
+      .gift-card {
+        height: 111px;
+        border: 1px solid #b9b9b9;
+        border-radius: 4px;
+        display: grid;
+        grid-template-columns: 1fr 130px;
+        overflow: hidden;
+      }
+      .gift-copy {
+        padding: 16px;
+        display: grid;
+        gap: 10px;
+      }
+      .gift-rating {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .gift-media {
+        background: #eeeeec;
+      }
+      .one-time-card {
+        position: absolute;
+        top: 497px;
+        left: 16px;
+        width: 398px;
+        height: 49px;
+        border: 1px solid #8d8d8d;
+        border-radius: 4px;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .add-bag {
+        position: absolute;
+        top: 568px;
+        left: 16px;
+        width: 398px;
+        height: 48px;
+      }
+      .benefits-icons {
+        position: absolute;
+        top: 640px;
+        left: 0;
+        width: 430px;
+        height: 155px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        align-content: start;
+        gap: 8px;
+        padding: 20px 16px 0;
+      }
+      .benefit {
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+      }
+      .benefit-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 4px;
+      }
+      .accordion-stack {
+        height: 437px;
+        padding: 0 16px;
+        border-top: 1px solid #eeeeee;
+      }
+      .accordion-row {
+        border-bottom: 1px solid #eeeeee;
+        padding: 18px 0;
+      }
+      .accordion-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .accordion-body {
+        display: grid;
+        gap: 9px;
+        padding: 14px 0 8px;
+      }
+      .bullet-list {
+        display: grid;
+        gap: 8px;
+      }
+      .bullet {
+        display: grid;
+        grid-template-columns: 8px 1fr;
+        gap: 8px;
+        align-items: start;
+      }
+      .bullet::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        margin-top: 4px;
+        border-radius: 50%;
+        background: #050505;
+      }
+      .ingredient-icons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screen" aria-busy="true">
+      <header class="topbar"><a class="bone logo" href="home.html"></a><div class="icons"><a class="bone icon" href="cart.html"></a><span class="bone icon"></span><span class="bone icon"></span></div></header>
+      <section class="hero-copy"><div class="hero-meta"><span class="bone line" style="width:42px"></span><span class="bone line" style="width:66px"></span></div><span class="bone" style="width:170px; height:70px; margin-top:30px"></span></section>
+      <section class="media-hero"><span class="product-a"></span><span class="product-b"></span><div class="slider"><span class="slide active"></span><span class="slide"></span><span class="slide"></span></div></section>
+      <section class="cta-wrap"><a class="cta-link" href="cart.html"><div class="cta" data-component="hero-cta"></div></a></section>
+      <section class="two" style="padding:0 16px"><span class="rule"></span><span class="rule"></span></section>
+      <section class="details"><div class="two"><div class="stack"><span class="bone line"></span><span class="bone line" style="width:82%"></span><span class="bone line" style="width:62%"></span></div><div><div class="marks" style="margin-top:28px"><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span><span class="mark"></span></div><span class="bone line" style="width:72px; margin-top:10px"></span></div></div><div class="stack" style="margin-top:38px"><span class="bone line"></span><span class="bone line" style="width:94%"></span><span class="bone line" style="width:88%"></span><span class="bone line" style="width:76%"></span></div></section>
+      <section class="purchase-flow" data-component="purchase-flow">
+        <div class="treatment-banner" data-component="treatment-banner">
+          <div class="banner-copy">
+            <span class="rule"></span>
+            <span class="bone line" style="width:112px; height:18px"></span>
+            <a class="cta-link" href="cart.html" style="height:32px"><div class="cta" style="height:32px"></div></a>
+          </div>
+          <div class="banner-media"></div>
+        </div>
+
+        <div class="subscription-card" data-component="subscription-card">
+          <div class="purchase-row">
+            <span class="marks"><i class="mark" style="border-radius:999px"></i><i class="bone line" style="width:150px; height:22px"></i></span>
+            <span class="bone line" style="width:30px"></span>
+          </div>
+          <div class="check-lines">
+            <span class="bone line" style="width:78%"></span>
+            <span class="bone line" style="width:74%"></span>
+            <span class="bone line" style="width:58%"></span>
+            <span class="bone line" style="width:70%"></span>
+          </div>
+          <div class="gift-card">
+            <div class="gift-copy">
+              <span class="bone line" style="width:74%"></span>
+              <span class="bone line" style="width:58%"></span>
+              <span class="rule"></span>
+              <span class="gift-rating" data-component="gift-rating">
+                <span class="bone line" style="width:70px"></span>
+                <span class="marks"><i class="bone line" style="width:20px"></i><i class="mark"></i></span>
+              </span>
+            </div>
+            <div class="gift-media"></div>
+          </div>
+          <span class="bone line" style="width:84%"></span>
+          <span class="bone line" style="width:52%"></span>
+        </div>
+
+        <div class="one-time-card" data-component="one-time-card">
+          <span class="marks"><i class="bone mark" style="border-radius:999px; background:#e8e8e6"></i><i class="bone line" style="width:160px; height:20px"></i></span>
+          <span class="bone line" style="width:30px"></span>
+        </div>
+
+        <a class="add-bag" data-component="add-to-bag" href="cart.html"><div class="cta"></div></a>
+
+        <div class="benefits-icons" data-component="benefits-icons">
+          <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:86px"></span></div>
+          <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:80px"></span></div>
+          <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:96px"></span><span class="bone line" style="width:78px"></span></div>
+        </div>
+      </section>
+
+      <section class="accordion-stack" data-component="accordion-stack">
+        <div class="accordion-row" data-accordion="expanded">
+          <div class="accordion-head">
+            <span class="bone line" style="width:170px; height:16px"></span>
+            <span class="bone line" style="width:16px"></span>
+          </div>
+          <div class="accordion-body">
+            <div class="bullet-list" data-component="accordion-bullets">
+              <span class="bullet"><i class="bone line" style="width:100%"></i></span>
+              <span class="bullet"><i class="bone line" style="width:94%"></i></span>
+              <span class="bullet"><i class="bone line" style="width:86%"></i></span>
+            </div>
+            <div class="ingredient-icons">
+              <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:74px"></span></div>
+              <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:88px"></span></div>
+              <div class="benefit"><span class="bone benefit-icon"></span><span class="bone line" style="width:58px"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="accordion-row">
+          <div class="accordion-head"><span class="bone line" style="width:132px; height:16px"></span><span class="bone line" style="width:16px"></span></div>
+        </div>
+        <div class="accordion-row">
+          <div class="accordion-head"><span class="bone line" style="width:112px; height:16px"></span><span class="bone line" style="width:16px"></span></div>
+        </div>
+        <div class="accordion-row">
+          <div class="accordion-head"><span class="bone line" style="width:122px; height:16px"></span><span class="bone line" style="width:16px"></span></div>
+        </div>
+      </section>
+      <section class="deep-section soft" style="height:986px"><span class="bone heading" style="width:330px"></span><div class="media-panel"></div><div class="stack"><span class="bone line" style="width:68%"></span><span class="bone line" style="width:92%"></span><span class="bone line" style="width:76%"></span><span class="bone line" style="width:84%"></span></div></section>
+      <section class="deep-section" style="height:694px"><span class="bone heading" style="width:250px"></span><div class="media-panel" style="height:310px"></div><div class="stack"><span class="bone line" style="width:48%"></span><span class="bone line"></span><span class="bone line" style="width:90%"></span><span class="bone line" style="width:72%"></span></div></section>
+      <section class="deep-section" style="height:1136px"><span class="bone heading" style="width:315px"></span><div class="media-panel" style="height:398px"></div><div class="stack"><div class="panel"></div><div class="panel"></div><div class="panel"></div></div></section>
+      <section class="deep-section soft" style="height:1014px"><span class="bone heading" style="width:340px"></span><div class="media-panel" style="height:477px"></div><div class="stack"><span class="bone line"></span><span class="bone line" style="width:86%"></span><span class="bone line" style="width:78%"></span></div></section>
+      <section class="deep-section soft" style="height:810px"><span class="bone heading" style="width:300px"></span><div class="two"><div class="panel" style="height:254px"></div><div class="panel" style="height:254px"></div></div><div class="stack"><span class="bone line"></span><span class="bone line"></span><span class="bone line"></span><span class="bone line"></span></div></section>
+      <section class="deep-section" style="height:632px"><span class="bone heading" style="width:300px"></span><div class="stack"><span class="bone line"></span><span class="bone line"></span><span class="bone line"></span><span class="bone line"></span><span class="bone line"></span></div></section>
+      <section class="deep-section" style="height:593px"><span class="bone heading" style="width:240px"></span><div class="panel" style="height:360px"><span class="bone line" style="width:18%"></span><span class="bone line" style="width:62%"></span><span class="bone line" style="width:36%"></span><a class="cta" href="cart.html" style="height:40px; margin-top:auto"></a></div></section>
+      <section class="deep-section soft" style="height:208px"><span class="bone heading" style="width:260px"></span></section>
+      <section class="deep-section" style="height:3356px"><span class="bone heading" style="width:235px"></span><div class="stack"><div class="review-card"><span class="bone line" style="width:42%"></span><span class="bone line"></span><span class="bone line" style="width:88%"></span></div><div class="review-card"><span class="bone line" style="width:44%"></span><span class="bone line"></span><span class="bone line" style="width:92%"></span></div><div class="review-card"><span class="bone line" style="width:38%"></span><span class="bone line"></span></div><div class="review-card"><span class="bone line" style="width:40%"></span><span class="bone line"></span></div><div class="review-card"><span class="bone line" style="width:36%"></span><span class="bone line"></span></div><div class="review-card"><span class="bone line" style="width:42%"></span><span class="bone line"></span></div></div></section>
+      <section class="deep-section" style="height:881px"><div class="media-panel" style="height:360px"></div><a class="cta" href="cart.html" style="height:56px"></a></section>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,101 @@
+{
+  "tag": "#SkeletonSiteMapSOP",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "pages": [
+    {
+      "type": "home",
+      "sourceUrl": "https://www.methodiq.com/",
+      "skeleton": "pages/home.html",
+      "compare": "compare/home.html",
+      "componentCompare": "component-compare/home.html",
+      "composition": "composition/home.json",
+      "sourceHeight": 14980,
+      "status": "captured"
+    },
+    {
+      "type": "category",
+      "sourceUrl": "https://www.methodiq.com/shop-all",
+      "skeleton": "pages/category.html",
+      "compare": "compare/category.html",
+      "componentCompare": "component-compare/category.html",
+      "composition": "composition/category.json",
+      "sourceHeight": 9246,
+      "status": "captured"
+    },
+    {
+      "type": "pdp",
+      "sourceUrl": "https://www.methodiq.com/collatin",
+      "skeleton": "pages/pdp.html",
+      "compare": "compare/pdp.html",
+      "componentCompare": "component-compare/pdp.html",
+      "composition": "composition/pdp.json",
+      "sourceHeight": 13173,
+      "status": "captured"
+    },
+    {
+      "type": "pdp",
+      "sourceUrl": "https://www.methodiq.com/clarixa",
+      "skeleton": "pages/clarixa.html",
+      "compare": "compare/clarixa.html",
+      "componentCompare": "component-compare/clarixa.html",
+      "composition": "composition/clarixa.json",
+      "sourceHeight": 13913,
+      "status": "captured"
+    },
+    {
+      "type": "cart-drawer",
+      "sourceUrl": "https://www.methodiq.com/clarixa",
+      "sourceState": "populated cart drawer opened from header cart button after adding Collatin and Clarixa subscription items",
+      "skeleton": "pages/cart.html",
+      "compare": "compare/cart.html",
+      "componentCompare": "component-compare/cart.html",
+      "composition": "composition/cart.json",
+      "sourceHeight": 932,
+      "status": "captured-populated-drawer"
+    }
+  ],
+  "navigation": [
+    { "from": "logo", "to": "pages/home.html" },
+    { "from": "product-card", "to": "pages/pdp.html" },
+    { "from": "product-card-clarixa", "to": "pages/clarixa.html" },
+    { "from": "primary-cta", "to": "pages/cart.html" },
+    { "from": "inventory-row", "to": "pages/*.html" }
+  ],
+  "processRules": [
+    {
+      "name": "real-source-gate",
+      "rule": "Before any compare output is accepted, prove source screenshots or crops came from the original page, not the skeleton, compare page, or stale local output."
+    },
+    {
+      "name": "complete-source-compare",
+      "rule": "If a full-page source or skeleton screenshot repeats, clips, misses sections, or includes capture-only scrollbars, replace that side with scroll-by-scroll viewport slices and a manifest."
+    },
+    {
+      "name": "stateful-media-block",
+      "rule": "If a hero or media area animates, evolves, or changes visual state while remaining one layout block, model it as one component with representative source states rather than separate sections."
+    },
+    {
+      "name": "paired-micro-content",
+      "rule": "Preserve paired data groups as components, such as review count plus rating, price plus option label, or label plus value."
+    },
+    {
+      "name": "semantic-list-shape",
+      "rule": "If the source uses bullets, checks, numbered steps, or icon-led list rows, represent that list structure instead of generic paragraphs."
+    },
+    {
+      "name": "component-anatomy-contract",
+      "rule": "Before skeletonizing a component crop, lock the ordered child anatomy and preserve source order, type, and repeated-unit count."
+    },
+    {
+      "name": "component-level-side-by-side",
+      "rule": "During compare review, check missing functions and subcomponents inside each section, not just section height and broad geometry."
+    },
+    {
+      "name": "matched-skeleton-coverage",
+      "rule": "For full-scroll component compares, the skeleton page must carry the same named downstream component ids as the source atlas; repeated generic sections are not accepted."
+    }
+  ]
+}
