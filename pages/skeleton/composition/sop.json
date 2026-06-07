@@ -57,6 +57,10 @@
         "Continue adding component rows until the source scroll depth is covered from top to bottom.",
         "Verify the skeleton side has matching named component rows for the same scroll coverage, not repeated generic placeholders.",
         "Write a component anatomy contract for each risky crop before skeletonizing: context/chrome, title/media/list/forms, repeated units, controls, and footnotes in source order.",
+        "Detect sticky or fixed chrome in source HTML or repeated screenshot bands, then crop it out of component rows unless the row is the global header itself.",
+        "Reject component rows that split a source component across atlas rows without an explicit continuation label.",
+        "Reject skeleton components that add borders, panels, frames, shadows, or dividers that are not present as structural source UI.",
+        "Check content density inside cards and panels: preserve source subfield count, separators, bullets/checks, ratings, prices, and repeated rows.",
         "Verify source and skeleton crops are not the same pixels.",
         "Use the atlas to find missing subcomponents, wrong states, and rhythm errors.",
         "Feed misses back into the composition map, skeleton template, and verifier.",
@@ -98,8 +102,24 @@
       "rule": "No invented structures: do not convert rows into cards, paired media into generic panels, or lists into paragraphs unless the source actually does that."
     },
     {
+      "name": "no-invented-borders",
+      "rule": "No invented borders: borders, outlines, shadows, dividers, card frames, and panel chrome appear only when they exist as structural UI in the source. If the source section is borderless, the skeleton is borderless."
+    },
+    {
+      "name": "content-density-gate",
+      "rule": "Content density gate: cards and panels must preserve source subfield density, including image zones, headings, body lines, labels, separators, bullets/checks, ratings, prices, CTAs, and repeated rows. Do not represent a dense card with a sparse placeholder."
+    },
+    {
       "name": "row-count-gate",
       "rule": "Row count gate: repeated semantic units must match source count and rhythm. Three stat rows, benefit rows, reviews, or FAQ rows become the same count unless intentionally grouped and labeled."
+    },
+    {
+      "name": "component-boundary-gate",
+      "rule": "Component boundary gate: source crops must start and end on component boundaries. If a source component continues across a viewport, stitch or extend the crop; only split it when both atlas rows are explicitly labeled as continuations."
+    },
+    {
+      "name": "sticky-chrome-suppression",
+      "rule": "Sticky chrome suppression: detect position: sticky/fixed headers in source HTML, or repeated identical top bands across scroll slices, and remove that chrome from component crops unless the component is the header/global chrome itself."
     },
     {
       "name": "paired-micro-content",

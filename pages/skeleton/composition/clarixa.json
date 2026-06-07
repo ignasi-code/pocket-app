@@ -83,13 +83,18 @@
     },
     {
       "component": "comparison-and-process",
-      "anatomy": ["comparison-card-pair with two comparison-card children", "process-title-panel"],
-      "rule": "preserve comparison card count before process heading"
+      "anatomy": ["comparison-card-pair with two dense comparison-card children", "each card preserves media, title, labels, separators, and multiple check/x rows", "process-title-panel"],
+      "rule": "preserve comparison card count, content density, and source card chrome exactly; do not add borders to the following process panel unless source shows them"
     },
     {
       "component": "assessment-and-faq",
       "anatomy": ["process-carousel-media", "process-step-copy", "faq-heading", "faq-stack with seven faq-row children"],
-      "rule": "preserve process media carousel and FAQ row stack"
+      "rule": "preserve process media carousel and FAQ row stack; avoid invented borders in the How it works/process section"
+    },
+    {
+      "component": "source-cropping",
+      "anatomy": ["detect sticky header/global chrome", "crop component content on true component boundaries", "label continuations when unavoidable"],
+      "rule": "sticky headers should not repeat in non-header component rows, and source components should not be split half in one row and half in another"
     },
     {
       "component": "related-products-and-review-header",

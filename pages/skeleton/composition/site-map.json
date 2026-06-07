@@ -90,6 +90,22 @@
       "rule": "Before skeletonizing a component crop, lock the ordered child anatomy and preserve source order, type, and repeated-unit count."
     },
     {
+      "name": "no-invented-borders",
+      "rule": "Do not add borders, frames, panel chrome, dividers, or shadows unless the source component uses them as structural UI."
+    },
+    {
+      "name": "content-density-gate",
+      "rule": "Cards and panels must preserve source subfield density; sparse placeholders fail when the source card has many labels, rows, checks, or separators."
+    },
+    {
+      "name": "component-boundary-gate",
+      "rule": "Atlas rows must not trim or split source components. Stitch, extend, or label continuation rows explicitly."
+    },
+    {
+      "name": "sticky-chrome-suppression",
+      "rule": "Detect sticky headers from source HTML or repeated screenshot bands and exclude them from component rows unless reviewing the header itself."
+    },
+    {
       "name": "component-level-side-by-side",
       "rule": "During compare review, check missing functions and subcomponents inside each section, not just section height and broad geometry."
     },

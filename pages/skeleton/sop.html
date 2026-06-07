@@ -42,7 +42,11 @@
           <li><strong>Function first:</strong> preserve CTAs, options, accordions, ratings, icon rows, bullets, forms, tabs, and selected states.</li>
           <li><strong>Component anatomy contract:</strong> before skeletonizing a component, lock the ordered child structure: context/chrome, title or media, repeated units, controls, and footnotes.</li>
           <li><strong>No invented structures:</strong> do not convert source rows into cards, paired media into generic panels, or lists into paragraphs just because the height is similar.</li>
+          <li><strong>No invented borders:</strong> borders, outlines, shadows, dividers, and card frames appear only when they exist as structural UI in the source component.</li>
+          <li><strong>Content density gate:</strong> cards and panels must preserve source content density: image zones, headings, labels, separators, bullets/checks, price/rating pairs, and repeated rows.</li>
           <li><strong>Row count gate:</strong> repeated semantic units must match count and rhythm; three result rows become three result rows.</li>
+          <li><strong>Component boundary gate:</strong> source crops must start and end on component boundaries; do not split one component across atlas rows unless both rows are explicitly labeled as continuations.</li>
+          <li><strong>Sticky chrome suppression:</strong> repeated sticky headers or nav bars are detected and removed from component crops unless the row is specifically the header/global chrome component.</li>
           <li><strong>Uniform repeats:</strong> repeated items in one family share one component template.</li>
           <li><strong>Local gaps:</strong> lock important vertical gaps inside cards, banners, CTAs, and option groups.</li>
           <li><strong>Navigation:</strong> page-to-page behavior is baked into the skeleton site.</li>
