@@ -23,6 +23,8 @@
       "steps": [
         "Capture the full source at the locked viewport.",
         "If full-page capture repeats, clips, or misses sections, use scroll-by-scroll slices with a manifest.",
+        "Build a DOM clone from the real rendered page before drawing the skeleton.",
+        "Transform the clone into skeleton primitives: media, headings, paragraph lines, controls, cards, icons, and form fields.",
         "Map sections first, then components, states, and links.",
         "Create the component compare atlas before refining the final page skeleton.",
         "Skeletonize visible content by default.",
@@ -88,6 +90,22 @@
     {
       "name": "function-before-shape",
       "rule": "Preserve function, state, and interaction groups before exact decorative shape."
+    },
+    {
+      "name": "clone-first",
+      "rule": "For fast high-fidelity skeletons, first create a static DOM clone from the real rendered page, then transform that clone into the skeleton. Debug clone fidelity separately from skeleton fidelity."
+    },
+    {
+      "name": "semantic-primitives-not-raw-rectangles",
+      "rule": "Skeletonize by primitive type, not by one generic rectangle pass: headings, body text, CTAs, links-as-controls, option cards, bordered cards, media, icons, form fields, lists, ratings, and rows each get their own treatment."
+    },
+    {
+      "name": "primitive-manifest-gate",
+      "rule": "Each generated skeleton includes a manifest count for text lines, heading lines, media blocks, icon blocks, control blocks, and card blocks. Counts that are implausibly low fail before human review."
+    },
+    {
+      "name": "no-source-text-leak",
+      "rule": "The skeleton must preserve layout without leaking source copy, product names, CTA labels, headings, alt text, aria labels, placeholders, or media URLs used as visible content."
     },
     {
       "name": "semantic-structure",

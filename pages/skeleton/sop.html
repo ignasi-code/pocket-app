@@ -23,6 +23,8 @@
           <li>Inventory page types and canonical URLs.</li>
           <li>Capture source at 430x932.</li>
           <li>If full-page capture is suspect, use scroll-by-scroll slices.</li>
+          <li>Build a static DOM clone from the real rendered page.</li>
+          <li>Transform the clone into semantic skeleton primitives.</li>
           <li>Map sections, components, states, repeated patterns, and links.</li>
           <li>Create the component-by-component atlas for the page.</li>
           <li>Build the skeleton page with internal navigation.</li>
@@ -40,6 +42,10 @@
           <li><strong>Capture both sides:</strong> the scroll-slice fallback applies to source and skeleton screenshots; hide capture scrollbars or crop them out before atlas generation.</li>
           <li><strong>Stateful media:</strong> animated or evolving heroes remain one component with representative states.</li>
           <li><strong>Function first:</strong> preserve CTAs, options, accordions, ratings, icon rows, bullets, forms, tabs, and selected states.</li>
+          <li><strong>Clone first:</strong> create a real static DOM clone before skeletonizing, then debug clone fidelity and skeleton fidelity separately.</li>
+          <li><strong>Primitive skeletonization:</strong> do not use one generic rectangle dump; headings, paragraph lines, controls, cards, media, icons, fields, ratings, lists, and rows get separate primitive treatments.</li>
+          <li><strong>Primitive manifest:</strong> generated skeletons record counts for text lines, heading lines, controls, cards, icons, and media blocks; implausible counts fail before review.</li>
+          <li><strong>No source text leak:</strong> preserve layout without leaking source copy, CTA labels, alt text, aria labels, placeholders, or visible media URLs.</li>
           <li><strong>Component anatomy contract:</strong> before skeletonizing a component, lock the ordered child structure: context/chrome, title or media, repeated units, controls, and footnotes.</li>
           <li><strong>No invented structures:</strong> do not convert source rows into cards, paired media into generic panels, or lists into paragraphs just because the height is similar.</li>
           <li><strong>No invented borders:</strong> borders, outlines, shadows, dividers, and card frames appear only when they exist as structural UI in the source component.</li>
