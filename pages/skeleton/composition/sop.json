@@ -25,6 +25,7 @@
         "If full-page capture repeats, clips, or misses sections, use scroll-by-scroll slices with a manifest.",
         "Build a DOM clone from the real rendered page before drawing the skeleton.",
         "Transform the clone into skeleton primitives: media, headings, paragraph lines, controls, cards, icons, and form fields.",
+        "Render the skeleton as a frozen fixed-height primitive canvas, not as a mutated live DOM.",
         "Map sections first, then components, states, and links.",
         "Create the component compare atlas before refining the final page skeleton.",
         "Skeletonize visible content by default.",
@@ -98,6 +99,22 @@
     {
       "name": "semantic-primitives-not-raw-rectangles",
       "rule": "Skeletonize by primitive type, not by one generic rectangle pass: headings, body text, CTAs, links-as-controls, option cards, bordered cards, media, icons, form fields, lists, ratings, and rows each get their own treatment."
+    },
+    {
+      "name": "frozen-skeleton-canvas",
+      "rule": "After capturing live DOM primitives, render the final skeleton as a fixed-position, fixed-height canvas of sanitized primitives. Do not rely on the saved page DOM to hold layout after text/media removal, because hidden responsive branches, missing scripts, and font/CSS differences can reflow lower components."
+    },
+    {
+      "name": "height-parity-gate",
+      "rule": "The saved skeleton document height and skeleton layer height must match the live captured source height within a tiny tolerance. Any drift means lower components such as offer cards, accordions, reviews, or FAQ rows cannot be trusted."
+    },
+    {
+      "name": "disclosure-row-primitive",
+      "rule": "Accordions and FAQs are disclosure-row primitives: preserve row separators, label rhythm, expanded/collapsed state, and plus/minus markers instead of treating them as plain text or generic controls."
+    },
+    {
+      "name": "primitive-ownership",
+      "rule": "When a specialized primitive owns a subpart, suppress overlapping generic primitives inside it. For example, FAQ rows own their plus/minus icons, and nested offer cards own their media, separators, rating/price pairs, and density."
     },
     {
       "name": "primitive-manifest-gate",

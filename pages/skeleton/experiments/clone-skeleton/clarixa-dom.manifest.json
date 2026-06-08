@@ -1,17 +1,19 @@
 {
   "url": "https://www.methodiq.com/clarixa",
   "capturedUrl": "https://www.methodiq.com/clarixa",
-  "generatedAt": "2026-06-07T23:22:07.939Z",
+  "generatedAt": "2026-06-08T02:25:36.507Z",
   "viewport": {
     "width": 430,
     "height": 932
   },
   "renderedHeight": 13875,
-  "textLineCount": 317,
-  "headingLineCount": 24,
-  "mediaBoxCount": 51,
-  "iconBoxCount": 30,
+  "textLineCount": 328,
+  "headingLineCount": 35,
+  "backgroundBoxCount": 17,
+  "mediaBoxCount": 50,
+  "iconBoxCount": 19,
   "cardBoxCount": 12,
-  "controlBoxCount": 25,
+  "disclosureBoxCount": 12,
+  "controlBoxCount": 13,
   "technique": "headful-cdp-dom-clone-then-skeleton"
 }

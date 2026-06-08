@@ -25,6 +25,7 @@
           <li>If full-page capture is suspect, use scroll-by-scroll slices.</li>
           <li>Build a static DOM clone from the real rendered page.</li>
           <li>Transform the clone into semantic skeleton primitives.</li>
+          <li>Render the skeleton as a fixed-height primitive canvas.</li>
           <li>Map sections, components, states, repeated patterns, and links.</li>
           <li>Create the component-by-component atlas for the page.</li>
           <li>Build the skeleton page with internal navigation.</li>
@@ -44,6 +45,10 @@
           <li><strong>Function first:</strong> preserve CTAs, options, accordions, ratings, icon rows, bullets, forms, tabs, and selected states.</li>
           <li><strong>Clone first:</strong> create a real static DOM clone before skeletonizing, then debug clone fidelity and skeleton fidelity separately.</li>
           <li><strong>Primitive skeletonization:</strong> do not use one generic rectangle dump; headings, paragraph lines, controls, cards, media, icons, fields, ratings, lists, and rows get separate primitive treatments.</li>
+          <li><strong>Frozen skeleton canvas:</strong> after capturing live DOM primitives, render a fixed-position skeleton canvas instead of saving a mutated DOM that can reflow after text and media are removed.</li>
+          <li><strong>Height parity:</strong> saved skeleton height must match captured source height; drift means lower components like offers, accordions, reviews, or FAQs cannot be trusted.</li>
+          <li><strong>Disclosure rows:</strong> accordions and FAQs preserve row separators, label rhythm, expanded/collapsed state, and plus/minus markers.</li>
+          <li><strong>Primitive ownership:</strong> specialized primitives own their internals; suppress generic overlaps inside them, such as generic icons over FAQ plus markers or sparse blocks inside dense offer cards.</li>
           <li><strong>Primitive manifest:</strong> generated skeletons record counts for text lines, heading lines, controls, cards, icons, and media blocks; implausible counts fail before review.</li>
           <li><strong>No source text leak:</strong> preserve layout without leaking source copy, CTA labels, alt text, aria labels, placeholders, or visible media URLs.</li>
           <li><strong>Component anatomy contract:</strong> before skeletonizing a component, lock the ordered child structure: context/chrome, title or media, repeated units, controls, and footnotes.</li>
