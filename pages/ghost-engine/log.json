@@ -1,27 +1,34 @@
 {
   "title": "Ghost Engine",
-  "current_task": "Keep the public log current while building the first reusable lead-to-fulfillment loop.",
+  "current_task": "Implement the Google Maps prospect adapter and wire the normalized lead record into it.",
   "pending_tasks": [
-    "Define Google Maps prospect fields",
-    "Normalize the lead schema",
     "Build the review queue",
     "Build the outreach sender",
     "Build the fulfillment integration",
-    "Wire the cockpit"
+    "Wire the cockpit",
+    "Keep the public log in sync"
   ],
   "completed_steps": [
     "Set up the Ghost Engine project shell",
     "Created the static public log page",
-    "Connected the log page to this JSON file"
+    "Connected the log page to this JSON file",
+    "Added the reusable Ghost Engine code scaffold",
+    "Passed the first Ghost Engine tests"
   ],
-  "blocker": "Need the first prospect schema before coding the prospecting module.",
-  "next_action": "Define the Google Maps fields and normalized lead record.",
+  "blocker": "Google Maps prospect fields still need to be wired into the adapter path.",
+  "next_action": "Implement the Google Maps adapter using the normalized prospect schema.",
   "entries": [
     {
       "time": "2026-06-09",
       "decision": "Hello world",
       "reason": "sanity check for the log route",
       "next_action": "verify the route is deploying"
+    },
+    {
+      "time": "2026-06-09",
+      "decision": "Implement the reusable Ghost Engine core scaffold",
+      "reason": "get the v0.1 engine out of docs and into code",
+      "next_action": "wire Google Maps into the prospect adapter"
     }
   ]
 }
