@@ -1,9 +1,7 @@
 {
   "title": "Ghost Engine",
-  "current_task": "Implement the Google Maps prospect adapter and wire the normalized lead record into it.",
+  "current_task": "Add the outreach sender scaffold.",
   "pending_tasks": [
-    "Build the review queue",
-    "Build the outreach sender",
     "Build the fulfillment integration",
     "Wire the cockpit",
     "Keep the public log in sync"
@@ -13,10 +11,12 @@
     "Created the static public log page",
     "Connected the log page to this JSON file",
     "Added the reusable Ghost Engine code scaffold",
+    "Implemented the Google Maps prospect adapter",
+    "Implemented the review queue scaffold",
     "Passed the first Ghost Engine tests"
   ],
-  "blocker": "Google Maps prospect fields still need to be wired into the adapter path.",
-  "next_action": "Implement the Google Maps adapter using the normalized prospect schema.",
+  "blocker": "Outreach sender needs approved-only gating wired in.",
+  "next_action": "Add the outreach sender scaffold.",
   "entries": [
     {
       "time": "2026-06-09",
@@ -29,6 +29,18 @@
       "decision": "Implement the reusable Ghost Engine core scaffold",
       "reason": "get the v0.1 engine out of docs and into code",
       "next_action": "wire Google Maps into the prospect adapter"
+    },
+    {
+      "time": "2026-06-09",
+      "decision": "Implement the Google Maps prospect adapter",
+      "reason": "normalize the first source into the shared prospect schema",
+      "next_action": "build the review queue"
+    },
+    {
+      "time": "2026-06-09",
+      "decision": "Implement the review queue scaffold",
+      "reason": "block outreach until a human approves prospects",
+      "next_action": "add the outreach sender scaffold"
     }
   ]
 }
