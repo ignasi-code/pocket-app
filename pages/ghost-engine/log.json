@@ -1,7 +1,10 @@
 {
   "title": "Ghost Engine",
-  "current_task": "Keep the public log in sync.",
-  "pending_tasks": [],
+  "current_task": "Implement the real Google Maps prospect adapter.",
+  "pending_tasks": [
+    "Wire live prospect counts into the cockpit",
+    "Keep the public log in sync"
+  ],
   "completed_steps": [
     "Set up the Ghost Engine project shell",
     "Created the static public log page",
@@ -12,10 +15,11 @@
     "Implemented the outreach sender scaffold",
     "Implemented the fulfillment adapter scaffold",
     "Wired the cockpit snapshot",
+    "Kept the public log in sync",
     "Passed the first Ghost Engine tests"
   ],
   "blocker": "None.",
-  "next_action": "Keep the public log in sync.",
+  "next_action": "Implement the real Google Maps prospect adapter.",
   "entries": [
     {
       "time": "2026-06-09",
@@ -58,6 +62,12 @@
       "decision": "Wire the cockpit snapshot",
       "reason": "surface the current task, blockers, and metrics from project state",
       "next_action": "keep the public log in sync"
+    },
+    {
+      "time": "2026-06-09",
+      "decision": "Keep the public log in sync",
+      "reason": "make the public cockpit reflect the current Ghost Engine state",
+      "next_action": "implement the real Google Maps prospect adapter"
     }
   ]
 }
