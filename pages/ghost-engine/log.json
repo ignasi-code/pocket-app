@@ -1,6 +1,6 @@
 {
   "title": "Ghost Engine",
-  "current_task": "Wire live prospect counts into the cockpit.",
+  "current_task": "Wire web search prospects into the cockpit.",
   "pending_tasks": [
     "Keep the public log in sync"
   ],
@@ -16,10 +16,11 @@
     "Wired the cockpit snapshot",
     "Kept the public log in sync",
     "Implemented the real Google Maps prospect adapter",
+    "Implemented the web search prospect adapter",
     "Passed the first Ghost Engine tests"
   ],
   "blocker": "None.",
-  "next_action": "Wire live prospect counts into the cockpit.",
+  "next_action": "Wire web search prospects into the cockpit.",
   "entries": [
     {
       "time": "2026-06-09",
@@ -74,6 +75,12 @@
       "decision": "Implement the real Google Maps prospect adapter",
       "reason": "make the first prospect source vertical-aware and ready for live Places data",
       "next_action": "wire live prospect counts into the cockpit"
+    },
+    {
+      "time": "2026-06-10",
+      "decision": "Implement the web search prospect adapter",
+      "reason": "replace costly maps sourcing with cheaper web search based prospect discovery",
+      "next_action": "wire web search prospects into the cockpit"
     }
   ]
 }
