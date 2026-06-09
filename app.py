@@ -21,6 +21,7 @@ from flask import Flask, Response, abort, jsonify, make_response, render_templat
 
 BASE_DIR = Path(__file__).resolve().parent
 ENV_PATH = BASE_DIR / ".env"
+SHARED_CLOUDFLARE_ENV_PATH = Path.home() / ".config" / "codex-shared" / "cloudflare.env"
 PLACEHOLDER_VALUES = {
     "your-gemini-api-key-here",
     "change-this-before-exposing-the-server",
@@ -160,6 +161,36 @@ def write_env_updates(updates):
 
     ENV_PATH.write_text("\n".join(next_lines).rstrip() + "\n", encoding="utf-8")
     os.chmod(ENV_PATH, 0o600)
+
+
+def write_shared_cloudflare_env(updates):
+    SHARED_CLOUDFLARE_ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
+    existing_lines = SHARED_CLOUDFLARE_ENV_PATH.read_text(encoding="utf-8").splitlines() if SHARED_CLOUDFLARE_ENV_PATH.exists() else []
+    written = set()
+    next_lines = []
+
+    for raw_line in existing_lines:
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            next_lines.append(raw_line)
+            continue
+
+        key, _value = line.split("=", 1)
+        key = key.strip()
+        if key in updates:
+            next_lines.append(f"{key}={quote_env_value(updates[key])}")
+            written.add(key)
+        else:
+            next_lines.append(raw_line)
+
+    for key, value in updates.items():
+        if key not in written:
+            if next_lines and next_lines[-1].strip():
+                next_lines.append("")
+            next_lines.append(f"{key}={quote_env_value(value)}")
+
+    SHARED_CLOUDFLARE_ENV_PATH.write_text("\n".join(next_lines).rstrip() + "\n", encoding="utf-8")
+    os.chmod(SHARED_CLOUDFLARE_ENV_PATH, 0o600)
 
 
 def refresh_runtime_config(updates):
@@ -3076,6 +3107,98 @@ def setup_page():
         default_model=gemini_model,
         gemini_args=gemini_args,
         api_key_required=not has_gemini_api_key(),
+    )
+
+
+CF_HELPER_PAGE = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloudflare Env Helper</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    body { margin: 0; padding: 24px; background: #05070a; color: #e8f0ff; }
+    main { max-width: 920px; margin: 0 auto; background: #10171d; border: 1px solid #203040; border-radius: 16px; padding: 20px; }
+    h1 { margin: 0 0 8px; color: #72f1b8; }
+    p, li { color: #8ea4bf; line-height: 1.5; }
+    label { display: block; margin: 16px 0 8px; font-weight: 700; }
+    input, textarea { width: 100%; box-sizing: border-box; border-radius: 10px; border: 1px solid #203040; background: #0b1117; color: #e8f0ff; padding: 12px; font: inherit; }
+    textarea { min-height: 160px; resize: vertical; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+    button { border: 1px solid #203040; background: #15212c; color: #e8f0ff; padding: 10px 14px; border-radius: 999px; cursor: pointer; font: inherit; }
+    .ok { color: #72f1b8; }
+    .err { color: #ff8a8a; }
+    code { color: #72f1b8; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Cloudflare Env Helper</h1>
+    <p>Local-only helper. It writes to <code>~/.config/codex-shared/cloudflare.env</code> on this machine.</p>
+    {% if saved %}<p class="ok">Saved.</p>{% endif %}
+    {% if error %}<p class="err">{{ error }}</p>{% endif %}
+    <form method="post">
+      <label for="account">Account ID</label>
+      <input id="account" name="account_id" value="{{ account_id }}" autocomplete="off" spellcheck="false" placeholder="Cloudflare account ID">
+
+      <label for="token">API Token</label>
+      <textarea id="token" name="api_token" autocomplete="off" spellcheck="false" placeholder="Paste Cloudflare API token here">{{ api_token }}</textarea>
+
+      <label for="zone">Zone ID (optional)</label>
+      <input id="zone" name="zone_id" value="{{ zone_id }}" autocomplete="off" spellcheck="false" placeholder="Cloudflare zone ID">
+
+      <div class="row">
+        <button type="submit">Save .env.cloudflare</button>
+      </div>
+    </form>
+    <p>After saving, tell Codex done and I’ll purge the cache.</p>
+  </main>
+</body>
+</html>
+"""
+
+
+@app.route("/cloudflare", methods=["GET", "POST"])
+def cloudflare_env_helper():
+    if request.method == "GET":
+        return render_template_string(
+            CF_HELPER_PAGE,
+            saved=False,
+            error="",
+            account_id="",
+            api_token="",
+            zone_id="",
+        )
+
+    account_id = clean_config_value(request.form.get("account_id"))
+    api_token = clean_config_value(request.form.get("api_token"))
+    zone_id = clean_config_value(request.form.get("zone_id"))
+
+    if not account_id or not api_token:
+        return render_template_string(
+            CF_HELPER_PAGE,
+            saved=False,
+            error="Account ID and API token are required.",
+            account_id=account_id,
+            api_token=api_token,
+            zone_id=zone_id,
+        ), 400
+
+    write_shared_cloudflare_env({
+        "CLOUDFLARE_ACCOUNT_ID": account_id,
+        "CLOUDFLARE_API_TOKEN": api_token,
+        "CLOUDFLARE_ZONE_ID": zone_id,
+    })
+
+    return render_template_string(
+        CF_HELPER_PAGE,
+        saved=True,
+        error="",
+        account_id=account_id,
+        api_token=api_token,
+        zone_id=zone_id,
     )
 
 

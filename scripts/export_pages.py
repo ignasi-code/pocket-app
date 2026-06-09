@@ -33,6 +33,7 @@ STATIC_PAGE_ROUTES = {
 
 STATIC_TREE_EXPORTS = {
     ROOT_DIR / "pages" / "skeleton": "skeleton",
+    ROOT_DIR / "pages" / "ghost-engine": "ghost-engine",
 }
 
 ROBOTS_TXT = """User-agent: *

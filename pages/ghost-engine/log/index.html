@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ghost Engine Log</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #040506;
+      --panel: #0f1419;
+      --line: #1f3140;
+      --text: #c8f7ff;
+      --accent: #72f1b8;
+      --warn: #ffd166;
+      --red: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(114,241,184,.12), transparent 35rem),
+        linear-gradient(180deg, #040506, var(--bg));
+      color: var(--text);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.05) 0,
+        rgba(255,255,255,.05) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      opacity: .35;
+    }
+    .shell {
+      position: relative;
+      max-width: 980px;
+      margin: 0 auto;
+      background: rgba(15, 20, 25, .96);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.55);
+      overflow: hidden;
+    }
+    .top {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(114,241,184,.08), transparent);
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2.4rem);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-shadow: 0 0 12px rgba(114,241,184,.55);
+    }
+    .status {
+      color: var(--warn);
+      font-size: .85rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+    }
+    .screen {
+      padding: 20px;
+      min-height: 60vh;
+      background: radial-gradient(circle at top, rgba(114,241,184,.08), transparent 22rem);
+    }
+    .line {
+      margin: 0 0 14px;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      font-size: 1rem;
+    }
+    .prompt { color: var(--warn); }
+    .cursor {
+      display: inline-block;
+      width: 9px;
+      background: var(--accent);
+      margin-left: 6px;
+      animation: blink 1s steps(1) infinite;
+      vertical-align: baseline;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--line);
+      color: rgba(200, 247, 255, .72);
+      font-size: .82rem;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <section class="shell">
+    <header class="top">
+      <div>
+        <h1>Ghost Engine Log</h1>
+        <div class="status">CRT stream / static log playback</div>
+      </div>
+      <div class="status" id="mode">loading...</div>
+    </header>
+    <main class="screen">
+      <pre class="line" id="stream"></pre><span class="cursor" aria-hidden="true">&nbsp;</span>
+    </main>
+    <footer class="footer">
+      <a href="/ghost-engine/">Back to Ghost Engine</a>
+      &nbsp;|&nbsp;
+      <a href="/ghost-engine/log.json">Raw log</a>
+    </footer>
+  </section>
+
+  <script>
+    const stream = document.getElementById("stream");
+    const mode = document.getElementById("mode");
+
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    async function typeLine(text, speed = 10) {
+      for (const ch of text) {
+        stream.textContent += ch;
+        await sleep(speed);
+      }
+      stream.textContent += "\n\n";
+      await sleep(180);
+    }
+
+    async function main() {
+      try {
+        const res = await fetch("../log.json", { cache: "no-store" });
+        const data = await res.json();
+        mode.textContent = "online";
+        await typeLine(`> ${data.title}`);
+        await typeLine("> " + "=".repeat(data.title.length));
+        for (const entry of data.entries) {
+          await typeLine(`> ${entry.time}`);
+          await typeLine(`  decision: ${entry.decision}`);
+          await typeLine(`  reason: ${entry.reason}`);
+          await typeLine(`  next: ${entry.next_action}`);
+        }
+        await typeLine("> end of log");
+      } catch (error) {
+        mode.textContent = "offline";
+        await typeLine("> log unavailable");
+        await typeLine(`> ${String(error)}`);
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
