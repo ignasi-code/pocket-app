@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ghost Engine Cockpit</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05070a;
+      --panel: #10171d;
+      --line: #203040;
+      --text: #e8f0ff;
+      --muted: #8ea4bf;
+      --accent: #72f1b8;
+      --warn: #ffd166;
+      --red: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(114, 241, 184, .14), transparent 30rem),
+        linear-gradient(180deg, #06080b, var(--bg));
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.04) 0,
+        rgba(255,255,255,.04) 2px,
+        transparent 2px,
+        transparent 4px
+      );
+      opacity: .35;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 24px; position: relative; }
+    .panel {
+      background: rgba(16, 23, 29, .94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      overflow: hidden;
+    }
+    .top {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: .08em; }
+    .eyebrow { color: var(--accent); text-transform: uppercase; font-size: .82rem; letter-spacing: .2em; }
+    .muted { color: var(--muted); }
+    .screen { padding: 20px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+    .card {
+      grid-column: span 12;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+      padding: 16px;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: .85rem;
+      color: var(--warn);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .stat {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(0,0,0,.2);
+    }
+    .stat .label { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .12em; }
+    .stat .value { margin-top: 6px; font-size: 1.1rem; color: var(--accent); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .92rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .green { color: var(--accent); }
+    .yellow { color: var(--warn); }
+    .red { color: var(--red); }
+    ul { margin: 0; padding-left: 18px; line-height: 1.6; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 20px;
+      border-top: 1px solid var(--line);
+      color: rgba(232, 240, 255, .72);
+      font-size: .82rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="top">
+        <div>
+          <div class="eyebrow">Pocket Server / Ghost Engine</div>
+          <h1>Founder Cockpit</h1>
+          <div class="muted">Auto-refreshing cockpit for prospects, approvals, outreach, fulfillment, and log state.</div>
+        </div>
+        <div class="muted" id="mode">loading...</div>
+      </div>
+      <div class="screen">
+        <div class="grid">
+          <section class="card" style="grid-column: span 12;">
+            <h2>Top Line</h2>
+            <div class="stats" id="stats"></div>
+          </section>
+          <section class="card" style="grid-column: span 12;">
+            <h2>Focus 3</h2>
+            <ul id="focus"></ul>
+          </section>
+          <section class="card" style="grid-column: span 12;">
+            <h2>Machine Table</h2>
+            <div style="overflow:auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Machine</th>
+                    <th>State</th>
+                    <th>Health</th>
+                    <th>KPI vs Target</th>
+                    <th>Blocker</th>
+                    <th>Next action</th>
+                  </tr>
+                </thead>
+                <tbody id="machines"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="card" style="grid-column: span 12;">
+            <h2>Prospects</h2>
+            <div class="muted" id="prospectSummary">No live scrape data yet.</div>
+            <div style="overflow:auto; margin-top:12px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Source</th>
+                    <th>City</th>
+                    <th>Status</th>
+                    <th>Phone</th>
+                    <th>Website</th>
+                  </tr>
+                </thead>
+                <tbody id="prospects"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="card" style="grid-column: span 12;">
+            <h2>Alerts</h2>
+            <ul id="alerts"></ul>
+          </section>
+          <section class="card" style="grid-column: span 12;">
+            <h2>Next Actions</h2>
+            <ul id="actions"></ul>
+          </section>
+        </div>
+      </div>
+      <div class="footer">
+        <div><a href="/ghost-engine/">Home</a> | <a href="/ghost-engine/log/">Log</a> | <a href="/ghost-engine/log.json">Raw log</a></div>
+        <div id="updated">waiting for data...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const mode = document.getElementById("mode");
+    const stats = document.getElementById("stats");
+    const focus = document.getElementById("focus");
+    const machines = document.getElementById("machines");
+    const prospects = document.getElementById("prospects");
+    const prospectSummary = document.getElementById("prospectSummary");
+    const alerts = document.getElementById("alerts");
+    const actions = document.getElementById("actions");
+    const updated = document.getElementById("updated");
+
+    const cockpitState = {
+      metrics: {
+        mrr: "$0",
+        pipeline: 0,
+        prospects: 0,
+        conversions: 0,
+        replies: 0,
+        cost: "$0",
+      },
+      focus: [
+        "Wire live prospect counts into the cockpit",
+        "Keep the public log in sync",
+        "Add live revenue totals",
+      ],
+      machines: [
+        ["Prospecting", "active", "green", "prospects / review", "none", "feed live Places data"],
+        ["Review Queue", "active", "green", "approvals / day", "none", "approve first batch"],
+        ["Outreach Sender", "active", "green", "sends / day", "none", "send only approved leads"],
+        ["Fulfillment Adapter", "active", "green", "setups / day", "none", "wire conversion events"],
+        ["Cockpit", "building", "yellow", "live counts / target", "no live prospect data", "render prospect rows"],
+      ],
+      prospects: [],
+      alerts: [
+        "No live scrape data yet",
+        "Revenue still unknown",
+      ],
+      actions: [
+        "Wire live prospect counts into cockpit",
+        "Add a real Places feed",
+        "Publish prospect rows once data exists",
+      ],
+    };
+
+    function stat(label, value) {
+      return `<div class="stat"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+    }
+
+    function esc(s) {
+      return String(s ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    }
+
+    function render() {
+      stats.innerHTML = [
+        stat("MRR", cockpitState.metrics.mrr),
+        stat("Pipeline", cockpitState.metrics.pipeline),
+        stat("Prospects", cockpitState.metrics.prospects),
+        stat("Replies", cockpitState.metrics.replies),
+        stat("Conversions", cockpitState.metrics.conversions),
+        stat("Cost / month", cockpitState.metrics.cost),
+      ].join("");
+      focus.innerHTML = cockpitState.focus.map((item) => `<li>${esc(item)}</li>`).join("");
+      machines.innerHTML = cockpitState.machines.map(([name, state, health, kpi, blocker, next]) => {
+        return `<tr>
+          <td>${esc(name)}</td>
+          <td>${esc(state)}</td>
+          <td class="${health}">${esc(health)}</td>
+          <td>${esc(kpi)}</td>
+          <td>${esc(blocker)}</td>
+          <td>${esc(next)}</td>
+        </tr>`;
+      }).join("");
+      if (cockpitState.prospects.length) {
+        prospectSummary.textContent = `${cockpitState.prospects.length} prospects loaded`;
+      } else {
+        prospectSummary.textContent = "No live scrape data yet.";
+      }
+      prospects.innerHTML = cockpitState.prospects.map((p) => `
+        <tr>
+          <td>${esc(p.name)}</td>
+          <td>${esc(p.source)}</td>
+          <td>${esc(p.city)}</td>
+          <td>${esc(p.status)}</td>
+          <td>${esc(p.phone)}</td>
+          <td>${p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noreferrer">${esc(p.website)}</a>` : ""}</td>
+        </tr>
+      `).join("");
+      alerts.innerHTML = cockpitState.alerts.map((item) => `<li>${esc(item)}</li>`).join("");
+      actions.innerHTML = cockpitState.actions.map((item) => `<li>${esc(item)}</li>`).join("");
+      updated.textContent = `updated ${new Date().toLocaleString()}`;
+    }
+
+    async function refresh() {
+      try {
+        const [logRes, stateRes] = await Promise.all([
+          fetch("../log.json?ts=" + Date.now(), { cache: "no-store" }),
+          fetch("/ghost-engine/cockpit.json?ts=" + Date.now(), { cache: "no-store" }),
+        ]);
+        const log = await logRes.json();
+        const state = await stateRes.json();
+        mode.textContent = "online";
+        cockpitState.metrics = state.metrics || cockpitState.metrics;
+        cockpitState.focus = state.focus || cockpitState.focus;
+        cockpitState.machines = state.machines || cockpitState.machines;
+        cockpitState.prospects = state.prospects || cockpitState.prospects;
+        cockpitState.alerts = state.alerts || cockpitState.alerts;
+        cockpitState.actions = state.actions || cockpitState.actions;
+        if (log.current_task) {
+          cockpitState.actions = [log.next_action || log.current_task, ...cockpitState.actions.filter((item) => item !== log.next_action)];
+        }
+        render();
+      } catch (error) {
+        mode.textContent = "offline";
+        prospectSummary.textContent = String(error);
+      }
+    }
+
+    render();
+    refresh();
+    setInterval(refresh, 10000);
+  </script>
+</body>
+</html>

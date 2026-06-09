@@ -1,0 +1,32 @@
+{
+  "metrics": {
+    "mrr": "$0",
+    "pipeline": 0,
+    "prospects": 0,
+    "conversions": 0,
+    "replies": 0,
+    "cost": "$0"
+  },
+  "focus": [
+    "Wire live prospect counts into the cockpit",
+    "Keep the public log in sync",
+    "Add live revenue totals"
+  ],
+  "machines": [
+    ["Prospecting", "active", "green", "prospects / review", "none", "feed live Places data"],
+    ["Review Queue", "active", "green", "approvals / day", "none", "approve first batch"],
+    ["Outreach Sender", "active", "green", "sends / day", "none", "send only approved leads"],
+    ["Fulfillment Adapter", "active", "green", "setups / day", "none", "wire conversion events"],
+    ["Cockpit", "building", "yellow", "live counts / target", "no live prospect data", "render prospect rows"]
+  ],
+  "prospects": [],
+  "alerts": [
+    "No live scrape data yet",
+    "Revenue still unknown"
+  ],
+  "actions": [
+    "Wire live prospect counts into cockpit",
+    "Add a real Places feed",
+    "Publish prospect rows once data exists"
+  ]
+}
