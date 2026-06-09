@@ -78,13 +78,37 @@
       min-height: 60vh;
       background: radial-gradient(circle at top, rgba(114,241,184,.08), transparent 22rem);
     }
+    .section {
+      margin: 0 0 20px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,.02);
+    }
+    .section h2 {
+      margin: 0 0 10px;
+      color: var(--warn);
+      font-size: .82rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    .kicker {
+      color: var(--accent);
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
     .line {
-      margin: 0 0 14px;
+      margin: 0;
       white-space: pre-wrap;
       line-height: 1.55;
       font-size: 1rem;
     }
-    .prompt { color: var(--warn); }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.55;
+    }
+    li { margin-bottom: 6px; }
     .cursor {
       display: inline-block;
       width: 9px;
@@ -109,12 +133,36 @@
     <header class="top">
       <div>
         <h1>Ghost Engine Log</h1>
-        <div class="status">CRT stream / static log playback</div>
+        <div class="status">CRT stream / self-refreshing log playback</div>
       </div>
       <div class="status" id="mode">loading...</div>
     </header>
     <main class="screen">
-      <pre class="line" id="stream"></pre><span class="cursor" aria-hidden="true">&nbsp;</span>
+      <section class="section">
+        <h2>Current task</h2>
+        <div class="kicker" id="currentTask">loading...</div>
+      </section>
+      <section class="section">
+        <h2>Pending tasks</h2>
+        <ul id="pendingTasks"></ul>
+      </section>
+      <section class="section">
+        <h2>Completed steps</h2>
+        <ul id="completedSteps"></ul>
+      </section>
+      <section class="section">
+        <h2>Blocker</h2>
+        <div class="line" id="blocker"></div>
+      </section>
+      <section class="section">
+        <h2>Next action</h2>
+        <div class="line" id="nextAction"></div>
+      </section>
+      <section class="section">
+        <h2>Log entries</h2>
+        <pre class="line" id="entries"></pre>
+      </section>
+      <span class="cursor" aria-hidden="true">&nbsp;</span>
     </main>
     <footer class="footer">
       <a href="/ghost-engine/">Back to Ghost Engine</a>
@@ -124,42 +172,51 @@
   </section>
 
   <script>
-    const stream = document.getElementById("stream");
+    const currentTask = document.getElementById("currentTask");
+    const pendingTasks = document.getElementById("pendingTasks");
+    const completedSteps = document.getElementById("completedSteps");
+    const blocker = document.getElementById("blocker");
+    const nextAction = document.getElementById("nextAction");
+    const entries = document.getElementById("entries");
     const mode = document.getElementById("mode");
 
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    async function typeLine(text, speed = 10) {
-      for (const ch of text) {
-        stream.textContent += ch;
-        await sleep(speed);
-      }
-      stream.textContent += "\n\n";
-      await sleep(180);
+    function renderList(node, items) {
+      node.innerHTML = items.map((item) => `<li>${item}</li>`).join("");
     }
 
     async function main() {
       try {
-        const res = await fetch("../log.json", { cache: "no-store" });
+        const res = await fetch("../log.json?ts=" + Date.now(), { cache: "no-store" });
         const data = await res.json();
         mode.textContent = "online";
-        await typeLine(`> ${data.title}`);
-        await typeLine("> " + "=".repeat(data.title.length));
-        for (const entry of data.entries) {
-          await typeLine(`> ${entry.time}`);
-          await typeLine(`  decision: ${entry.decision}`);
-          await typeLine(`  reason: ${entry.reason}`);
-          await typeLine(`  next: ${entry.next_action}`);
-        }
-        await typeLine("> end of log");
+        currentTask.textContent = data.current_task || "unknown";
+        renderList(pendingTasks, (data.pending_tasks || []).map((item) => item));
+        renderList(completedSteps, (data.completed_steps || []).map((item) => item));
+        blocker.textContent = data.blocker || "none";
+        nextAction.textContent = data.next_action || "none";
+        entries.textContent = [
+          `> ${data.title || "Ghost Engine"}`,
+          `> ${"=".repeat((data.title || "Ghost Engine").length)}`,
+          ...(data.entries || []).map((entry) => [
+            `> ${entry.time}`,
+            `  decision: ${entry.decision}`,
+            `  reason: ${entry.reason}`,
+            `  next: ${entry.next_action}`,
+          ].join("\n")),
+        ].join("\n\n");
       } catch (error) {
         mode.textContent = "offline";
-        await typeLine("> log unavailable");
-        await typeLine(`> ${String(error)}`);
+        currentTask.textContent = "log unavailable";
+        pendingTasks.innerHTML = "";
+        completedSteps.innerHTML = "";
+        blocker.textContent = String(error);
+        nextAction.textContent = "retry after reload";
+        entries.textContent = "";
       }
     }
 
     main();
+    setInterval(main, 10000);
   </script>
 </body>
 </html>

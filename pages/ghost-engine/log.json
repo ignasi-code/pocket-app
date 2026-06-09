@@ -1,9 +1,25 @@
 {
-  "title": "hello world",
+  "title": "Ghost Engine",
+  "current_task": "Keep the public log current while building the first reusable lead-to-fulfillment loop.",
+  "pending_tasks": [
+    "Define Google Maps prospect fields",
+    "Normalize the lead schema",
+    "Build the review queue",
+    "Build the outreach sender",
+    "Build the fulfillment integration",
+    "Wire the cockpit"
+  ],
+  "completed_steps": [
+    "Set up the Ghost Engine project shell",
+    "Created the static public log page",
+    "Connected the log page to this JSON file"
+  ],
+  "blocker": "Need the first prospect schema before coding the prospecting module.",
+  "next_action": "Define the Google Maps fields and normalized lead record.",
   "entries": [
     {
       "time": "2026-06-09",
-      "decision": "hello world",
+      "decision": "Hello world",
       "reason": "sanity check for the log route",
       "next_action": "verify the route is deploying"
     }
