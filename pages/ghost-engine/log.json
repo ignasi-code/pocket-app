@@ -1,11 +1,7 @@
 {
   "title": "Ghost Engine",
-  "current_task": "Add the outreach sender scaffold.",
-  "pending_tasks": [
-    "Build the fulfillment integration",
-    "Wire the cockpit",
-    "Keep the public log in sync"
-  ],
+  "current_task": "Keep the public log in sync.",
+  "pending_tasks": [],
   "completed_steps": [
     "Set up the Ghost Engine project shell",
     "Created the static public log page",
@@ -13,10 +9,13 @@
     "Added the reusable Ghost Engine code scaffold",
     "Implemented the Google Maps prospect adapter",
     "Implemented the review queue scaffold",
+    "Implemented the outreach sender scaffold",
+    "Implemented the fulfillment adapter scaffold",
+    "Wired the cockpit snapshot",
     "Passed the first Ghost Engine tests"
   ],
-  "blocker": "Outreach sender needs approved-only gating wired in.",
-  "next_action": "Add the outreach sender scaffold.",
+  "blocker": "None.",
+  "next_action": "Keep the public log in sync.",
   "entries": [
     {
       "time": "2026-06-09",
@@ -41,6 +40,24 @@
       "decision": "Implement the review queue scaffold",
       "reason": "block outreach until a human approves prospects",
       "next_action": "add the outreach sender scaffold"
+    },
+    {
+      "time": "2026-06-09",
+      "decision": "Implement the outreach sender scaffold",
+      "reason": "send only approved prospects and track send status",
+      "next_action": "add the fulfillment adapter scaffold"
+    },
+    {
+      "time": "2026-06-09",
+      "decision": "Implement the fulfillment adapter scaffold",
+      "reason": "provision converted customers through an isolated delivery adapter",
+      "next_action": "wire the cockpit snapshot"
+    },
+    {
+      "time": "2026-06-09",
+      "decision": "Wire the cockpit snapshot",
+      "reason": "surface the current task, blockers, and metrics from project state",
+      "next_action": "keep the public log in sync"
     }
   ]
 }
