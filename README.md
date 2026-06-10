@@ -116,6 +116,8 @@ Build output directory: dist
 Production branch: master
 ```
 
+Project architecture notes: [docs/edge-first-architecture.md](/data/data/com.termux/files/home/pocket-app/docs/edge-first-architecture.md)
+
 Do not expose this app publicly without setting `POCKET_ACCESS_TOKEN`. Unattended `/ops` automation should use HMAC headers instead of open mode. The HMAC message is:
 
 ```text
