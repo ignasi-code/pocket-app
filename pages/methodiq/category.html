@@ -5,23 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Methodiq Category Clone</title>
     <style>
-      :root { --ink:#111; --muted:#595959; --line:#e7e1d7; }
-      *{box-sizing:border-box} html,body{margin:0;background:#fff;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
-      .page{max-width:430px;margin:0 auto;min-height:100vh}
+      :root { --ink:#111; --muted:#5d5d5d; --line:#e3dccf; --canary:#f7e77d; }
+      *{box-sizing:border-box}
+      html,body{margin:0;background:#fff;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+      .page{max-width:430px;margin:0 auto}
       .topbar{height:59px;padding:0 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd}
       .logo,.icon{display:block;background:#111;border-radius:2px}.logo{width:128px;height:20px}.icon{width:24px;height:24px}.icons{display:flex;gap:12px}
-      .hero{padding:22px 16px 12px}
-      .eyebrow{color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-size:13px;margin-bottom:8px}
-      h1{margin:0;font-size:32px;line-height:1}
-      .section{padding:26px 16px;border-top:1px solid var(--line)}
-      .grid{display:grid;grid-template-columns:1fr;gap:18px}
-      .product{border:1px solid #111;border-radius:18px;padding:14px;background:#fff}
-      .img{height:180px;background:linear-gradient(135deg,#ece5d1,#d9cfb6);border-radius:12px;margin-bottom:10px}
-      .row{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
-      .title{font-weight:700}.price{font-weight:700}
-      .meta{color:var(--muted);font-size:14px;line-height:1.45}
-      .cta{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:4px;background:#111;color:#fff;text-decoration:none;font-weight:700;margin-top:10px}
-      .link{display:inline-block;margin-top:10px;color:#111;font-weight:700}
+      .catalog{padding:18px 0 0}
+      .section-label{padding:0 16px;color:var(--muted);font-size:14px;line-height:1.2}
+      .section-title{padding:2px 16px 0;font-size:28px;line-height:1.05;margin:0}
+      .section-sub{padding:2px 16px 0;color:var(--muted);font-size:14px;line-height:1.2}
+      .group{padding:18px 16px 28px;border-top:1px solid var(--line)}
+      .group h2{margin:0 0 10px;font-size:18px;line-height:1.05;text-transform:none}
+      .product-link{display:block;color:inherit;text-decoration:none}
+      .product-link + .product-link{margin-top:18px}
+      .product{display:grid;grid-template-columns:112px 1fr;gap:12px;align-items:start}
+      .thumb{width:112px;height:112px;border-radius:12px;background:linear-gradient(135deg,#ede7d8,#daccaf)}
+      .meta{min-width:0}
+      .meta-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+      .name{font-weight:700;font-size:18px;line-height:1.1}
+      .price{font-weight:700;font-size:16px;white-space:nowrap}
+      .stars{display:flex;gap:4px;margin:4px 0 6px}
+      .star{width:10px;height:10px;background:#111;border-radius:1px;display:block}
+      .reviews{font-size:13px;color:var(--ink);margin-bottom:6px}
+      .desc{font-size:13px;line-height:1.35;color:var(--muted);margin:0}
+      .action-row{display:flex;gap:12px;align-items:center;margin-top:10px}
+      .learn{color:#111;font-weight:700;text-decoration:none}
+      .cart{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 14px;background:#111;color:#fff;text-decoration:none;border-radius:4px;font-weight:700}
+      .shade{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 14px;border:1px solid #111;color:#111;text-decoration:none;border-radius:4px;font-weight:700;background:#fff}
+      .promo{padding:18px 16px;border-top:1px solid var(--line)}
+      .promo a{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;background:#111;color:#fff;text-decoration:none;border-radius:4px;font-weight:700}
+      .footer{background:var(--canary);padding:22px 16px 32px;border-top:1px solid #111}
+      .footer-links{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px;margin-top:16px}
+      .footer-links a{color:#111}
+      .legal{margin-top:16px;color:#111}
     </style>
   </head>
   <body>
@@ -30,35 +47,461 @@
         <a class="logo" href="/methodiq/home" aria-label="Methodiq home"></a>
         <div class="icons"><a class="icon" href="/store/cart" aria-label="Cart"></a><span class="icon"></span><span class="icon"></span></div>
       </header>
-      <section class="hero">
-        <div class="eyebrow">All Products</div>
-        <h1>Shop all treatments</h1>
-      </section>
-      <section class="section">
-        <div class="grid">
-          <article class="product">
-            <div class="img" aria-hidden="true"></div>
-            <div class="row"><div class="title">Collatin</div><div class="price">$49</div></div>
-            <p class="meta">113 reviews. Types 1 & 3 Collagen, Zinc, Niacinamide, L-Theanine, Magnesium.</p>
-            <a class="link" href="/methodiq/clarixa">Learn more</a>
-            <a class="cta" href="/store/cart">Add to cart</a>
-          </article>
-          <article class="product">
-            <div class="img" aria-hidden="true"></div>
-            <div class="row"><div class="title">SkinShield</div><div class="price">$45</div></div>
-            <p class="meta">9,540 reviews. Patented Azelaic Acid Technology, Centella Asiatica, Aloe Vera, Niacinamide, Vitamin E.</p>
-            <a class="link" href="/methodiq/clarixa">Learn more</a>
-            <a class="cta" href="/store/cart">Add to cart</a>
-          </article>
-          <article class="product">
-            <div class="img" aria-hidden="true"></div>
-            <div class="row"><div class="title">Clarixa</div><div class="price">$49</div></div>
-            <p class="meta">325 reviews. Zinc, Niacinamide, Selenium, L-Theanine, Magnesium.</p>
-            <a class="link" href="/methodiq/clarixa">Learn more</a>
-            <a class="cta" href="/store/cart">Add to cart</a>
-          </article>
+
+      <section class="catalog">
+        <div class="section-label">All Products</div>
+        <h1 class="section-title">Shop all</h1>
+        <div class="section-sub">treatments</div>
+
+        <div class="group">
+          <h2>Best sellers</h2>
+
+          <a class="product-link" href="/collatin">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Collatin</div><div class="price">$49</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">113 reviews</div>
+                <p class="desc">Types 1 &amp; 3 Collagen, Zinc, Niacinamide, L-Theanine, Magnesium</p>
+                <div class="action-row"><a class="learn" href="/collatin">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/skinshield">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">SkinShield</div><div class="price">$45</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">9,540 reviews</div>
+                <p class="desc">Patented Azelaic Acid Technology, Centella Asiatica, Aloe Vera, Niacinamide, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/skinshield">Learn more</a><a class="shade" href="/quiz?type=color-acn">Find your shade</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/melanex-509">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Melanex 509</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,549 reviews</div>
+                <p class="desc">Patented ODDL1007, SymWhite® 377, Niacinamide, Resveratrol, Vitamin C</p>
+                <div class="action-row"><a class="learn" href="/melanex-509">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/duolaq">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Duolaq</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">758 reviews</div>
+                <p class="desc">Encapsulated Salicylic Acid, Glycolic Acid, Niacinamide, Allantoin, Hyaluronic Acid</p>
+                <div class="action-row"><a class="learn" href="/duolaq">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/dapinaq">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Dapinaq</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,039 reviews</div>
+                <p class="desc">Encapsulated Salicylic Acid, Adapinoid®, Aloe Vera, Hyaluronic Acid, Peptides</p>
+                <div class="action-row"><a class="learn" href="/dapinaq">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+        </div>
+
+        <div class="group">
+          <h2>Acne</h2>
+
+          <a class="product-link" href="/doxycycline">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Doxycycline</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">115 reviews</div>
+                <p class="desc">Antibiotic oral acne medication</p>
+                <div class="action-row"><a class="learn" href="/doxycycline">Learn more</a><a class="shade" href="/quiz?type=full-active-acn">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/hydroxil">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Hydroxil</div><div class="price">$39</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">500 reviews</div>
+                <p class="desc">Postbiotics, Ceramide NP, Glycerin, Squalane, Vitamin E, Aloe Vera</p>
+                <div class="action-row"><a class="learn" href="/hydroxil">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/spironolactone">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Spironolactone</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">122 reviews</div>
+                <p class="desc">Hormonal oral acne medication</p>
+                <div class="action-row"><a class="learn" href="/spironolactone">Learn more</a><a class="shade" href="/quiz?type=full-active-acn">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/saloril">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Saloril</div><div class="price">$39</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">878 reviews</div>
+                <p class="desc">Salicylic Acid, Lactic Acid, Pomegranate Enzymes, Hyaluronic Acid, Allantoin</p>
+                <div class="action-row"><a class="learn" href="/saloril">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/clindalaq-307">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Clindalaq 307</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">225 reviews</div>
+                <p class="desc">Tretinoin, Clindamycin, Niacinamide, Aloe Vera Extract, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/clindalaq-307">Learn more</a><a class="shade" href="/quiz?type=full-active-acn">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/clindalaq-305">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Clindalaq 305</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">589 reviews</div>
+                <p class="desc">Tretinoin, Clindamycin, Niacinamide, Hydrocortisone, Aloe Vera Extract, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/clindalaq-305">Learn more</a><a class="shade" href="/quiz?type=full-active-acn">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/duolaq">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Duolaq</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">758 reviews</div>
+                <p class="desc">Encapsulated Salicylic Acid, Glycolic Acid, Niacinamide, Allantoin, Hyaluronic Acid</p>
+                <div class="action-row"><a class="learn" href="/duolaq">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/dapinaq">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Dapinaq</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,039 reviews</div>
+                <p class="desc">Encapsulated Salicylic Acid, Adapinoid®, Aloe Vera, Hyaluronic Acid, Peptides</p>
+                <div class="action-row"><a class="learn" href="/dapinaq">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/zeralaq">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Zeralaq</div><div class="price">$49</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">94 reviews</div>
+                <p class="desc">Patented ODDL103, Vegan Collagen, Tranexamic Acid, Niacinamide, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/zeralaq">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/azelaq">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Azelaq</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">292 reviews</div>
+                <p class="desc">Encapsulated Salicylic Acid, Azelaic Acid, SymCalmin®, Hyaluronic Acid</p>
+                <div class="action-row"><a class="learn" href="/azelaq">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/trazelaq-307">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Trazelaq 307</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">71 reviews</div>
+                <p class="desc">Tretinoin, Azelaic Acid, Niacinamide, Aloe Vera Extract, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/trazelaq-307">Learn more</a><a class="shade" href="/quiz?type=full-active-acn">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/trazelaq-305">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Trazelaq 305</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <p class="desc">Tretinoin, Azelaic Acid, Niacinamide, Hydrocortisone, Aloe Vera Extract, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/trazelaq-305">Learn more</a><a class="shade" href="/quiz?type=full-active-acn">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/dermacil">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Dermacil</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">131 reviews</div>
+                <p class="desc">Vegan Collagen, Adenosine, Vitamin E, Mung Bean Extract</p>
+                <div class="action-row"><a class="learn" href="/dermacil">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+
+          <a class="product-link" href="/clarixa">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Clarixa</div><div class="price">$49</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">325 reviews</div>
+                <p class="desc">Zinc, Niacinamide, Selenium, L-Theanine, Magnesium</p>
+                <div class="action-row"><a class="learn" href="/clarixa">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+        </div>
+
+        <div class="group">
+          <h2>Hyperpigmentation</h2>
+          <a class="product-link" href="/melanex-501">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Melanex 501</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,549 reviews</div>
+                <p class="desc">Hydroquinone, Azelaic Acid, Hydrocortisone, Aloe Vera Extract, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/melanex-501">Learn more</a><a class="shade" href="/quiz?type=hyp">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/melanex-503">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Melanex 503</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,549 reviews</div>
+                <p class="desc">Tretinoin, Hydroquinone, Hydrocortisone, Aloe Vera Extract, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/melanex-503">Learn more</a><a class="shade" href="/quiz?type=hyp">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/melanex-505">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Melanex 505</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,549 reviews</div>
+                <p class="desc">Hydroquinone, Azelaic Acid, Allantoin, Aloe Vera Extract, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/melanex-505">Learn more</a><a class="shade" href="/quiz?type=hyp">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/melanex-507">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Melanex 507</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,549 reviews</div>
+                <p class="desc">Tretinoin, Hydroquinone, Allantoin, Aloe Vera Extract, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/melanex-507">Learn more</a><a class="shade" href="/quiz?type=hyp">Find your treatment</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/melanex-509">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Melanex 509</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,549 reviews</div>
+                <p class="desc">Patented ODDL1007, SymWhite® 377, Niacinamide, Resveratrol, Vitamin C</p>
+                <div class="action-row"><a class="learn" href="/melanex-509">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/lexoril">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Lexoril</div><div class="price">$39</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">166 reviews</div>
+                <p class="desc">Sulfur, Niacinamide, Papaya Enzymes, Hyaluronic Acid, Colloidal Oatmeal</p>
+                <div class="action-row"><a class="learn" href="/lexoril">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+        </div>
+
+        <div class="group">
+          <h2>Body treatments</h2>
+          <a class="product-link" href="/exyrone">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Exyrone</div><div class="price">$59</div></div>
+                <p class="desc">Urea 10%, Vitamin C, Niacinamide, Hyaluronic Acid, Turmeric Root, Aloe Vera Extract</p>
+                <div class="action-row"><a class="learn" href="/exyrone">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/fibrexa">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Fibrexa</div><div class="price">$69</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">140 reviews</div>
+                <p class="desc">Patented OLABS1246, Bakuchiol, Niacinamide, Hyaluronic Acid, Caffeine</p>
+                <div class="action-row"><a class="learn" href="/fibrexa">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/neurexa-30">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Neurexa</div><div class="price">$59</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">158 reviews</div>
+                <p class="desc">Colloidal Oatmeal 1%, Patented OLABS1669, Niacinamide, Ceramides, Hyaluronic Acid</p>
+                <div class="action-row"><a class="learn" href="/neurexa-30">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+        </div>
+
+        <div class="group">
+          <h2>Makeup</h2>
+          <a class="product-link" href="/skinshield">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">SkinShield</div><div class="price">$45</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">9,540 reviews</div>
+                <p class="desc">Patented Azelaic Acid Technology, Centella Asiatica, Aloe Vera, Niacinamide, Vitamin E</p>
+                <div class="action-row"><a class="learn" href="/skinshield">Learn more</a><a class="shade" href="/quiz?type=color-acn">Find your shade</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/spotshield">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">SpotShield</div><div class="price">$38</div></div>
+                <div class="stars" aria-hidden="true"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+                <div class="reviews">1,544 reviews</div>
+                <p class="desc">Salicylic Acid, Niacinamide, Panthenol, Postbiotics</p>
+                <div class="action-row"><a class="learn" href="/spotshield">Learn more</a><a class="shade" href="/quiz?type=concealer-acn">Find your shade</a></div>
+              </div>
+            </article>
+          </a>
+        </div>
+
+        <div class="group">
+          <h2>Other essentials</h2>
+          <a class="product-link" href="/hydroscreen">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">HydroScreen</div><div class="price">$24</div></div>
+                <p class="desc">Niacinamide, Hydrolyzed Collagen, Ceramides, Allantoin</p>
+                <div class="action-row"><a class="learn" href="/hydroscreen">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/antimicrobial-skinshield-brush">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Antimicrobial SkinShield Brush</div><div class="price">$39</div></div>
+                <p class="desc">Silver Ion, Polybutylene Terephthalate</p>
+                <div class="action-row"><a class="learn" href="/antimicrobial-skinshield-brush">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/spotdot">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">SpotDot</div><div class="price">$24</div></div>
+                <p class="desc">Tea Tree Oil, Niacinamide</p>
+                <div class="action-row"><a class="learn" href="/spotdot">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
+          <a class="product-link" href="/dermaclin">
+            <article class="product">
+              <div class="thumb" aria-hidden="true"></div>
+              <div class="meta">
+                <div class="meta-top"><div class="name">Dermaclin</div><div class="price">$31</div></div>
+                <p class="desc">Salicylic Acid, Cotton, Rose</p>
+                <div class="action-row"><a class="learn" href="/dermaclin">Learn more</a><a class="cart" href="/store/cart">Add to cart</a></div>
+              </div>
+            </article>
+          </a>
         </div>
       </section>
+
+      <footer class="footer">
+        <div class="eyebrow">Commit to the cure</div>
+        <a class="cart" href="/methodiq/home" style="display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;">Find your treatment</a>
+        <div class="footer-links">
+          <a href="/about-us">About us</a><a href="/returns-portal">Returns & exchanges</a><a href="/login">Log-in</a><a href="/contact">Contact us</a><a href="/help/faqs">Help & FAQs</a><a href="/privacy-policy">Privacy policy</a><a href="/terms-and-conditions">Terms & conditions</a>
+        </div>
+        <div class="legal">METHODIQ 2026, All rights reserved.</div>
+      </footer>
     </main>
   </body>
-  </html>
+</html>
