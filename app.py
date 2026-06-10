@@ -2575,6 +2575,27 @@ def fast_upload():
     })
 
 
+@app.route("/methodiq")
+@app.route("/methodiq/")
+def methodiq_index():
+    return send_file(BASE_DIR / "pages" / "methodiq" / "index.html")
+
+
+@app.route("/methodiq/home")
+def methodiq_home():
+    return send_file(BASE_DIR / "pages" / "methodiq" / "home.html")
+
+
+@app.route("/methodiq/category")
+def methodiq_category():
+    return send_file(BASE_DIR / "pages" / "methodiq" / "category.html")
+
+
+@app.route("/methodiq/clarixa")
+def methodiq_clarixa():
+    return send_file(BASE_DIR / "pages" / "methodiq" / "clarixa.html")
+
+
 @app.route("/store")
 @app.route("/store/")
 def store_page():

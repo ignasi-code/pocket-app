@@ -12,8 +12,16 @@
       <p>
         Canonical page-type inventory for METHODIQ at viewport 430x932. Each row
         links to a standalone skeleton page, compare page, and composition map.
-        The folder tree below is the output shape.
+        The folder tree below is the output shape. This inventory is backed by
+        direct browser captures of the live home, category, and Clarixa pages.
       </p>
+      <p>
+        Live source verified in-browser:
+        <a href="https://www.methodiq.com/">home</a>,
+        <a href="https://www.methodiq.com/shop-all">shop-all</a>,
+        <a href="https://www.methodiq.com/clarixa">clarixa</a>.
+      </p>
+      <p><strong>Clone rule:</strong> keep the DOM exact first, then simplify only after the browser-captured structure is locked.</p>
       <p><a href="sop.html">Open #SkeletonSOP</a> · <a href="composition/sop.json">JSON SOP</a></p>
 
       <section class="folder-tree" aria-label="Output folder tree">
@@ -99,7 +107,7 @@
             <td><a href="component-compare/home.html">component-compare/home.html</a></td>
             <td><a href="composition/home.json">composition/home.json</a></td>
             <td><span class="status">captured</span></td>
-            <td>Homepage / marketing template. Source height 14980px. Animated hero is one evolving media component.</td>
+            <td>Homepage / marketing template. Source height 14980px. Hero is one evolving media block with concern buttons, expert section, app promo, and long review rail.</td>
           </tr>
           <tr>
             <td>Category</td>
@@ -109,7 +117,7 @@
             <td><a href="component-compare/category.html">component-compare/category.html</a></td>
             <td><a href="composition/category.json">composition/category.json</a></td>
             <td><span class="status">captured</span></td>
-            <td>Product listing template. Source height 9246px.</td>
+            <td>Product listing template. Source height 9246px. Includes best-seller cards, treatment groups, repeated CTA buttons, and review-driven cards.</td>
           </tr>
           <tr>
             <td>PDP</td>
@@ -119,7 +127,7 @@
             <td><a href="component-compare/pdp.html">component-compare/pdp.html</a></td>
             <td><a href="composition/pdp.json">composition/pdp.json</a></td>
             <td><span class="status">captured</span></td>
-            <td>Product detail template. Source height 13173px.</td>
+            <td>Product detail template. Source height 13173px. Collatin uses subscription + one-time purchase flow before the accordion/review depth.</td>
           </tr>
           <tr>
             <td>PDP</td>
@@ -129,7 +137,7 @@
             <td><a href="component-compare/clarixa.html">component-compare/clarixa.html</a></td>
             <td><a href="composition/clarixa.json">composition/clarixa.json</a></td>
             <td><span class="status">captured</span></td>
-            <td>Second product-detail URL using the same PDP template. Source height 13913px.</td>
+            <td>Second product-detail URL using the same PDP template. Source height 13913px. Clarixa adds the liquid supplement purchase flow, comparisons, FAQ, related products, and reviews.</td>
           </tr>
           <tr>
             <td>Cart drawer</td>
@@ -139,7 +147,7 @@
             <td><a href="component-compare/cart.html">component-compare/cart.html</a></td>
             <td><a href="composition/cart.json">composition/cart.json</a></td>
             <td><span class="status">captured</span></td>
-            <td>Populated cart drawer state with two paid subscription items and one gift line.</td>
+            <td>Populated cart drawer state with two paid subscription items and one gift line; captured from the Clarixa page after cart population.</td>
           </tr>
         </tbody>
       </table>

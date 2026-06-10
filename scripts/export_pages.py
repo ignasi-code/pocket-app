@@ -29,6 +29,10 @@ STORE_ASSET_ROUTES = [
 STATIC_PAGE_ROUTES = {
     "/": "index.html",
     "/bp": "bp/index.html",
+    "/methodiq": "methodiq/index.html",
+    "/methodiq/home": "methodiq/home.html",
+    "/methodiq/category": "methodiq/category.html",
+    "/methodiq/clarixa": "methodiq/clarixa.html",
 }
 
 PWA_FILE_ROUTES = {
@@ -164,6 +168,18 @@ def headers_file() -> str:
         f"  {html_cache}",
         "",
         "/bp/*",
+        f"  {html_cache}",
+        "",
+        "/methodiq/",
+        f"  {html_cache}",
+        "",
+        "/methodiq/home",
+        f"  {html_cache}",
+        "",
+        "/methodiq/category",
+        f"  {html_cache}",
+        "",
+        "/methodiq/clarixa",
         f"  {html_cache}",
         "",
         "/skeleton/*",

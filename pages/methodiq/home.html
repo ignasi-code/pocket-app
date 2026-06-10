@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Methodiq Home Clone</title>
+    <style>
+      :root { --bg:#fff; --ink:#111; --muted:#5a5a5a; --line:#e5e0d7; --canary:#f7e77d; }
+      *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+      .page{max-width:430px;margin:0 auto;min-height:100vh}
+      .topbar{height:59px;padding:0 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd}
+      .logo,.icon{display:block;background:#111;border-radius:2px}
+      .logo{width:128px;height:20px}.icon{width:24px;height:24px}.icons{display:flex;gap:12px}
+      .hero{padding:20px 16px 28px}
+      .eyebrow{font-size:14px;line-height:1.2;margin-bottom:8px}
+      h1{margin:0 0 12px;font-size:38px;line-height:.95;max-width:12ch}
+      .sub{font-size:18px;line-height:1.35;margin:0 0 16px}
+      .cta{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;background:#111;color:#fff;text-decoration:none;border-radius:4px;font-weight:700}
+      .hero-img{margin-top:18px;height:330px;background:linear-gradient(135deg,#efe7d1,#ddd3bb);border-radius:8px}
+      section.band{padding:44px 16px;border-top:1px solid var(--line)}
+      h2{margin:0 0 10px;font-size:24px;line-height:1.05}
+      p{color:var(--muted);line-height:1.45}
+      .concerns{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+      .concerns button{border:1px solid #111;background:#fff;padding:12px 10px;border-radius:999px;font:inherit}
+      .reel{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
+      .card{background:#f5f2e9;border-radius:14px;padding:14px}
+      .img{height:170px;background:#e2d7bf;border-radius:12px;margin-bottom:10px}
+      .footer{padding:44px 16px;background:var(--canary);border-top:1px solid #111}
+      .footer-links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+      .footer-links a{color:var(--ink)}
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <a class="logo" href="/methodiq/home" aria-label="Methodiq home"></a>
+        <div class="icons"><a class="icon" href="/store/cart" aria-label="Cart"></a><span class="icon"></span><span class="icon"></span></div>
+      </header>
+      <section class="hero">
+        <div class="eyebrow">Commit to the cure</div>
+        <h1>Clinically proven medical-grade treatments</h1>
+        <p>Dermatologist-developed treatments powered by prescription ingredients.</p>
+        <a class="cta" href="/methodiq/category">Find your treatment</a>
+        <div class="hero-img" role="img" aria-label="Follow our custom routine"></div>
+      </section>
+      <section class="band">
+        <h2>Precise diagnosis and proven treatment for every skin concern</h2>
+        <p>Acne, hyperpigmentation, redness, and eczema pathways are represented as separate concerns.</p>
+        <div class="concerns">
+          <button>Acne</button><button>Hyperpigmentation</button><button>Redness</button><button>Eczema</button>
+        </div>
+      </section>
+      <section class="band">
+        <h2>A personal health platform</h2>
+        <p>Progress tracking, treatment updates, and provider access stay visible in the browser-first clone.</p>
+        <a class="cta" href="/methodiq/category">Get started</a>
+      </section>
+      <section class="band">
+        <h2>Developed and backed by leading experts</h2>
+        <div class="reel">
+          <div class="card"><div class="img"></div><strong>Dr. Sarah Gee</strong><p>Harvard Medical School</p></div>
+          <div class="card"><div class="img"></div><strong>Dr. MaryBeth Parisi</strong><p>Harvard Medical School</p></div>
+        </div>
+      </section>
+      <footer class="footer">
+        <h2>Commit fully. Adhere precisely. Transform completely.</h2>
+        <a class="cta" href="/methodiq/category">Find your treatment</a>
+        <div class="footer-links">
+          <a href="/about-us">About us</a><a href="/help/faqs">Help & FAQs</a><a href="/privacy-policy">Privacy policy</a><a href="/terms-and-conditions">Terms & conditions</a>
+        </div>
+      </footer>
+    </main>
+  </body>
+  </html>

@@ -96,6 +96,10 @@ The browser owns cart state in `localStorage`. The mock checkout endpoint verifi
 /store/api/checkout
 ```
 
+## Commandments
+
+The working rules for clone and storefront decisions live in [`docs/commandments.md`](docs/commandments.md). The most important one for this repo is browser-first inspection before architecture decisions.
+
 ## Cloudflare Pages static export
 
 The public static shell can be exported for Cloudflare Pages with:

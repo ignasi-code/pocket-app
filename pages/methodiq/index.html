@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Methodiq Clone Hub</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f1e7;
+        --panel: #fffaf1;
+        --ink: #111111;
+        --muted: #5f5b55;
+        --line: #d8cfbf;
+        --accent: #d8b45a;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at top, #fff 0%, var(--bg) 55%, #efe7d7 100%); color: var(--ink); }
+      body { font-family: Georgia, "Times New Roman", serif; }
+      main { width: min(1040px, calc(100vw - 32px)); margin: 0 auto; padding: 32px 0 72px; }
+      .hero { border: 1px solid var(--line); border-radius: 24px; background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,250,241,.96)); padding: 28px; box-shadow: 0 24px 60px rgba(62, 48, 21, .08); }
+      .eyebrow { text-transform: uppercase; letter-spacing: .16em; font-size: .72rem; color: var(--muted); margin-bottom: 10px; }
+      h1 { margin: 0; font-size: clamp(2.4rem, 5vw, 4.8rem); line-height: .94; max-width: 9ch; }
+      p { line-height: 1.55; color: var(--muted); max-width: 72ch; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 22px; }
+      .card { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); padding: 18px; text-decoration: none; color: inherit; }
+      .card strong { display: block; font-size: 1.15rem; margin-bottom: 8px; }
+      .card span { color: var(--muted); display: block; line-height: 1.45; }
+      .card:hover { border-color: var(--accent); box-shadow: 0 14px 34px rgba(90, 69, 18, .08); transform: translateY(-1px); }
+      .links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+      .links a { color: var(--ink); font-weight: 700; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+      .note { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">Static-first clone hub</div>
+        <h1>Methodiq as a browser-captured clone.</h1>
+        <p>
+          This repo already contains live-browser captures and composition maps for the Methodiq home, category, and Clarixa PDP surfaces.
+          Use those exact DOM structures as the clone source before simplifying anything else.
+        </p>
+        <div class="links">
+          <a href="../skeleton/index.html">Open skeleton inventory</a>
+          <a href="../skeleton/sop.html">Read SOP</a>
+          <a href="https://www.methodiq.com/" target="_blank" rel="noreferrer">Live home</a>
+          <a href="https://www.methodiq.com/shop-all" target="_blank" rel="noreferrer">Live shop-all</a>
+          <a href="https://www.methodiq.com/clarixa" target="_blank" rel="noreferrer">Live Clarixa</a>
+        </div>
+        <div class="note">
+          <p>
+            The clone strategy is:
+            capture in browser, lock DOM anatomy, map to composition JSON, then render the static surfaces.
+            That keeps the work portable and avoids tying the frontend to one provider too early.
+          </p>
+        </div>
+      </section>
+
+      <section class="grid" aria-label="Captured surfaces">
+        <a class="card" href="../skeleton/pages/home.html">
+          <strong>Home</strong>
+          <span>Commit-to-the-cure hero, concern selector, app promo, expert rail, and long review/story stack.</span>
+        </a>
+        <a class="card" href="../skeleton/pages/category.html">
+          <strong>Category</strong>
+          <span>Best-seller cards, treatment groupings, repeated CTA rhythm, and review-heavy product listings.</span>
+        </a>
+        <a class="card" href="../skeleton/pages/pdp.html">
+          <strong>Collatin PDP</strong>
+          <span>Subscription-first purchase flow with treatment banner, accordion stack, and deep content sections.</span>
+        </a>
+        <a class="card" href="../skeleton/pages/clarixa.html">
+          <strong>Clarixa PDP</strong>
+          <span>Liquid supplement PDP with comparisons, FAQ, review rails, related products, and footer CTA.</span>
+        </a>
+        <a class="card" href="../skeleton/pages/cart.html">
+          <strong>Cart Drawer</strong>
+          <span>Populated drawer state captured from Clarixa after items were added from the live surface.</span>
+        </a>
+      </section>
+    </main>
+  </body>
+</html>

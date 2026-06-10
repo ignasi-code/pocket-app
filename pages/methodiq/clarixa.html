@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Methodiq Clarixa Clone</title>
+    <style>
+      :root { --ink:#111; --muted:#5a5a5a; --line:#e5ded0; --canary:#f7e77d; }
+      *{box-sizing:border-box} html,body{margin:0;background:#fff;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+      .page{max-width:430px;margin:0 auto;min-height:100vh}
+      .topbar{height:59px;padding:0 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd}
+      .logo,.icon{display:block;background:#111;border-radius:2px}.logo{width:128px;height:20px}.icon{width:24px;height:24px}.icons{display:flex;gap:12px}
+      .gallery{padding:16px 16px 10px}
+      .gallery .strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+      .shot{height:110px;border-radius:12px;background:linear-gradient(135deg,#ebe2cb,#d9cfb3)}
+      .meta{padding:0 16px 16px}
+      .meta p{margin:6px 0;color:var(--muted);line-height:1.45}
+      .rating{display:flex;gap:4px;margin:8px 0}
+      .star{width:10px;height:10px;background:#111;border-radius:1px}
+      .purchase{padding:16px;border-top:1px solid var(--line)}
+      .card{border:1px solid #111;border-radius:12px;padding:14px;background:#fff;margin-bottom:10px}
+      .row{display:flex;justify-content:space-between;gap:12px}
+      .cta{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:4px;background:#111;color:#fff;text-decoration:none;font-weight:700;margin-top:10px}
+      .pill{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;margin:4px 6px 0 0}
+      section{padding:26px 16px;border-top:1px solid var(--line)}
+      h2{margin:0 0 10px;font-size:24px;line-height:1.05}
+      .list{display:grid;gap:10px}
+      .comparison{display:grid;gap:10px}
+      .compare-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .compare-row > div{border:1px solid var(--line);border-radius:10px;padding:10px}
+      .footer{padding:28px 16px 40px;background:var(--canary);border-top:1px solid #111}
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <a class="logo" href="/methodiq/home" aria-label="Methodiq home"></a>
+        <div class="icons"><a class="icon" href="/store/cart" aria-label="Cart"></a><span class="icon"></span><span class="icon"></span></div>
+      </header>
+      <section class="gallery">
+        <div class="strip">
+          <div class="shot" aria-hidden="true"></div>
+          <div class="shot" aria-hidden="true"></div>
+          <div class="shot" aria-hidden="true"></div>
+        </div>
+      </section>
+      <section class="meta">
+        <p>400 ml</p>
+        <p>13.5 FL. OZ.</p>
+        <h1 style="margin:0;font-size:34px;line-height:1">Clarixa</h1>
+        <p>Dermatologist-developed acne supplement. It targets internal triggers like stress and hormone shifts.</p>
+        <p>Zinc, Niacinamide, Selenium, L-Theanine, Magnesium</p>
+        <div class="rating" aria-label="325 reviews"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+        <p>325 reviews</p>
+      </section>
+      <section class="purchase">
+        <div class="card">
+          <div class="row"><strong>Subscribe & save</strong><strong>$49</strong></div>
+          <p>20% off future deliveries + free shipping. Cancel anytime online.</p>
+          <span class="pill">Free Dermaclin Towels</span>
+          <span class="pill">Free returns</span>
+        </div>
+        <div class="card">
+          <div class="row"><strong>One-time purchase</strong><strong>$49</strong></div>
+        </div>
+        <a class="cta" href="/store/cart">Add to bag</a>
+      </section>
+      <section>
+        <h2>Treatment details</h2>
+        <div class="list">
+          <div>Uses: targets the root cause of breakouts.</div>
+          <div>Dermatologist developed: sugar-free, gluten-free, vegan, non-GMO.</div>
+          <div>Initial results within 4 weeks, significant improvement in 8 weeks.</div>
+        </div>
+      </section>
+      <section>
+        <h2>Results</h2>
+        <div class="comparison">
+          <div class="compare-row"><div>98% saw overall improvement after 4 weeks.</div><div>90% saw more hydrated skin after 7 weeks.</div></div>
+          <div class="compare-row"><div>93% saw brighter, more radiant, or less dull skin.</div><div>Based on consumer testing of 61 users.</div></div>
+        </div>
+      </section>
+      <section>
+        <h2>How it works</h2>
+        <div class="list">
+          <div>1. Online acne assessment</div>
+          <div>2. Prescribed treatment protocol</div>
+          <div>3. Ongoing tracking and updates</div>
+          <div>4. Follow precisely</div>
+        </div>
+      </section>
+      <section>
+        <h2>Frequently asked questions</h2>
+        <div class="list">
+          <div>How do I use the product?</div>
+          <div>Why is Clarixa a liquid?</div>
+          <div>Are there other flavors?</div>
+          <div>How long does it take to see results?</div>
+          <div>What benefits does Clarixa provide?</div>
+          <div>What is the return policy?</div>
+          <div>How do subscriptions work?</div>
+        </div>
+      </section>
+      <section>
+        <h2>Related products</h2>
+        <div class="list">
+          <div>Clindalaq 305</div>
+          <div>Duolaq</div>
+          <div>Dapinaq</div>
+          <div>Hydroxil</div>
+          <div>Saloril</div>
+        </div>
+      </section>
+      <section class="footer">
+        <h2>Commit to the cure</h2>
+        <a class="cta" href="/methodiq/category">Find your treatment</a>
+      </section>
+    </main>
+  </body>
+  </html>
