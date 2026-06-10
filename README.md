@@ -27,6 +27,12 @@ POCKET_HOST=0.0.0.0 POCKET_PORT=5052 python run_pocket.py
 
 Then open `/setup` in a browser to paste your Gemini API key and save `.env`.
 
+Current Termux tunnel:
+
+```text
+https://changes-sic-dans-directive.trycloudflare.com/
+```
+
 Control pages:
 
 - `/`: Pocket Arkanoid HTML5 game.
@@ -66,6 +72,7 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_FAST_MAX_UPLOAD_BYTES`: Maximum browser-to-server test size. Default: `67108864`.
 - `POCKET_STORE_BASE_URL`: Shopify store base URL used to generate mock cart permalinks. Default: `https://roxanneassoulin.com`.
 - `POCKET_STORE_CURRENCY`: Currency label for the mock checkout response. Default: `usd`.
+- `POCKET_TUNNEL_URL`: Public tunnel URL for the Termux server. Current value: `https://changes-sic-dans-directive.trycloudflare.com/`.
 - `POCKET_RESTART_COMMAND`: Optional command used by `/restart`. Default runs `python run_pocket.py`.
 - `POCKET_OPS_SESSION_SECONDS`: How long `/ops` stays unlocked in one browser after a valid token. Default: `43200`.
 - `POCKET_OPS_HMAC_SECRET`: Optional dedicated secret for signed `/ops` automation requests. If unset, `/ops` uses `POCKET_ACCESS_TOKEN` for HMAC signing.

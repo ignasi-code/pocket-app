@@ -99,6 +99,9 @@ STORE_CART_UPSELL_HANDLES = [
     "the-paprika-necklace-duo",
     "the-netted-stone-pendant",
 ]
+PWA_DIR = BASE_DIR / "pages" / "pwa"
+PWA_BROWSER_CACHE_SECONDS = 300
+PWA_DATA_BROWSER_CACHE_SECONDS = 3600
 STORE_SWATCH_COLORS = {
     "cloud": "#8ED1D1",
     "lemon": "#E3D43C",
@@ -1028,6 +1031,11 @@ def render_store_template(template_name, **context):
         STORE_HTML_BROWSER_CACHE_SECONDS,
         STORE_HTML_EDGE_CACHE_SECONDS,
     )
+
+
+def render_static_pwa_file(path, mimetype, browser_max_age, edge_max_age=None, immutable=False):
+    response = send_file(path, mimetype=mimetype, max_age=browser_max_age)
+    return apply_cache_headers(response, browser_max_age, edge_max_age, immutable=immutable)
 
 
 def store_variant_lookup():
@@ -2400,6 +2408,58 @@ def home():
 @app.route("/bp/")
 def bp_home():
     return send_file(BASE_DIR / "pages" / "bp" / "index.html")
+
+
+@app.route("/pwa")
+@app.route("/pwa/")
+def pwa_home():
+    return render_static_pwa_file(PWA_DIR / "index.html", "text/html", PWA_BROWSER_CACHE_SECONDS)
+
+
+@app.route("/pwa/app.css")
+def pwa_app_css():
+    return render_static_pwa_file(PWA_DIR / "app.css", "text/css", PWA_BROWSER_CACHE_SECONDS)
+
+
+@app.route("/pwa/app.js")
+def pwa_app_js():
+    return render_static_pwa_file(PWA_DIR / "app.js", "text/javascript", PWA_BROWSER_CACHE_SECONDS)
+
+
+@app.route("/pwa/manifest.webmanifest")
+def pwa_manifest():
+    return render_static_pwa_file(PWA_DIR / "manifest.webmanifest", "application/manifest+json", PWA_BROWSER_CACHE_SECONDS)
+
+
+@app.route("/pwa/service-worker.js")
+def pwa_service_worker():
+    response = render_static_pwa_file(PWA_DIR / "service-worker.js", "text/javascript", 0)
+    response.headers["Cache-Control"] = "no-store"
+    response.headers.pop("CDN-Cache-Control", None)
+    response.headers.pop("Cloudflare-CDN-Cache-Control", None)
+    return response
+
+
+@app.route("/pwa/offline.html")
+def pwa_offline():
+    return render_static_pwa_file(PWA_DIR / "offline.html", "text/html", PWA_BROWSER_CACHE_SECONDS)
+
+
+@app.route("/pwa/catalog.json")
+def pwa_catalog():
+    response = send_file(STORE_CATALOG_PATH, mimetype="application/json", max_age=PWA_DATA_BROWSER_CACHE_SECONDS)
+    return apply_cache_headers(response, PWA_DATA_BROWSER_CACHE_SECONDS, STORE_DATA_EDGE_CACHE_SECONDS)
+
+
+@app.route("/pwa/cart-index.json")
+def pwa_cart_index():
+    payload = jsonify(store_cart_index_payload())
+    return apply_cache_headers(payload, PWA_DATA_BROWSER_CACHE_SECONDS, STORE_DATA_EDGE_CACHE_SECONDS)
+
+
+@app.route("/pwa/icons/<path:filename>")
+def pwa_icon(filename):
+    return render_static_pwa_file(PWA_DIR / "icons" / filename, "image/svg+xml", STORE_ASSET_CACHE_SECONDS, immutable=True)
 
 
 @app.route("/terminal")

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8dd5f">
+  <title>Pocket Store PWA</title>
+  <link rel="manifest" href="/pwa/manifest.webmanifest">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/pwa/app.css">
+  <script defer src="/pwa/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/pwa/service-worker.js", { scope: "/pwa/" }).catch(() => {});
+      });
+    }
+  </script>
+</head>
+<body data-pwa-root>
+  <main class="shell" data-shell>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Pocket Store</p>
+        <h1>Offline-first catalogue</h1>
+      </div>
+      <div class="status" data-status>Loading catalogue…</div>
+    </header>
+
+    <nav class="nav">
+      <button type="button" data-route="home">Catalogue</button>
+      <button type="button" data-route="cart">Bag</button>
+      <button type="button" data-route="outbox">Outbox</button>
+    </nav>
+
+    <section class="panel" data-view></section>
+  </main>
+</body>
+</html>

@@ -31,6 +31,17 @@ STATIC_PAGE_ROUTES = {
     "/bp": "bp/index.html",
 }
 
+PWA_FILE_ROUTES = {
+    "/pwa/": "pwa/index.html",
+    "/pwa/app.css": "pwa/app.css",
+    "/pwa/app.js": "pwa/app.js",
+    "/pwa/manifest.webmanifest": "pwa/manifest.webmanifest",
+    "/pwa/offline.html": "pwa/offline.html",
+    "/pwa/service-worker.js": "pwa/service-worker.js",
+    "/pwa/icons/icon-192.svg": "pwa/icons/icon-192.svg",
+    "/pwa/icons/icon-512.svg": "pwa/icons/icon-512.svg",
+}
+
 STATIC_TREE_EXPORTS = {
     ROOT_DIR / "pages" / "skeleton": "skeleton",
     ROOT_DIR / "pages" / "ghost-engine": "ghost-engine",
@@ -134,6 +145,18 @@ def export_cart_items_static_index(output_dir: Path) -> Path:
     return write_text(output_dir, "store/cart-items.json", payload)
 
 
+def export_pwa_catalog(output_dir: Path) -> Path:
+    return write_bytes(output_dir, "pwa/catalog.json", pocket.STORE_CATALOG_PATH.read_bytes())
+
+
+def export_pwa_cart_index(output_dir: Path) -> Path:
+    payload = pocket.json.dumps(
+        pocket.store_cart_index_payload(),
+        separators=(",", ":"),
+    )
+    return write_text(output_dir, "pwa/cart-index.json", payload)
+
+
 def headers_file() -> str:
     html_cache = "Cache-Control: public, max-age=300, stale-while-revalidate=3600, stale-if-error=86400"
     return "\n".join([
@@ -161,6 +184,30 @@ def headers_file() -> str:
         "/store/assets/*",
         "  Cache-Control: public, max-age=31536000, immutable",
         "",
+        "/pwa/",
+        f"  {html_cache}",
+        "",
+        "/pwa/app.css",
+        "  Cache-Control: public, max-age=300, stale-while-revalidate=3600, stale-if-error=86400",
+        "",
+        "/pwa/app.js",
+        "  Cache-Control: public, max-age=300, stale-while-revalidate=3600, stale-if-error=86400",
+        "",
+        "/pwa/manifest.webmanifest",
+        "  Cache-Control: public, max-age=300, stale-while-revalidate=3600, stale-if-error=86400",
+        "",
+        "/pwa/offline.html",
+        f"  {html_cache}",
+        "",
+        "/pwa/icons/*",
+        "  Cache-Control: public, max-age=31536000, immutable",
+        "",
+        "/pwa/catalog.json",
+        "  Cache-Control: public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400",
+        "",
+        "/pwa/cart-index.json",
+        "  Cache-Control: public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400",
+        "",
         "/store/catalog.json",
         "  Cache-Control: public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400",
         "",
@@ -187,6 +234,12 @@ def build_dist(output_dir: Path | str = ROOT_DIR / "dist") -> set[Path]:
     with pocket.app.test_client() as client:
         for route, relative_path in STATIC_PAGE_ROUTES.items():
             written.add(export_route(client, output_path, route, relative_path))
+
+        for route, relative_path in PWA_FILE_ROUTES.items():
+            written.add(export_route(client, output_path, route, relative_path))
+
+        written.add(export_pwa_catalog(output_path))
+        written.add(export_pwa_cart_index(output_path))
 
         for route in [
             "/store",
