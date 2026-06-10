@@ -29,10 +29,6 @@ STORE_ASSET_ROUTES = [
 STATIC_PAGE_ROUTES = {
     "/": "index.html",
     "/bp": "bp/index.html",
-    "/methodiq": "methodiq/index.html",
-    "/methodiq/home": "methodiq/home.html",
-    "/methodiq/category": "methodiq/category.html",
-    "/methodiq/clarixa": "methodiq/clarixa.html",
 }
 
 PWA_FILE_ROUTES = {
@@ -139,6 +135,18 @@ def store_product_routes() -> list[str]:
         f"/store/products/{handle}"
         for handle in sorted({handle for handle in handles if handle})
     ]
+
+
+def methodiq_routes() -> list[str]:
+    methodiq_dir = ROOT_DIR / "pages" / "methodiq"
+    if not methodiq_dir.exists():
+        return []
+    routes: list[str] = []
+    for html_file in sorted(methodiq_dir.glob("*.html")):
+        stem = html_file.stem
+        route = "/methodiq" if stem == "index" else f"/methodiq/{stem}"
+        routes.append(route)
+    return routes
 
 
 def export_cart_items_static_index(output_dir: Path) -> Path:
@@ -250,6 +258,9 @@ def build_dist(output_dir: Path | str = ROOT_DIR / "dist") -> set[Path]:
     with pocket.app.test_client() as client:
         for route, relative_path in STATIC_PAGE_ROUTES.items():
             written.add(export_route(client, output_path, route, relative_path))
+
+        for route in methodiq_routes():
+            written.add(export_clean_html_route(client, output_path, route))
 
         for route, relative_path in PWA_FILE_ROUTES.items():
             written.add(export_route(client, output_path, route, relative_path))
