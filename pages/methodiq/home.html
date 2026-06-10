@@ -5,29 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Methodiq Home Clone</title>
     <style>
-      :root { --bg:#fff; --ink:#111; --muted:#5a5a5a; --line:#e5e0d7; --canary:#f7e77d; }
-      *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
-      .page{max-width:430px;margin:0 auto;min-height:100vh}
-      .topbar{height:59px;padding:0 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd}
-      .logo,.icon{display:block;background:#111;border-radius:2px}
-      .logo{width:128px;height:20px}.icon{width:24px;height:24px}.icons{display:flex;gap:12px}
-      .hero{padding:20px 16px 28px}
-      .eyebrow{font-size:14px;line-height:1.2;margin-bottom:8px}
-      h1{margin:0 0 12px;font-size:38px;line-height:.95;max-width:12ch}
-      .sub{font-size:18px;line-height:1.35;margin:0 0 16px}
-      .cta{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;background:#111;color:#fff;text-decoration:none;border-radius:4px;font-weight:700}
-      .hero-img{margin-top:18px;height:330px;background:linear-gradient(135deg,#efe7d1,#ddd3bb);border-radius:8px}
-      section.band{padding:44px 16px;border-top:1px solid var(--line)}
-      h2{margin:0 0 10px;font-size:24px;line-height:1.05}
-      p{color:var(--muted);line-height:1.45}
-      .concerns{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
-      .concerns button{border:1px solid #111;background:#fff;padding:12px 10px;border-radius:999px;font:inherit}
-      .reel{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
-      .card{background:#f5f2e9;border-radius:14px;padding:14px}
-      .img{height:170px;background:#e2d7bf;border-radius:12px;margin-bottom:10px}
-      .footer{padding:44px 16px;background:var(--canary);border-top:1px solid #111}
-      .footer-links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
-      .footer-links a{color:var(--ink)}
+      :root { --ink:#111; --muted:#575757; --line:#ded6c6; --canary:#f4e66f; }
+      * { box-sizing:border-box; }
+      html, body { margin:0; background:#fff; color:var(--ink); font-family: Arial, Helvetica, sans-serif; }
+      .page { max-width:430px; margin:0 auto; }
+      .topbar { height:59px; padding:0 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #ddd; }
+      .logo,.icon{display:block;background:#111;border-radius:2px}.logo{width:128px;height:20px}.icon{width:24px;height:24px}.icons{display:flex;gap:12px}
+      .hero, .section { padding:20px 16px; }
+      .hero { padding-top:18px; }
+      .eyebrow { font-size:14px; line-height:1.2; margin-bottom:10px; }
+      h1 { margin:0; font-size:37px; line-height:.95; max-width:11ch; letter-spacing:-.02em; }
+      .sub { margin:12px 0 16px; font-size:18px; line-height:1.35; color:var(--ink); font-weight:700; }
+      .lead { color:var(--muted); line-height:1.45; margin:10px 0 0; }
+      .cta { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:0 18px; background:#111; color:#fff; text-decoration:none; border-radius:4px; font-weight:700; margin-top:16px; }
+      .hero-art { margin-top:18px; height:330px; border-radius:8px; background:linear-gradient(135deg,#efe9d4 0%, #ddd1af 45%, #f7f0dc 100%); position:relative; overflow:hidden; }
+      .hero-art::before { content:""; position:absolute; inset:18px 16px 22px; border:1px solid rgba(17,17,17,.12); border-radius:6px; }
+      .hero-art::after { content:""; position:absolute; left:50%; top:50%; width:200px; height:200px; transform:translate(-50%,-50%); border-radius:50%; background:rgba(255,255,255,.25); filter:blur(4px); }
+      .section { border-top:1px solid var(--line); }
+      .section h2 { margin:0 0 8px; font-size:24px; line-height:1.05; }
+      .section .note { color:var(--muted); line-height:1.45; margin:0; }
+      .concern-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px; }
+      .concern-grid button { appearance:none; border:1px solid #111; background:#fff; padding:12px 10px; border-radius:999px; font:inherit; }
+      .region-row { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:16px; }
+      .pair-card { background:#f6f2e8; border-radius:14px; padding:12px; }
+      .pair-card .img { height:176px; border-radius:12px; background:linear-gradient(135deg,#e7dbc2,#d5c3a0); }
+      .pair-card .label { margin-top:8px; font-weight:700; font-size:14px; }
+      .pair-card .small { color:var(--muted); font-size:13px; line-height:1.4; margin-top:4px; }
+      .app-row { display:grid; grid-template-columns:1fr; gap:14px; align-items:start; }
+      .app-shot { height:300px; background:linear-gradient(135deg,#f2f2f2,#ddd); border-radius:14px; }
+      .app-links { display:flex; gap:12px; align-items:center; margin-top:10px; }
+      .appstore { width:134px; height:40px; border-radius:8px; background:#111; }
+      .qr { width:96px; height:96px; border:1px solid #111; background:repeating-linear-gradient(90deg,#111 0 2px,#fff 2px 6px), repeating-linear-gradient(#111 0 2px,#fff 2px 6px); background-blend-mode:multiply; }
+      .experts { display:grid; gap:16px; margin-top:16px; }
+      .expert { display:grid; grid-template-columns:88px 1fr; gap:12px; align-items:start; }
+      .expert .photo { width:88px; height:88px; border-radius:50%; background:linear-gradient(135deg,#e6dfd1,#d7c8ae); }
+      .expert .name { font-weight:700; margin-bottom:4px; }
+      .expert .edu { font-size:12px; letter-spacing:.08em; margin:6px 0 4px; color:var(--muted); }
+      .hero-footer { padding:18px 16px 44px; }
+      .hero-footer .big { font-size:28px; line-height:1.05; max-width:14ch; margin:0 0 12px; }
+      .review-head { margin-bottom:10px; }
+      .reviews { display:grid; gap:24px; }
+      .review { padding-bottom:18px; border-bottom:1px solid #d8d8d8; }
+      .review-top { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:start; }
+      .review-name { font-weight:700; }
+      .verified { color:#6d6d6d; font-size:12px; letter-spacing:.06em; margin-top:4px; }
+      .stars { display:flex; gap:5px; }
+      .stars span { width:10px; height:10px; background:#111; border-radius:1px; display:block; }
+      .before-after { display:flex; gap:8px; margin:12px 0; }
+      .before-after .shot { width:80px; height:80px; border-radius:4px; background:linear-gradient(135deg,#e0d5bd,#cbb890); }
+      .review-title { font-weight:700; margin:0 0 6px; }
+      .review-body { color:var(--ink); line-height:1.45; margin:0; }
+      .review-date { color:#878787; font-size:12px; margin-top:10px; }
+      .pager { display:flex; justify-content:space-between; gap:10px; margin-top:16px; }
+      .pager button { border:1px solid #111; background:#fff; width:44px; height:44px; border-radius:8px; }
+      .footer { background:var(--canary); padding:22px 16px 32px; border-top:1px solid #111; }
+      .footer-links { display:grid; grid-template-columns:1fr 1fr; gap:12px 10px; margin-top:16px; }
+      .footer-links a { color:#111; }
+      .legal { margin-top:16px; color:#111; }
     </style>
   </head>
   <body>
@@ -36,39 +70,181 @@
         <a class="logo" href="/methodiq/home" aria-label="Methodiq home"></a>
         <div class="icons"><a class="icon" href="/store/cart" aria-label="Cart"></a><span class="icon"></span><span class="icon"></span></div>
       </header>
+
       <section class="hero">
         <div class="eyebrow">Commit to the cure</div>
-        <h1>Clinically proven medical-grade treatments</h1>
-        <p>Dermatologist-developed treatments powered by prescription ingredients.</p>
+        <div class="sub">Clinically proven medical-grade treatments</div>
+        <h1>Dermatologist-developed treatments powered by prescription ingredients</h1>
+        <p class="lead">Precise diagnosis and proven treatment for every skin concern.</p>
         <a class="cta" href="/methodiq/category">Find your treatment</a>
-        <div class="hero-img" role="img" aria-label="Follow our custom routine"></div>
+        <div class="hero-art" role="img" aria-label="Follow our custom routine"></div>
       </section>
-      <section class="band">
+
+      <section class="section">
         <h2>Precise diagnosis and proven treatment for every skin concern</h2>
-        <p>Acne, hyperpigmentation, redness, and eczema pathways are represented as separate concerns.</p>
-        <div class="concerns">
-          <button>Acne</button><button>Hyperpigmentation</button><button>Redness</button><button>Eczema</button>
+        <p class="note">Select a concern to follow the path used in the live Methodiq homepage.</p>
+        <div class="concern-grid">
+          <button>Acne</button>
+          <button>Hyperpigmentation</button>
+          <button>Redness</button>
+          <button>Eczema</button>
         </div>
+        <div class="region-row">
+          <div class="pair-card"><div class="img"></div><div class="label">Acne</div><div class="small">Before</div></div>
+          <div class="pair-card"><div class="img"></div><div class="label">Hyperpigmentation</div><div class="small">Before</div></div>
+        </div>
+        <p class="note" style="margin-top:14px;">Dermatology powered by leading doctors and immense datasets.</p>
+        <a class="cta" href="/methodiq/category">Find your treatment</a>
       </section>
-      <section class="band">
+
+      <section class="section">
         <h2>A personal health platform</h2>
-        <p>Progress tracking, treatment updates, and provider access stay visible in the browser-first clone.</p>
-        <a class="cta" href="/methodiq/category">Get started</a>
-      </section>
-      <section class="band">
-        <h2>Developed and backed by leading experts</h2>
-        <div class="reel">
-          <div class="card"><div class="img"></div><strong>Dr. Sarah Gee</strong><p>Harvard Medical School</p></div>
-          <div class="card"><div class="img"></div><strong>Dr. MaryBeth Parisi</strong><p>Harvard Medical School</p></div>
+        <p class="note">Progress and improvement tracking, treatment updates and adjustments, and medical provider access.</p>
+        <div class="app-row">
+          <div class="app-shot" aria-label="App screenshots"></div>
+          <div>
+            <div>Get the app on</div>
+            <div class="app-links">
+              <div class="appstore"></div>
+              <div class="qr" aria-label="QR Code"></div>
+            </div>
+          </div>
         </div>
       </section>
+
+      <section class="section">
+        <h2>Developed and backed by leading experts</h2>
+        <p class="note">World-leading experts enable us to deliver high-quality healthcare at scale.</p>
+        <div class="experts">
+          <article class="expert">
+            <div class="photo"></div>
+            <div>
+              <div class="name">Dr. Sarah Gee, MD, FAAD</div>
+              <div class="edu">EDUCATION</div>
+              <div>Harvard Medical School</div>
+            </div>
+          </article>
+          <article class="expert">
+            <div class="photo"></div>
+            <div>
+              <div class="name">Dr. MaryBeth Parisi, MD, FAAD</div>
+              <div class="edu">EDUCATION</div>
+              <div>Harvard Medical School</div>
+            </div>
+          </article>
+          <article class="expert">
+            <div class="photo"></div>
+            <div>
+              <div class="name">Dr. Jeanine B. Downie, MD, FAAD</div>
+              <div class="edu">EDUCATION</div>
+              <div>Mount Sinai Hospital</div>
+            </div>
+          </article>
+          <article class="expert">
+            <div class="photo"></div>
+            <div>
+              <div class="name">Dr. Saryna P. Young, MD, FAAD</div>
+              <div class="edu">EDUCATION</div>
+              <div>Yale University School of Medicine</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="hero-footer">
+        <div class="big">Commit fully. Adhere precisely. Transform completely.</div>
+        <a class="cta" href="/methodiq/category">Find your treatment</a>
+      </section>
+
+      <section class="section">
+        <div class="review-head">
+          <div>Real customers.</div>
+          <div>Proven results.</div>
+        </div>
+        <div class="reviews">
+          <article class="review">
+            <div class="review-top">
+              <div>
+                <div class="review-name">Alyssa C., 34</div>
+                <div class="verified">Verified review</div>
+              </div>
+              <div class="stars"><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="before-after"><div class="shot"></div><div class="shot"></div></div>
+            <div class="review-title">Alyssa C., 34</div>
+            <p class="review-body">This stuff is magical! This is the only product that has given me real, noticeable results when it comes to my face and acne. I have never had my skin look and feel this healthy.</p>
+            <div class="review-date">12 / 26 / 2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top">
+              <div>
+                <div class="review-name">Ashley B., 34</div>
+                <div class="verified">Verified review</div>
+              </div>
+              <div class="stars"><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="before-after"><div class="shot"></div><div class="shot"></div></div>
+            <div class="review-title">Ashley B., 34</div>
+            <p class="review-body">It is a great product. Definitely noticed a difference in my skin with evening out skin tone and skin seems more radiant.</p>
+            <div class="review-date">07 / 24 / 2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top">
+              <div>
+                <div class="review-name">Julissa D., 33</div>
+                <div class="verified">Verified review</div>
+              </div>
+              <div class="stars"><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="before-after"><div class="shot"></div><div class="shot"></div></div>
+            <div class="review-title">Julissa D., 33</div>
+            <p class="review-body">Works and is excellent. When my period was approaching my face was full of breakouts. While using it, I have only seen 1 or 2 small pimples that disappear quickly.</p>
+            <div class="review-date">09 / 15 / 2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top">
+              <div>
+                <div class="review-name">Karen Michelle C., 25</div>
+                <div class="verified">Verified review</div>
+              </div>
+              <div class="stars"><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="before-after"><div class="shot"></div><div class="shot"></div></div>
+            <div class="review-title">Karen Michelle C., 25</div>
+            <p class="review-body">Impressed with how quickly my skin got used to it. I think anyone dealing with hormonal acne flare ups and a clogged pores should give this product a try!</p>
+            <div class="review-date">12 / 25 / 2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top">
+              <div>
+                <div class="review-name">Jacobi H., 41</div>
+                <div class="verified">Verified review</div>
+              </div>
+              <div class="stars"><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="before-after"><div class="shot"></div><div class="shot"></div></div>
+            <div class="review-title">Jacobi H., 41</div>
+            <p class="review-body">Love the texture. After the initial purging, it worked very well. Not really a strong scent and it didn’t irritate my skin.</p>
+            <div class="review-date">06 / 24 / 2024</div>
+          </article>
+        </div>
+        <div class="pager"><button>‹</button><button>›</button></div>
+      </section>
+
       <footer class="footer">
-        <h2>Commit fully. Adhere precisely. Transform completely.</h2>
+        <div class="eyebrow">Commit to the cure</div>
         <a class="cta" href="/methodiq/category">Find your treatment</a>
         <div class="footer-links">
-          <a href="/about-us">About us</a><a href="/help/faqs">Help & FAQs</a><a href="/privacy-policy">Privacy policy</a><a href="/terms-and-conditions">Terms & conditions</a>
+          <a href="/about-us">About us</a>
+          <a href="/returns-portal">Returns & exchanges</a>
+          <a href="/login">Log-in</a>
+          <a href="/contact">Contact us</a>
+          <a href="/help/faqs">Help & FAQs</a>
+          <a href="/privacy-policy">Privacy policy</a>
+          <a href="/terms-and-conditions">Terms & conditions</a>
         </div>
+        <div class="legal">METHODIQ 2026, All rights reserved.</div>
       </footer>
     </main>
   </body>
-  </html>
+</html>

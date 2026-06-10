@@ -2591,6 +2591,11 @@ def methodiq_category():
     return send_file(BASE_DIR / "pages" / "methodiq" / "category.html")
 
 
+@app.route("/methodiq/dapinaq")
+def methodiq_dapinaq():
+    return send_file(BASE_DIR / "pages" / "methodiq" / "dapinaq.html")
+
+
 @app.route("/methodiq/clarixa")
 def methodiq_clarixa():
     return send_file(BASE_DIR / "pages" / "methodiq" / "clarixa.html")

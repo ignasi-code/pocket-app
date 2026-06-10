@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Methodiq Dapinaq Clone</title>
+    <style>
+      :root { --ink:#111; --muted:#5f5f5f; --line:#e5ddcf; --canary:#f7e77d; }
+      * { box-sizing:border-box; }
+      html, body { margin:0; background:#fff; color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
+      .page { max-width:430px; margin:0 auto; }
+      .topbar { height:59px; padding:0 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; }
+      .logo,.icon{display:block;background:#111;border-radius:2px}.logo{width:128px;height:20px}.icon{width:24px;height:24px}.icons{display:flex;gap:12px}
+      .hero { padding:16px 16px 12px; }
+      .shots { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+      .shot { height:190px; border-radius:14px; background:linear-gradient(135deg,#eee3c8,#dac9a4); }
+      .meta { padding:0 16px 16px; }
+      .meta p { margin:6px 0; }
+      .size { color:var(--ink); font-size:14px; line-height:1.1; }
+      .title { margin:6px 0 4px; font-size:34px; line-height:1; }
+      .ingredients { color:var(--muted); line-height:1.45; margin-top:6px; }
+      .rating { display:flex; gap:4px; margin:8px 0 6px; }
+      .star { width:10px; height:10px; background:#111; border-radius:1px; }
+      .reviews { font-size:13px; }
+      .intro { padding:0 16px 18px; line-height:1.45; color:var(--ink); }
+      .find { padding:0 16px 16px; }
+      .cta { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:0 18px; background:#111; color:#fff; text-decoration:none; border-radius:4px; font-weight:700; }
+      .product-shot { margin:8px 16px 0; height:312px; border-radius:14px; background:linear-gradient(135deg,#f1f1f1,#d9d9d9); }
+      .purchase { padding:16px; }
+      .radio-card { border:1px solid #111; border-radius:12px; padding:14px; margin-bottom:10px; }
+      .radio-top { display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+      .radio-title { font-weight:700; }
+      .radio-price { font-weight:700; }
+      .radio-copy { color:var(--muted); line-height:1.45; margin:8px 0 0; font-size:14px; }
+      .gift { display:block; margin-top:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; }
+      .gift strong { display:block; margin-bottom:4px; }
+      .bullet-row { display:flex; gap:18px; align-items:center; padding:10px 16px; color:var(--ink); }
+      .bullet { display:flex; align-items:center; gap:8px; }
+      .bullet::before { content:""; width:10px; height:10px; border-radius:999px; background:#111; display:block; }
+      .section { padding:26px 16px; border-top:1px solid var(--line); }
+      .section h2 { margin:0; font-size:24px; line-height:1.05; }
+      .section .eyebrow { color:var(--muted); font-size:14px; margin-bottom:8px; }
+      .copy-list { display:grid; gap:10px; margin-top:10px; }
+      .copy-list p { margin:0; line-height:1.45; }
+      .stats { display:grid; gap:10px; margin-top:14px; }
+      .stat { font-size:16px; }
+      .reviews-rail { display:grid; gap:18px; }
+      .review { padding-bottom:18px; border-bottom:1px solid #ddd; }
+      .review-top { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:start; }
+      .review-name { font-weight:700; }
+      .verified { color:#6f6f6f; font-size:12px; letter-spacing:.06em; margin-top:4px; }
+      .before-after { display:flex; gap:8px; margin:12px 0; }
+      .before-after .img { width:80px; height:80px; border-radius:4px; background:linear-gradient(135deg,#e5d8bb,#cfb98d); }
+      .review-title { font-weight:700; margin:0 0 6px; }
+      .review-body { margin:0; line-height:1.45; }
+      .review-date { margin-top:10px; font-size:12px; color:#888; }
+      .footer { background:var(--canary); padding:22px 16px 32px; border-top:1px solid #111; }
+      .footer-links { display:grid; grid-template-columns:1fr 1fr; gap:12px 10px; margin-top:16px; }
+      .footer-links a { color:#111; }
+      .legal { margin-top:16px; color:#111; }
+      .pager { display:flex; gap:10px; justify-content:space-between; margin-top:16px; }
+      .pager button { width:44px; height:44px; border:1px solid #111; border-radius:8px; background:#fff; }
+      .search { border:1px solid #111; border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+      .search input { border:0; outline:0; font:inherit; width:100%; }
+      .section-title { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 4px; }
+      .related { display:grid; gap:16px; margin-top:14px; }
+      .related-card { display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:start; }
+      .related-card .img { width:72px; height:72px; border-radius:10px; background:linear-gradient(135deg,#eadfcb,#d9caa9); }
+      .related-card p { margin:0; line-height:1.35; }
+      .related-card .name { font-weight:700; }
+      .related-card .price { font-weight:700; margin-top:2px; }
+      .related-card .cta2 { display:inline-flex; align-items:center; justify-content:center; min-height:32px; padding:0 12px; border:1px solid #111; border-radius:6px; color:#111; text-decoration:none; margin-top:8px; }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <a class="logo" href="/methodiq/home" aria-label="Methodiq home"></a>
+        <div class="icons"><a class="icon" href="/store/cart" aria-label="Cart"></a><span class="icon"></span><span class="icon"></span></div>
+      </header>
+
+      <section class="hero">
+        <div class="shots" aria-label="Product images">
+          <div class="shot"></div>
+          <div class="shot"></div>
+        </div>
+      </section>
+
+      <section class="meta">
+        <p class="size">30 ml</p>
+        <p class="size">1 FL. OZ.</p>
+        <h1 class="title">Dapinaq</h1>
+        <a class="cta" href="/quiz?type=full-active-acn">Find your treatment</a>
+        <p class="ingredients">Encapsulated Salicylic Acid, Adapinoid®, Aloe Vera, Hyaluronic Acid, Peptides</p>
+        <div class="rating" aria-label="1,039 reviews"><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span></div>
+        <div class="reviews">1,039 reviews</div>
+      </section>
+
+      <p class="intro">
+        Clinically targeted treatment for mild to moderate acne. Adapinoid, next generation retinoid, clears breakouts at the source, encapsulated salicylic acid unclogs pores, and niacinamide calms skin, reduces redness, and fades dark spots. Targeted, powerful, and gentle on skin.
+      </p>
+
+      <div class="find">
+        <a class="cta" href="/quiz?type=full-active-acn">Get started</a>
+      </div>
+
+      <div class="product-shot" aria-label="Treatment product image"></div>
+
+      <section class="purchase">
+        <div class="radio-card">
+          <div class="radio-top"><div class="radio-title">Subscribe & save</div><div class="radio-price">$69</div></div>
+          <div class="radio-copy">20% off future deliveries + free shipping · Convenient deliveries every 3 month · Cancel anytime online · Free returns, no questions asked.</div>
+          <div class="gift">
+            <strong>Free Dermaclin Towels</strong>
+            <div>($30 value)</div>
+            <div style="margin-top:6px;color:var(--muted);font-size:14px;">348 reviews · 4.9</div>
+          </div>
+          <div class="radio-copy">You can cancel or change the auto replenishment at any time. Learn more</div>
+        </div>
+        <div class="radio-card">
+          <div class="radio-top"><div class="radio-title">One-time purchase</div><div class="radio-price">$69</div></div>
+        </div>
+        <a class="cta" href="/store/cart">Add to bag</a>
+      </section>
+
+      <div class="bullet-row">
+        <div class="bullet">Free shipping over $40</div>
+        <div class="bullet">Free returns</div>
+        <div class="bullet">30 day money-back guarantee</div>
+      </div>
+
+      <section class="section">
+        <div class="eyebrow">Treatment details</div>
+        <h2>Treatment details</h2>
+        <div class="copy-list">
+          <p><strong>Uses:</strong> targets acne breakouts, reduces the appearance of redness and dark spots.</p>
+          <p><strong>Dermatologist developed & approved:</strong> non-comedogenic, safe for sensitive skin.</p>
+          <p>Initial results within 4 weeks, significant improvement in 4-6 months.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">Dermatologist developed</div>
+          <div class="stat">Sensitive skin safe</div>
+          <div class="stat">Oil-free</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">01</div>
+        <h2>Treatments powered by precision diagnostics</h2>
+        <div class="copy-list">
+          <p>Before / After study imagery and performance callouts.</p>
+          <p>99% saw fewer breakouts or blackheads within 4 weeks.</p>
+          <p>99% noticed an improvement on acne dark spots or acne scars within 2 weeks.</p>
+          <p>98% experienced smoother or a healthier skin barrier within 3 weeks.</p>
+          <p style="font-size:12px;color:#777;">* Based on consumer testing of 320 users after 3 months of use</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">02</div>
+        <h2>Follow the script</h2>
+        <div class="reviews-rail">
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Jacobi H., 41</div><div class="verified">Verified review</div></div><div></div></div>
+            <div class="before-after"><div class="img"></div><div class="img"></div></div>
+            <div class="review-title">Love the texture.</div>
+            <p class="review-body">Love the texture. After the initial purging, it worked very well. Not really a strong scent and it didn’t irritate my skin.</p>
+            <div class="review-date">06 / 24 / 2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Tarren A., 39</div><div class="verified">Verified review</div></div><div></div></div>
+            <div class="before-after"><div class="img"></div><div class="img"></div></div>
+            <div class="review-title">Bringing the healthy skin back!</div>
+            <p class="review-body">I noticed my skin felt brighter and less dull. I had less breakouts and after a month I had no new pimples. My pores looked less noticeable.</p>
+            <div class="review-date">06 / 22 / 2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Robyn H., 47</div><div class="verified">Verified review</div></div><div></div></div>
+            <div class="before-after"><div class="img"></div><div class="img"></div></div>
+            <div class="review-title">New acne treatment that leaves your face feeling smooth and looking great.</div>
+            <p class="review-body">Within a week of using the product I noticed my acne improving and my face feeling a lot smoother. You don't need much to cover your entire face.</p>
+            <div class="review-date">06 / 17 / 2024</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">03</div>
+        <h2>Dermatologist developed, clinically formulated</h2>
+        <div class="copy-list">
+          <p><strong>Acne-Fighting</strong> Encapsulated Salicylic Acid</p>
+          <p><strong>Anti-Inflammatory</strong> Adapinoid</p>
+          <p><strong>Soothes Skin</strong> Aloe Vera</p>
+          <p><strong>Deep Hydration</strong> Hyaluronic Acid</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">04</div>
+        <h2>Commit to the cure</h2>
+        <div class="copy-list">
+          <p><strong>Custom prescribed treatments</strong> Powered by proprietary technology and a network of doctors.</p>
+          <p><strong>Real time progress tracking</strong> Our advanced tech analyzes your progress, while licensed dermatology providers review and refine your treatment.</p>
+          <p><strong>Clear skin guaranteed</strong> Weekly check-ins and a clear skin promise within 6 months.</p>
+          <p><strong>A personal health platform</strong> Top experts across fields of physical health, at the ready to review, analyze, and prescribe accurate treatment plans.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">05</div>
+        <div class="eyebrow">Here's what you need to know</div>
+        <h2>Frequently asked questions</h2>
+        <div class="copy-list">
+          <p>What skin type is Dapinaq recommended for?</p>
+          <p>Is Dapinaq a retinol?</p>
+          <p>Is Dapinaq oil-free?</p>
+          <p>Are there any possible side effects?</p>
+          <p>How long does it take to see results?</p>
+          <p>How often should I use Dapinaq?</p>
+          <p>What is the return policy?</p>
+          <p>How do subscriptions work?</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">06</div>
+        <div class="eyebrow">You may also like</div>
+        <h2>Related Products</h2>
+        <div class="related">
+          <article class="related-card">
+            <div class="img"></div>
+            <div>
+              <div class="name">Duolaq</div>
+              <p class="price">$69</p>
+              <p>Encapsulated Salicylic Acid, Glycolic Acid, Niacinamide, Allantoin, Hyaluronic Acid</p>
+              <a class="cta2" href="/duolaq">View product</a>
+            </div>
+          </article>
+          <article class="related-card">
+            <div class="img"></div>
+            <div>
+              <div class="name">Clindalaq 305</div>
+              <p class="price">$69</p>
+              <p>Tretinoin, Clindamycin, Niacinamide, Hydrocortisone, Aloe Vera Extract, Vitamin E</p>
+              <a class="cta2" href="/clindalaq-305">View product</a>
+            </div>
+          </article>
+          <article class="related-card">
+            <div class="img"></div>
+            <div>
+              <div class="name">Hydroxil</div>
+              <p class="price">$39</p>
+              <p>Postbiotics, Ceramide NP, Glycerin, Squalane, Vitamin E, Aloe Vera</p>
+              <a class="cta2" href="/hydroxil">View product</a>
+            </div>
+          </article>
+          <article class="related-card">
+            <div class="img"></div>
+            <div>
+              <div class="name">Saloril</div>
+              <p class="price">$39</p>
+              <p>Salicylic Acid, Lactic Acid, Pomegranate Enzymes, Hyaluronic Acid, Allantoin</p>
+              <a class="cta2" href="/saloril">View product</a>
+            </div>
+          </article>
+          <article class="related-card">
+            <div class="img"></div>
+            <div>
+              <div class="name">Clarixa</div>
+              <p class="price">$49</p>
+              <p>Zinc, Niacinamide, Selenium, L-Theanine, Magnesium</p>
+              <a class="cta2" href="/clarixa">View product</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">07</div>
+        <h2>Product reviews</h2>
+        <div class="search"><input value="" placeholder="Search Reviews" /><span></span></div>
+        <div class="reviews-rail" style="margin-top:14px;">
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Karina F.</div><div class="verified">VERIFIED BUYER</div></div><div></div></div>
+            <div class="before-after"><div class="img"></div><div class="img"></div></div>
+            <div class="review-title">Bringing the healthy skin back!</div>
+            <p class="review-body">I have been battling with acne (cystic) for over 8 years. I have used over-the-counter and prescribed treatment with little to no long-term results. For the first time, I have visibly improved and have less painful, nasty-looking acne. It is not a miracle worker. You need to be consistent. But it has changed the way I feel about myself.</p>
+            <div class="review-date">04/05/2026</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Natalie M.</div><div class="verified">VERIFIED BUYER</div></div><div></div></div>
+            <div class="before-after"><div class="img"></div><div class="img"></div></div>
+            <div class="review-title">Helping clear my skin</div>
+            <p class="review-body">Really excited about this product, this has been a game changer for my skin. I’m seeing so much improvement in my face and my acne just in the past three months. Excited to keep using this product.</p>
+            <div class="review-date">04/14/2026</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Amanda</div><div class="verified">VERIFIED BUYER</div></div><div></div></div>
+            <div class="before-after"><div class="img"></div><div class="img"></div></div>
+            <div class="review-title">It exceeded my expectations</div>
+            <p class="review-body">It exceeded my expectations , calmed the acne I get due to rosacea and my skin barrier is the best it has been in a long time. Was lightweight and non greasy.</p>
+            <div class="review-date">01/22/2025</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Abigail</div><div class="verified">VERIFIED BUYER</div></div><div></div></div>
+            <p class="review-body">I have tried MANY products and none have ever worked for me. This treatment had shown me tremendous progress, and I finally feel confident in my own skin. It worked FAST too!</p>
+            <div class="review-date">06/24/2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Jacobi</div><div class="verified">VERIFIED BUYER</div></div><div></div></div>
+            <div class="before-after"><div class="img"></div></div>
+            <div class="review-title">Love the texture and you do not need to use much.</div>
+            <p class="review-body">Love the texture. After the initial purging, it worked very well. Not really a strong scent and it didn’t irritate my skin.</p>
+            <div class="review-date">06/24/2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Robyn</div><div class="verified">VERIFIED BUYER</div></div><div></div></div>
+            <div class="before-after"><div class="img"></div><div class="img"></div></div>
+            <div class="review-title">New acne treatment that leaves your face feeling smooth and looking great.</div>
+            <p class="review-body">Within a week of using the product I noticed my acne improving and my face feeling a lot smoother. You don't need much to cover your entire face.</p>
+            <div class="review-date">06/17/2024</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">Dalianny</div><div class="verified">VERIFIED BUYER</div></div><div></div></div>
+            <p class="review-body">This product has completely Changed my skin in the month I’ve been Using it. The purge phase was rough but Once that was done I haven’t had a Single breakout. Highly recommended.</p>
+            <div class="review-date">05/05/2026</div>
+          </article>
+          <article class="review">
+            <div class="review-top"><div><div class="review-name">SHANNON A.</div><div class="verified">VERIFIED BUYER</div></div><div></div></div>
+            <p class="review-body">At 50 my skin was stuck between acne and wrinkles. After a horrible Botox experience I tried everything to not look “older” naturally and this has done the trick after 6 weeks my skin is better than it’s been in years.</p>
+            <div class="review-date">Today</div>
+          </article>
+        </div>
+        <nav class="pager" aria-label="pagination">
+          <button aria-label="Go to previous page">‹</button>
+          <div>1 2 … 130</div>
+          <button aria-label="Go to next page">›</button>
+        </nav>
+      </section>
+
+      <footer class="footer">
+        <div class="eyebrow">Commit to the cure</div>
+        <a class="cta" href="/quiz?type=full-active-acn">Find your treatment</a>
+        <div class="footer-links">
+          <a href="/about-us">About us</a><a href="/returns-portal">Returns & exchanges</a><a href="/login">Log-in</a><a href="/contact">Contact us</a><a href="/help/faqs">Help & FAQs</a><a href="/privacy-policy">Privacy policy</a><a href="/terms-and-conditions">Terms & conditions</a>
+        </div>
+        <div class="legal">METHODIQ 2026, All rights reserved.</div>
+      </footer>
+    </main>
+  </body>
+</html>
