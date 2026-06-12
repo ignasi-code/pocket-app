@@ -44,17 +44,37 @@
       "title": "pretty in pearls",
       "href": "/store/collections/pearls-1",
       "image_mobile": "https://roxanneassoulin.com/cdn/shop/files/0531_Pearl_Mobile_48a1396e-8ee0-4cd6-90be-cc066e9ca7d1_760x_crop_center.jpg?v=1780086295",
-      "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/0531_Pearl_Desktop_06383eb6-8836-41ff-8065-46db314f40c9_1600x_crop_center.jpg?v=1780086281"
+      "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/0531_Pearl_Mobile_48a1396e-8ee0-4cd6-90be-cc066e9ca7d1_957x_crop_center.jpg?v=1780086295"
     },
     {
       "type": "category_module",
       "title": "jewelry that makes you smile :)",
       "items": [
-        { "label": "what's new,", "href": "/store/collections/new-arrivals", "class": "is-pink" },
-        { "label": " hearts,", "href": "/store/collections/the-puffy-heart-club", "class": "is-pink" },
-        { "label": " charms,", "href": "/store/products/the-mini-happy-heart-charms", "class": "is-yellow" },
-        { "label": " happy cords,", "href": "/store/collections/custom", "class": "is-green" },
-        { "label": " and more", "href": "/store/collections/shop", "class": "is-orange" }
+        {
+          "label": "what's new,",
+          "href": "/store/collections/new-arrivals",
+          "class": "is-pink"
+        },
+        {
+          "label": " hearts,",
+          "href": "/store/collections/the-puffy-heart-club",
+          "class": "is-pink"
+        },
+        {
+          "label": " charms,",
+          "href": "/store/products/the-mini-happy-heart-charms",
+          "class": "is-yellow"
+        },
+        {
+          "label": " happy cords,",
+          "href": "/store/collections/custom",
+          "class": "is-green"
+        },
+        {
+          "label": " and more",
+          "href": "/store/collections/shop",
+          "class": "is-orange"
+        }
       ]
     },
     {
