@@ -105,13 +105,13 @@
           "image_mobile": "https://roxanneassoulin.com/cdn/shop/files/0512_Store_Info_760x_crop_center.jpg?v=1778529026",
           "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/0512_Store_Info_957x_crop_center.jpg?v=1778529026"
         },
-        {
-          "title": "",
-          "aria_label": "Schedule an appointment",
-          "href": "/store/pages/schedule-an-appointment",
-          "image_mobile": "https://roxanneassoulin.com/cdn/shop/files/FOOTER_UPDATE_760x_crop_center.png?v=1766760503",
-          "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/FOOTER_UPDATE_957x_crop_center.png?v=1766760503"
-        }
+      {
+        "title": "",
+        "aria_label": "Schedule an appointment",
+        "href": "/store/pages/schedule-an-appointment",
+        "image_mobile": "https://roxanneassoulin.com/cdn/shop/files/0512_Store_Info_760x_crop_center.jpg?v=1778529026",
+        "image_desktop": "https://roxanneassoulin.com/cdn/shop/files/0512_Store_Info_957x_crop_center.jpg?v=1778529026"
+      }
       ]
     },
     {
