@@ -3341,9 +3341,16 @@ def buffer_post():
     data = request.get_json(silent=True) or {}
     text = clean_config_value(data.get("text"))
     image_url = clean_config_value(data.get("image_url"))
+    image_width = data.get("image_width")
+    image_height = data.get("image_height")
+    image_alt_text = clean_config_value(data.get("image_alt_text"))
     channel_id = clean_config_value(data.get("channel_id")) or BUFFER_CHANNEL_ID
     mode = clean_config_value(data.get("mode")) or BUFFER_DEFAULT_MODE
     scheduling_type = clean_config_value(data.get("scheduling_type")) or "automatic"
+    due_at = clean_config_value(data.get("due_at"))
+    save_to_draft = data.get("save_to_draft") in {True, "true", "1", "yes", "on"}
+    metadata_service = clean_config_value(data.get("metadata_service")) or "instagram"
+    post_type = clean_config_value(data.get("post_type")) or "post"
 
     try:
         result = create_post(
@@ -3351,8 +3358,15 @@ def buffer_post():
             channel_id=channel_id,
             text=text,
             image_url=image_url,
+            image_width=image_width,
+            image_height=image_height,
+            image_alt_text=image_alt_text,
             mode=mode,
             scheduling_type=scheduling_type,
+            due_at=due_at,
+            save_to_draft=save_to_draft,
+            metadata_service=metadata_service,
+            post_type=post_type,
         )
     except BufferApiError as exc:
         return jsonify({"error": str(exc)}), 400
