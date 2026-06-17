@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request as UrlRequest, urlopen
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 from flask import Flask, Response, abort, jsonify, make_response, render_template, render_template_string, request, send_file
 
@@ -142,11 +142,22 @@ def current_gemini_args():
     return ["-m", current_default_gemini_model(), *extra_args]
 
 
+def current_maison_flou_gemini_model():
+    return clean_config_value(os.environ.get("MAISON_FLOU_GEMINI_MODEL")) or "gemini-2.5-flash-lite"
+
+
+def current_maison_flou_gemini_args():
+    extra_args = shlex.split(os.environ.get("MAISON_FLOU_GEMINI_ARGS", ""))
+    return ["-m", current_maison_flou_gemini_model(), *extra_args]
+
+
 DEFAULT_GEMINI_MODEL = current_default_gemini_model()
 GEMINI_COMMAND = os.environ.get("POCKET_GEMINI_COMMAND", "gemini")
 GEMINI_ARGS = current_gemini_args()
 GEMINI_WORKDIR = Path(os.environ.get("POCKET_GEMINI_WORKDIR", BASE_DIR)).expanduser()
 GEMINI_TIMEOUT_SECONDS = int(os.environ.get("POCKET_GEMINI_TIMEOUT_SECONDS", "180"))
+MAISON_FLOU_GEMINI_ARGS = current_maison_flou_gemini_args()
+MAISON_FLOU_GEMINI_TIMEOUT_SECONDS = int(os.environ.get("MAISON_FLOU_GEMINI_TIMEOUT_SECONDS", "90"))
 POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
 BUFFER_API_KEY = clean_config_value(os.environ.get("BUFFER_API_KEY"))
 BUFFER_ORGANIZATION_ID = clean_config_value(os.environ.get("BUFFER_ORGANIZATION_ID"))
@@ -200,6 +211,13 @@ SHOPIFY_LEGACY_IMAGE_SIZE_RE = re.compile(
     re.IGNORECASE,
 )
 RESTART_LOG_PATH = BASE_DIR / "pocket-restart.log"
+MAISON_FLOU_BUSINESS_ID = "maison-flou"
+MAISON_FLOU_PROMPTS_DIR = BUSINESSES_DIR / MAISON_FLOU_BUSINESS_ID / "prompts"
+MAISON_FLOU_RUNTIME_DIR = BUSINESSES_DIR / MAISON_FLOU_BUSINESS_ID / "runtime"
+MAISON_FLOU_SEQUENCE_PATH = MAISON_FLOU_RUNTIME_DIR / "object-sequence.txt"
+MAISON_FLOU_DEFAULT_IMAGE_WIDTH = 1080
+MAISON_FLOU_DEFAULT_IMAGE_HEIGHT = 1350
+MAISON_FLOU_DEFAULT_IMAGE_MODEL = "flux"
 
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True
@@ -216,6 +234,181 @@ def has_gemini_api_key():
 
 def has_buffer_api_key():
     return bool(clean_config_value(os.environ.get("BUFFER_API_KEY")))
+
+
+def request_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if not text:
+        return default
+    return text in {"1", "true", "yes", "on"}
+
+
+def process_text(value):
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    return str(value or "")
+
+
+class GeminiCliError(RuntimeError):
+    def __init__(self, message, status_code=500, payload=None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.payload = payload or {"error": message}
+
+
+def run_gemini_text(prompt, args=None, timeout_seconds=None):
+    prompt = str(prompt or "").strip()
+    timeout_seconds = int(timeout_seconds or GEMINI_TIMEOUT_SECONDS)
+    if not prompt:
+        raise GeminiCliError("Prompt is required.", 400)
+    if len(prompt) > MAX_PROMPT_LENGTH:
+        raise GeminiCliError(f"Prompt is too long. Limit is {MAX_PROMPT_LENGTH} characters.", 400)
+    if not GEMINI_WORKDIR.exists():
+        raise GeminiCliError(f"Gemini workdir does not exist: {GEMINI_WORKDIR}", 500)
+
+    command = [GEMINI_COMMAND, *(args if args is not None else GEMINI_ARGS), "-p", prompt]
+    started = time.time()
+    try:
+        result = subprocess.run(
+            command,
+            cwd=str(GEMINI_WORKDIR),
+            text=True,
+            capture_output=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise GeminiCliError(
+            f"Gemini CLI not found: {GEMINI_COMMAND}",
+            500,
+            {
+                "error": f"Gemini CLI not found: {GEMINI_COMMAND}",
+                "hint": "Install Gemini CLI on the server or set POCKET_GEMINI_COMMAND.",
+            },
+        ) from exc
+    except subprocess.TimeoutExpired as exc:
+        output = "\n".join(process_text(part) for part in [exc.stdout, exc.stderr] if part).strip()
+        raise GeminiCliError(
+            f"Gemini timed out after {timeout_seconds} seconds.",
+            504,
+            {
+                "error": f"Gemini timed out after {timeout_seconds} seconds.",
+                "output": output,
+                "elapsed_seconds": round(time.time() - started, 2),
+            },
+        ) from exc
+
+    if result.returncode != 0:
+        output = "\n".join(process_text(part) for part in [result.stdout, result.stderr] if part).strip()
+        raise GeminiCliError(
+            f"Gemini exited with code {result.returncode}.",
+            502,
+            {
+                "error": f"Gemini exited with code {result.returncode}.",
+                "output": output,
+                "returncode": result.returncode,
+                "elapsed_seconds": round(time.time() - started, 2),
+            },
+        )
+
+    return (result.stdout or result.stderr or "").strip()
+
+
+def clean_ai_output(value):
+    text = str(value or "").strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+
+    for _ in range(2):
+        if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
+            text = text[1:-1].strip()
+            continue
+        break
+    return text
+
+
+def read_business_prompt_template(name):
+    path = MAISON_FLOU_PROMPTS_DIR / name
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        raise GeminiCliError(f"Prompt template not found: {path}", 500) from exc
+
+
+def read_maison_flou_sequence():
+    try:
+        value = int(MAISON_FLOU_SEQUENCE_PATH.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return 0
+    return max(0, value)
+
+
+def save_maison_flou_sequence(value):
+    MAISON_FLOU_RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+    MAISON_FLOU_SEQUENCE_PATH.write_text(f"{int(value)}\n", encoding="utf-8")
+    os.chmod(MAISON_FLOU_SEQUENCE_PATH, 0o600)
+
+
+def normalize_object_number(value):
+    text = clean_config_value(value)
+    if not text:
+        return ""
+    try:
+        number = int(text)
+    except ValueError:
+        return ""
+    if number <= 0:
+        return ""
+    return f"{number:03d}"
+
+
+def next_maison_flou_object_number():
+    return f"{read_maison_flou_sequence() + 1:03d}"
+
+
+def build_caption_prompt(template, image_prompt, object_number):
+    return (
+        template
+        .replace("{image_prompt}", image_prompt)
+        .replace("{object_number}", object_number)
+    )
+
+
+def enforce_maison_flou_caption_contract(caption, object_number):
+    text = clean_ai_output(caption)
+    required_start = f"Objet d’étude {object_number}."
+    required_close = (
+        "Allocation for Collection 01 is strictly limited. Request registry access at our digital atelier.\n\n"
+        "maisonflou.com"
+    )
+
+    if not text.startswith(required_start):
+        text = f"{required_start}\n\n{text}".strip()
+
+    if required_close not in text:
+        text = text.rstrip()
+        text = f"{text}\n\n{required_close}" if text else f"{required_start}\n\n{required_close}"
+
+    return text
+
+
+def pollinations_image_url(prompt, width, height, model):
+    query = urlencode({
+        "width": int(width),
+        "height": int(height),
+        "model": clean_config_value(model) or MAISON_FLOU_DEFAULT_IMAGE_MODEL,
+        "nologo": "true",
+    })
+    return f"https://image.pollinations.ai/prompt/{quote(prompt)}?{query}"
 
 
 def setup_is_open():
@@ -288,12 +481,14 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, OPS_HMAC_SECRET
+    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, OPS_HMAC_SECRET
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_BUSINESS_ID = normalize_business_id(os.environ.get("POCKET_DEFAULT_BUSINESS")) or "maison-flou"
     DEFAULT_GEMINI_MODEL = current_default_gemini_model()
     GEMINI_ARGS = current_gemini_args()
+    MAISON_FLOU_GEMINI_ARGS = current_maison_flou_gemini_args()
+    MAISON_FLOU_GEMINI_TIMEOUT_SECONDS = int(os.environ.get("MAISON_FLOU_GEMINI_TIMEOUT_SECONDS", "90"))
     POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
     BUFFER_API_KEY = clean_config_value(os.environ.get("BUFFER_API_KEY"))
     BUFFER_ORGANIZATION_ID = clean_config_value(os.environ.get("BUFFER_ORGANIZATION_ID"))
@@ -3469,6 +3664,112 @@ def buffer_post():
     return jsonify({"business_id": business["business_id"], "channel_id": channel_id, "result": result})
 
 
+@app.route("/api/maison-flou/content", methods=["POST"])
+def maison_flou_content():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+
+    data = request.get_json(silent=True) or {}
+    try:
+        business_id = resolve_business_id(data.get("business") or data.get("business_id") or MAISON_FLOU_BUSINESS_ID)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    if business_id != MAISON_FLOU_BUSINESS_ID:
+        return jsonify({"error": "This endpoint only supports maison-flou."}), 400
+
+    try:
+        image_width = int(data.get("image_width") or MAISON_FLOU_DEFAULT_IMAGE_WIDTH)
+        image_height = int(data.get("image_height") or MAISON_FLOU_DEFAULT_IMAGE_HEIGHT)
+    except (TypeError, ValueError):
+        return jsonify({"error": "image_width and image_height must be integers."}), 400
+    if image_width <= 0 or image_height <= 0:
+        return jsonify({"error": "image_width and image_height must be positive."}), 400
+
+    object_number = normalize_object_number(data.get("object_number"))
+    auto_sequence = not object_number
+    if auto_sequence:
+        object_number = next_maison_flou_object_number()
+
+    image_model = clean_config_value(data.get("image_model")) or MAISON_FLOU_DEFAULT_IMAGE_MODEL
+    image_prompt = clean_ai_output(data.get("image_prompt"))
+
+    try:
+        if not image_prompt:
+            image_prompt = clean_ai_output(run_gemini_text(
+                read_business_prompt_template("image-description.prompt.txt"),
+                args=MAISON_FLOU_GEMINI_ARGS,
+                timeout_seconds=MAISON_FLOU_GEMINI_TIMEOUT_SECONDS,
+            ))
+        if not image_prompt:
+            return jsonify({"error": "Image prompt generation returned empty output."}), 502
+        caption_template = read_business_prompt_template("caption.prompt.txt")
+        caption_prompt = build_caption_prompt(caption_template, image_prompt, object_number)
+        caption = enforce_maison_flou_caption_contract(
+            run_gemini_text(
+                caption_prompt,
+                args=MAISON_FLOU_GEMINI_ARGS,
+                timeout_seconds=MAISON_FLOU_GEMINI_TIMEOUT_SECONDS,
+            ),
+            object_number,
+        )
+        if not caption:
+            return jsonify({"error": "Caption generation returned empty output."}), 502
+    except GeminiCliError as exc:
+        return jsonify(exc.payload), exc.status_code
+
+    image_url = pollinations_image_url(image_prompt, image_width, image_height, image_model)
+    response = {
+        "business_id": business_id,
+        "object_number": object_number,
+        "image_prompt": image_prompt,
+        "caption": caption,
+        "image_url": image_url,
+        "image_width": image_width,
+        "image_height": image_height,
+        "image_model": image_model,
+    }
+
+    if request_bool(data.get("draft_buffer"), default=False):
+        if not BUFFER_API_KEY:
+            return jsonify({"error": "BUFFER_API_KEY is not configured."}), 400
+        business = get_business_buffer_config(business_id)
+        channel_id = clean_config_value(data.get("channel_id")) or business["channel_id"]
+        mode = clean_config_value(data.get("mode")) or business["default_mode"]
+        scheduling_type = clean_config_value(data.get("scheduling_type")) or "automatic"
+        due_at = clean_config_value(data.get("due_at"))
+        save_to_draft = request_bool(data.get("save_to_draft"), default=True)
+
+        try:
+            buffer_result = create_post(
+                BUFFER_API_KEY,
+                channel_id=channel_id,
+                text=caption,
+                image_url=image_url,
+                image_width=image_width,
+                image_height=image_height,
+                image_alt_text=image_prompt,
+                mode=mode,
+                scheduling_type=scheduling_type,
+                due_at=due_at,
+                save_to_draft=save_to_draft,
+                metadata_service=business["metadata_service"],
+                post_type=business["post_type"],
+            )
+        except BufferApiError as exc:
+            return jsonify({"error": str(exc), **response}), 400
+
+        response["buffer"] = {
+            "channel_id": channel_id,
+            "save_to_draft": save_to_draft,
+            "result": buffer_result,
+        }
+
+    if auto_sequence:
+        save_maison_flou_sequence(int(object_number))
+
+    return jsonify(response)
+
+
 CF_HELPER_PAGE = """
 <!doctype html>
 <html lang="en">
@@ -3814,7 +4115,7 @@ def run_gemini_prompt():
             "hint": "Install Gemini CLI on the server or set POCKET_GEMINI_COMMAND.",
         }), 500
     except subprocess.TimeoutExpired as exc:
-        output = "\n".join(part for part in [exc.stdout or "", exc.stderr or ""] if part).strip()
+        output = "\n".join(process_text(part) for part in [exc.stdout, exc.stderr] if part).strip()
         return jsonify({
             "error": f"Gemini timed out after {GEMINI_TIMEOUT_SECONDS} seconds.",
             "output": output,
