@@ -23,6 +23,7 @@ from office.shared.social.buffer_client import BufferApiError, create_post, get_
 
 BASE_DIR = Path(__file__).resolve().parent
 ENV_PATH = BASE_DIR / ".env"
+BUSINESSES_DIR = BASE_DIR / "office" / "businesses"
 SHARED_CLOUDFLARE_ENV_PATH = Path.home() / ".config" / "codex-shared" / "cloudflare.env"
 PLACEHOLDER_VALUES = {
     "your-gemini-api-key-here",
@@ -37,21 +38,99 @@ def clean_config_value(value):
     return text
 
 
-def load_local_env():
-    if not ENV_PATH.exists():
-        return
-    for raw_line in ENV_PATH.read_text(encoding="utf-8").splitlines():
+def clean_env_value(value):
+    text = str(value or "").strip()
+    for _ in range(2):
+        if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
+            text = text[1:-1].strip()
+            continue
+        break
+    return clean_config_value(text)
+
+
+def normalize_business_id(value):
+    text = clean_config_value(value).lower().replace("_", "-")
+    if not text:
+        return ""
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", text):
+        return ""
+    return text
+
+
+def read_env_values(path):
+    if not path.exists():
+        return {}
+
+    values = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
         key = key.strip()
-        value = clean_config_value(value.strip().strip('"').strip("'"))
+        value = clean_env_value(value)
+        if key:
+            values[key] = value
+    return values
+
+
+def load_local_env():
+    if not ENV_PATH.exists():
+        return
+    for key, value in read_env_values(ENV_PATH).items():
         if key and key not in os.environ:
             os.environ[key] = value
 
 
 load_local_env()
+
+
+DEFAULT_BUSINESS_ID = normalize_business_id(os.environ.get("POCKET_DEFAULT_BUSINESS")) or "maison-flou"
+
+
+def resolve_business_id(value=None):
+    raw_value = clean_config_value(value) or DEFAULT_BUSINESS_ID
+    business_id = normalize_business_id(raw_value)
+    if not business_id:
+        raise ValueError("Invalid business id.")
+    return business_id
+
+
+def business_env_path(business_id):
+    return BUSINESSES_DIR / business_id / ".env"
+
+
+def business_env_aliases(business_id, key):
+    suffix = business_id.upper().replace("-", "_")
+    aliases = [key, f"{key}_{suffix}"]
+    if key.startswith("BUFFER_"):
+        aliases.append(f"BUFFER_{suffix}_{key.removeprefix('BUFFER_')}")
+    return aliases
+
+
+def business_config_value(values, business_id, key, fallback=""):
+    for alias in business_env_aliases(business_id, key):
+        value = clean_config_value(values.get(alias))
+        if value:
+            return value
+    for alias in business_env_aliases(business_id, key):
+        value = clean_config_value(os.environ.get(alias))
+        if value:
+            return value
+    return clean_config_value(fallback)
+
+
+def get_business_buffer_config(business_id=None):
+    business_id = resolve_business_id(business_id)
+    values = read_env_values(business_env_path(business_id))
+    return {
+        "business_id": business_id,
+        "organization_id": business_config_value(values, business_id, "BUFFER_ORGANIZATION_ID", BUFFER_ORGANIZATION_ID),
+        "channel_id": business_config_value(values, business_id, "BUFFER_CHANNEL_ID", BUFFER_CHANNEL_ID),
+        "default_mode": business_config_value(values, business_id, "BUFFER_DEFAULT_MODE", BUFFER_DEFAULT_MODE) or "addToQueue",
+        "metadata_service": business_config_value(values, business_id, "BUFFER_METADATA_SERVICE", "instagram") or "instagram",
+        "post_type": business_config_value(values, business_id, "BUFFER_POST_TYPE", "post") or "post",
+    }
 
 
 def current_default_gemini_model():
@@ -209,9 +288,10 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, OPS_HMAC_SECRET
+    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, OPS_HMAC_SECRET
     for key, value in updates.items():
         os.environ[key] = value
+    DEFAULT_BUSINESS_ID = normalize_business_id(os.environ.get("POCKET_DEFAULT_BUSINESS")) or "maison-flou"
     DEFAULT_GEMINI_MODEL = current_default_gemini_model()
     GEMINI_ARGS = current_gemini_args()
     POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
@@ -2410,16 +2490,16 @@ SETUP_PAGE = """
           <input id="pocket_access_token" name="pocket_access_token" type="password" autocomplete="off" placeholder="{{ 'Leave blank to keep existing token' if locked else 'Recommended before using this beyond localhost' }}">
         </div>
         <div class="field">
-          <label for="buffer_api_key">Buffer API key</label>
+          <label for="buffer_api_key">Shared Buffer API key</label>
           <input id="buffer_api_key" name="buffer_api_key" type="password" autocomplete="off" placeholder="Leave blank to keep existing key">
         </div>
         <div class="field">
-          <label for="buffer_organization_id">Buffer organization ID</label>
-          <input id="buffer_organization_id" name="buffer_organization_id" type="text" value="{{ buffer_organization_id }}" autocomplete="off" placeholder="Optional until you list channels">
+          <label for="buffer_organization_id">Fallback Buffer organization ID</label>
+          <input id="buffer_organization_id" name="buffer_organization_id" type="text" value="{{ buffer_organization_id }}" autocomplete="off" placeholder="Prefer business .env values">
         </div>
         <div class="field">
-          <label for="buffer_channel_id">Buffer channel ID</label>
-          <input id="buffer_channel_id" name="buffer_channel_id" type="text" value="{{ buffer_channel_id }}" autocomplete="off" placeholder="Optional until you post">
+          <label for="buffer_channel_id">Fallback Buffer channel ID</label>
+          <input id="buffer_channel_id" name="buffer_channel_id" type="text" value="{{ buffer_channel_id }}" autocomplete="off" placeholder="Prefer business .env values">
         </div>
         <div class="field">
           <label for="uptimerobot_status_page_url">UptimeRobot status page URL</label>
@@ -3292,15 +3372,23 @@ def buffer_status():
     if not BUFFER_API_KEY:
         return jsonify({"configured": False, "error": "BUFFER_API_KEY is not configured."}), 400
     try:
+        business = get_business_buffer_config(request.args.get("business") or request.args.get("business_id"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    try:
         account = get_account(BUFFER_API_KEY)
     except BufferApiError as exc:
         return jsonify({"configured": True, "error": str(exc)}), 502
     return jsonify({
         "configured": True,
         "account": account,
-        "organization_id": BUFFER_ORGANIZATION_ID,
-        "channel_id": BUFFER_CHANNEL_ID,
-        "default_mode": BUFFER_DEFAULT_MODE,
+        "shared": {
+            "api_key_configured": True,
+            "fallback_organization_id": BUFFER_ORGANIZATION_ID,
+            "fallback_channel_id": BUFFER_CHANNEL_ID,
+            "fallback_default_mode": BUFFER_DEFAULT_MODE,
+        },
+        "business": business,
     })
 
 
@@ -3323,12 +3411,16 @@ def buffer_channels():
         return jsonify({"error": "Invalid Pocket access token."}), 401
     if not BUFFER_API_KEY:
         return jsonify({"error": "BUFFER_API_KEY is not configured."}), 400
-    organization_id = clean_config_value(request.args.get("organization_id")) or BUFFER_ORGANIZATION_ID
+    try:
+        business = get_business_buffer_config(request.args.get("business") or request.args.get("business_id"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    organization_id = clean_config_value(request.args.get("organization_id")) or business["organization_id"]
     try:
         channels = get_channels(BUFFER_API_KEY, organization_id)
     except BufferApiError as exc:
         return jsonify({"error": str(exc)}), 502
-    return jsonify({"organization_id": organization_id, "channels": channels})
+    return jsonify({"business_id": business["business_id"], "organization_id": organization_id, "channels": channels})
 
 
 @app.route("/api/buffer/post", methods=["POST"])
@@ -3339,18 +3431,22 @@ def buffer_post():
         return jsonify({"error": "BUFFER_API_KEY is not configured."}), 400
 
     data = request.get_json(silent=True) or {}
+    try:
+        business = get_business_buffer_config(data.get("business") or data.get("business_id"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
     text = clean_config_value(data.get("text"))
     image_url = clean_config_value(data.get("image_url"))
     image_width = data.get("image_width")
     image_height = data.get("image_height")
     image_alt_text = clean_config_value(data.get("image_alt_text"))
-    channel_id = clean_config_value(data.get("channel_id")) or BUFFER_CHANNEL_ID
-    mode = clean_config_value(data.get("mode")) or BUFFER_DEFAULT_MODE
+    channel_id = clean_config_value(data.get("channel_id")) or business["channel_id"]
+    mode = clean_config_value(data.get("mode")) or business["default_mode"]
     scheduling_type = clean_config_value(data.get("scheduling_type")) or "automatic"
     due_at = clean_config_value(data.get("due_at"))
     save_to_draft = data.get("save_to_draft") in {True, "true", "1", "yes", "on"}
-    metadata_service = clean_config_value(data.get("metadata_service")) or "instagram"
-    post_type = clean_config_value(data.get("post_type")) or "post"
+    metadata_service = clean_config_value(data.get("metadata_service")) or business["metadata_service"]
+    post_type = clean_config_value(data.get("post_type")) or business["post_type"]
 
     try:
         result = create_post(
@@ -3370,7 +3466,7 @@ def buffer_post():
         )
     except BufferApiError as exc:
         return jsonify({"error": str(exc)}), 400
-    return jsonify({"result": result})
+    return jsonify({"business_id": business["business_id"], "channel_id": channel_id, "result": result})
 
 
 CF_HELPER_PAGE = """
