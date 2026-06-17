@@ -18,6 +18,8 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from flask import Flask, Response, abort, jsonify, make_response, render_template, render_template_string, request, send_file
 
+from office.shared.social.buffer_client import BufferApiError, create_post, get_account, get_channels, get_organizations
+
 
 BASE_DIR = Path(__file__).resolve().parent
 ENV_PATH = BASE_DIR / ".env"
@@ -67,6 +69,10 @@ GEMINI_ARGS = current_gemini_args()
 GEMINI_WORKDIR = Path(os.environ.get("POCKET_GEMINI_WORKDIR", BASE_DIR)).expanduser()
 GEMINI_TIMEOUT_SECONDS = int(os.environ.get("POCKET_GEMINI_TIMEOUT_SECONDS", "180"))
 POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
+BUFFER_API_KEY = clean_config_value(os.environ.get("BUFFER_API_KEY"))
+BUFFER_ORGANIZATION_ID = clean_config_value(os.environ.get("BUFFER_ORGANIZATION_ID"))
+BUFFER_CHANNEL_ID = clean_config_value(os.environ.get("BUFFER_CHANNEL_ID"))
+BUFFER_DEFAULT_MODE = clean_config_value(os.environ.get("BUFFER_DEFAULT_MODE")) or "addToQueue"
 OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 OPS_SESSION_COOKIE = "pocket_ops_session"
 DEFAULT_OPS_SESSION_SECONDS = 12 * 60 * 60
@@ -125,6 +131,10 @@ def truthy_env(name):
 
 def has_gemini_api_key():
     return bool(clean_config_value(os.environ.get("GEMINI_API_KEY")))
+
+
+def has_buffer_api_key():
+    return bool(clean_config_value(os.environ.get("BUFFER_API_KEY")))
 
 
 def setup_is_open():
@@ -197,12 +207,16 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN, OPS_HMAC_SECRET
+    global DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, OPS_HMAC_SECRET
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_GEMINI_MODEL = current_default_gemini_model()
     GEMINI_ARGS = current_gemini_args()
     POCKET_ACCESS_TOKEN = clean_config_value(os.environ.get("POCKET_ACCESS_TOKEN"))
+    BUFFER_API_KEY = clean_config_value(os.environ.get("BUFFER_API_KEY"))
+    BUFFER_ORGANIZATION_ID = clean_config_value(os.environ.get("BUFFER_ORGANIZATION_ID"))
+    BUFFER_CHANNEL_ID = clean_config_value(os.environ.get("BUFFER_CHANNEL_ID"))
+    BUFFER_DEFAULT_MODE = clean_config_value(os.environ.get("BUFFER_DEFAULT_MODE")) or "addToQueue"
     OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 
 
@@ -2383,6 +2397,18 @@ SETUP_PAGE = """
           <input id="pocket_access_token" name="pocket_access_token" type="password" autocomplete="off" placeholder="{{ 'Leave blank to keep existing token' if locked else 'Recommended before using this beyond localhost' }}">
         </div>
         <div class="field">
+          <label for="buffer_api_key">Buffer API key</label>
+          <input id="buffer_api_key" name="buffer_api_key" type="password" autocomplete="off" placeholder="Leave blank to keep existing key">
+        </div>
+        <div class="field">
+          <label for="buffer_organization_id">Buffer organization ID</label>
+          <input id="buffer_organization_id" name="buffer_organization_id" type="text" value="{{ buffer_organization_id }}" autocomplete="off" placeholder="Optional until you list channels">
+        </div>
+        <div class="field">
+          <label for="buffer_channel_id">Buffer channel ID</label>
+          <input id="buffer_channel_id" name="buffer_channel_id" type="text" value="{{ buffer_channel_id }}" autocomplete="off" placeholder="Optional until you post">
+        </div>
+        <div class="field">
           <label for="gemini_model">Gemini model</label>
           <input id="gemini_model" name="gemini_model" type="text" value="{{ default_model }}" autocomplete="off">
         </div>
@@ -3132,6 +3158,8 @@ def setup_page():
             error="",
             default_model=DEFAULT_GEMINI_MODEL,
             gemini_args=os.environ.get("POCKET_GEMINI_ARGS", ""),
+            buffer_organization_id=BUFFER_ORGANIZATION_ID,
+            buffer_channel_id=BUFFER_CHANNEL_ID,
             api_key_required=not has_gemini_api_key(),
         )
 
@@ -3143,6 +3171,8 @@ def setup_page():
             error="Invalid Pocket access token.",
             default_model=DEFAULT_GEMINI_MODEL,
             gemini_args=os.environ.get("POCKET_GEMINI_ARGS", ""),
+            buffer_organization_id=BUFFER_ORGANIZATION_ID,
+            buffer_channel_id=BUFFER_CHANNEL_ID,
             api_key_required=not has_gemini_api_key(),
         ), 401
 
@@ -3150,6 +3180,9 @@ def setup_page():
     pocket_access_token = clean_config_value(request.form.get("pocket_access_token"))
     gemini_model = clean_config_value(request.form.get("gemini_model")) or DEFAULT_GEMINI_MODEL
     gemini_args = clean_config_value(request.form.get("gemini_args"))
+    buffer_api_key = clean_config_value(request.form.get("buffer_api_key"))
+    buffer_organization_id = clean_config_value(request.form.get("buffer_organization_id"))
+    buffer_channel_id = clean_config_value(request.form.get("buffer_channel_id"))
 
     if not gemini_api_key and not has_gemini_api_key():
         return render_template_string(
@@ -3159,17 +3192,24 @@ def setup_page():
             error="Gemini API key is required.",
             default_model=gemini_model,
             gemini_args=gemini_args,
+            buffer_organization_id=buffer_organization_id,
+            buffer_channel_id=buffer_channel_id,
             api_key_required=True,
         ), 400
 
     updates = {
         "POCKET_GEMINI_MODEL": gemini_model,
         "POCKET_GEMINI_ARGS": gemini_args,
+        "BUFFER_ORGANIZATION_ID": buffer_organization_id,
+        "BUFFER_CHANNEL_ID": buffer_channel_id,
+        "BUFFER_DEFAULT_MODE": BUFFER_DEFAULT_MODE,
     }
     if gemini_api_key:
         updates["GEMINI_API_KEY"] = gemini_api_key
     if pocket_access_token:
         updates["POCKET_ACCESS_TOKEN"] = pocket_access_token
+    if buffer_api_key:
+        updates["BUFFER_API_KEY"] = buffer_api_key
 
     try:
         write_env_updates(updates)
@@ -3182,6 +3222,8 @@ def setup_page():
             error=f"Could not save .env: {exc}",
             default_model=gemini_model,
             gemini_args=gemini_args,
+            buffer_organization_id=buffer_organization_id,
+            buffer_channel_id=buffer_channel_id,
             api_key_required=not has_gemini_api_key(),
         ), 500
 
@@ -3192,8 +3234,84 @@ def setup_page():
         error="",
         default_model=gemini_model,
         gemini_args=gemini_args,
+        buffer_organization_id=buffer_organization_id,
+        buffer_channel_id=buffer_channel_id,
         api_key_required=not has_gemini_api_key(),
     )
+
+
+@app.route("/api/buffer/status")
+def buffer_status():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    if not BUFFER_API_KEY:
+        return jsonify({"configured": False, "error": "BUFFER_API_KEY is not configured."}), 400
+    try:
+        account = get_account(BUFFER_API_KEY)
+    except BufferApiError as exc:
+        return jsonify({"configured": True, "error": str(exc)}), 502
+    return jsonify({
+        "configured": True,
+        "account": account,
+        "organization_id": BUFFER_ORGANIZATION_ID,
+        "channel_id": BUFFER_CHANNEL_ID,
+        "default_mode": BUFFER_DEFAULT_MODE,
+    })
+
+
+@app.route("/api/buffer/organizations")
+def buffer_organizations():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    if not BUFFER_API_KEY:
+        return jsonify({"error": "BUFFER_API_KEY is not configured."}), 400
+    try:
+        organizations = get_organizations(BUFFER_API_KEY)
+    except BufferApiError as exc:
+        return jsonify({"error": str(exc)}), 502
+    return jsonify({"organizations": organizations})
+
+
+@app.route("/api/buffer/channels")
+def buffer_channels():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    if not BUFFER_API_KEY:
+        return jsonify({"error": "BUFFER_API_KEY is not configured."}), 400
+    organization_id = clean_config_value(request.args.get("organization_id")) or BUFFER_ORGANIZATION_ID
+    try:
+        channels = get_channels(BUFFER_API_KEY, organization_id)
+    except BufferApiError as exc:
+        return jsonify({"error": str(exc)}), 502
+    return jsonify({"organization_id": organization_id, "channels": channels})
+
+
+@app.route("/api/buffer/post", methods=["POST"])
+def buffer_post():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    if not BUFFER_API_KEY:
+        return jsonify({"error": "BUFFER_API_KEY is not configured."}), 400
+
+    data = request.get_json(silent=True) or {}
+    text = clean_config_value(data.get("text"))
+    image_url = clean_config_value(data.get("image_url"))
+    channel_id = clean_config_value(data.get("channel_id")) or BUFFER_CHANNEL_ID
+    mode = clean_config_value(data.get("mode")) or BUFFER_DEFAULT_MODE
+    scheduling_type = clean_config_value(data.get("scheduling_type")) or "automatic"
+
+    try:
+        result = create_post(
+            BUFFER_API_KEY,
+            channel_id=channel_id,
+            text=text,
+            image_url=image_url,
+            mode=mode,
+            scheduling_type=scheduling_type,
+        )
+    except BufferApiError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"result": result})
 
 
 CF_HELPER_PAGE = """
