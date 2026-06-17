@@ -3152,6 +3152,15 @@ def store_pulse():
     return apply_no_store_headers(response)
 
 
+@app.route("/health")
+def health():
+    return jsonify({
+        "ok": True,
+        "service": "pocket-office",
+        "runtime": "termux",
+    })
+
+
 @app.route("/stats")
 @app.route("/stats/")
 def stats_page():
