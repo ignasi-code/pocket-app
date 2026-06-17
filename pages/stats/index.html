@@ -116,6 +116,22 @@
       background: var(--danger);
     }
 
+    .status-link {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .monitor-badge {
+      display: block;
+      max-width: 100%;
+      margin-top: 12px;
+    }
+
+    .hidden { display: none; }
+
     #loading {
       position: fixed;
       top: 0;
@@ -206,6 +222,21 @@
         <div class="bar-container">
           <div id="disk-bar" class="bar-fill" style="width: 0%"></div>
         </div>
+      </section>
+
+      <!-- Monitoring -->
+      <section class="card">
+        <h2>External Monitoring</h2>
+        <div class="stat-row">
+          <span class="stat-label">Provider</span>
+          <span class="stat-value" id="monitor-provider">...</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Status</span>
+          <span class="stat-value" id="monitor-status">...</span>
+        </div>
+        <a class="status-link hidden" id="monitor-link" href="#" rel="noopener" target="_blank">Open status page</a>
+        <img class="monitor-badge hidden" id="monitor-badge" alt="UptimeRobot status badge">
       </section>
 
       <!-- System -->

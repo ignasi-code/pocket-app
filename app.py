@@ -73,6 +73,8 @@ BUFFER_API_KEY = clean_config_value(os.environ.get("BUFFER_API_KEY"))
 BUFFER_ORGANIZATION_ID = clean_config_value(os.environ.get("BUFFER_ORGANIZATION_ID"))
 BUFFER_CHANNEL_ID = clean_config_value(os.environ.get("BUFFER_CHANNEL_ID"))
 BUFFER_DEFAULT_MODE = clean_config_value(os.environ.get("BUFFER_DEFAULT_MODE")) or "addToQueue"
+UPTIMEROBOT_STATUS_PAGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_STATUS_PAGE_URL"))
+UPTIMEROBOT_BADGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_BADGE_URL"))
 OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 OPS_SESSION_COOKIE = "pocket_ops_session"
 DEFAULT_OPS_SESSION_SECONDS = 12 * 60 * 60
@@ -207,7 +209,7 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, OPS_HMAC_SECRET
+    global DEFAULT_GEMINI_MODEL, GEMINI_ARGS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, OPS_HMAC_SECRET
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_GEMINI_MODEL = current_default_gemini_model()
@@ -217,6 +219,8 @@ def refresh_runtime_config(updates):
     BUFFER_ORGANIZATION_ID = clean_config_value(os.environ.get("BUFFER_ORGANIZATION_ID"))
     BUFFER_CHANNEL_ID = clean_config_value(os.environ.get("BUFFER_CHANNEL_ID"))
     BUFFER_DEFAULT_MODE = clean_config_value(os.environ.get("BUFFER_DEFAULT_MODE")) or "addToQueue"
+    UPTIMEROBOT_STATUS_PAGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_STATUS_PAGE_URL"))
+    UPTIMEROBOT_BADGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_BADGE_URL"))
     OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 
 
@@ -460,6 +464,15 @@ def get_battery_info():
         return {"error": "termux-api not installed"}
     except Exception as e:
         return {"error": str(e)}
+
+
+def get_monitoring_info():
+    return {
+        "provider": "uptimerobot",
+        "status_page_url": UPTIMEROBOT_STATUS_PAGE_URL,
+        "badge_url": UPTIMEROBOT_BADGE_URL,
+        "configured": bool(UPTIMEROBOT_STATUS_PAGE_URL or UPTIMEROBOT_BADGE_URL),
+    }
 
 
 def get_system_info():
@@ -2409,6 +2422,14 @@ SETUP_PAGE = """
           <input id="buffer_channel_id" name="buffer_channel_id" type="text" value="{{ buffer_channel_id }}" autocomplete="off" placeholder="Optional until you post">
         </div>
         <div class="field">
+          <label for="uptimerobot_status_page_url">UptimeRobot status page URL</label>
+          <input id="uptimerobot_status_page_url" name="uptimerobot_status_page_url" type="url" value="{{ uptimerobot_status_page_url }}" autocomplete="off" placeholder="https://stats.uptimerobot.com/...">
+        </div>
+        <div class="field">
+          <label for="uptimerobot_badge_url">UptimeRobot badge URL</label>
+          <input id="uptimerobot_badge_url" name="uptimerobot_badge_url" type="url" value="{{ uptimerobot_badge_url }}" autocomplete="off" placeholder="Optional badge image URL">
+        </div>
+        <div class="field">
           <label for="gemini_model">Gemini model</label>
           <input id="gemini_model" name="gemini_model" type="text" value="{{ default_model }}" autocomplete="off">
         </div>
@@ -3144,6 +3165,7 @@ def api_stats():
         "ram": get_ram_info(),
         "storage": get_storage_info(),
         "system": get_system_info(),
+        "monitoring": get_monitoring_info(),
     })
 
 
@@ -3160,6 +3182,8 @@ def setup_page():
             gemini_args=os.environ.get("POCKET_GEMINI_ARGS", ""),
             buffer_organization_id=BUFFER_ORGANIZATION_ID,
             buffer_channel_id=BUFFER_CHANNEL_ID,
+            uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
+            uptimerobot_badge_url=UPTIMEROBOT_BADGE_URL,
             api_key_required=not has_gemini_api_key(),
         )
 
@@ -3173,6 +3197,8 @@ def setup_page():
             gemini_args=os.environ.get("POCKET_GEMINI_ARGS", ""),
             buffer_organization_id=BUFFER_ORGANIZATION_ID,
             buffer_channel_id=BUFFER_CHANNEL_ID,
+            uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
+            uptimerobot_badge_url=UPTIMEROBOT_BADGE_URL,
             api_key_required=not has_gemini_api_key(),
         ), 401
 
@@ -3183,6 +3209,8 @@ def setup_page():
     buffer_api_key = clean_config_value(request.form.get("buffer_api_key"))
     buffer_organization_id = clean_config_value(request.form.get("buffer_organization_id"))
     buffer_channel_id = clean_config_value(request.form.get("buffer_channel_id"))
+    uptimerobot_status_page_url = clean_config_value(request.form.get("uptimerobot_status_page_url"))
+    uptimerobot_badge_url = clean_config_value(request.form.get("uptimerobot_badge_url"))
 
     if not gemini_api_key and not has_gemini_api_key():
         return render_template_string(
@@ -3194,6 +3222,8 @@ def setup_page():
             gemini_args=gemini_args,
             buffer_organization_id=buffer_organization_id,
             buffer_channel_id=buffer_channel_id,
+            uptimerobot_status_page_url=uptimerobot_status_page_url,
+            uptimerobot_badge_url=uptimerobot_badge_url,
             api_key_required=True,
         ), 400
 
@@ -3203,6 +3233,8 @@ def setup_page():
         "BUFFER_ORGANIZATION_ID": buffer_organization_id,
         "BUFFER_CHANNEL_ID": buffer_channel_id,
         "BUFFER_DEFAULT_MODE": BUFFER_DEFAULT_MODE,
+        "UPTIMEROBOT_STATUS_PAGE_URL": uptimerobot_status_page_url,
+        "UPTIMEROBOT_BADGE_URL": uptimerobot_badge_url,
     }
     if gemini_api_key:
         updates["GEMINI_API_KEY"] = gemini_api_key
@@ -3224,6 +3256,8 @@ def setup_page():
             gemini_args=gemini_args,
             buffer_organization_id=buffer_organization_id,
             buffer_channel_id=buffer_channel_id,
+            uptimerobot_status_page_url=uptimerobot_status_page_url,
+            uptimerobot_badge_url=uptimerobot_badge_url,
             api_key_required=not has_gemini_api_key(),
         ), 500
 
@@ -3236,6 +3270,8 @@ def setup_page():
         gemini_args=gemini_args,
         buffer_organization_id=buffer_organization_id,
         buffer_channel_id=buffer_channel_id,
+        uptimerobot_status_page_url=uptimerobot_status_page_url,
+        uptimerobot_badge_url=uptimerobot_badge_url,
         api_key_required=not has_gemini_api_key(),
     )
 
