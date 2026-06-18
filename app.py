@@ -167,6 +167,8 @@ BUFFER_CHANNEL_ID = clean_config_value(os.environ.get("BUFFER_CHANNEL_ID"))
 BUFFER_DEFAULT_MODE = clean_config_value(os.environ.get("BUFFER_DEFAULT_MODE")) or "addToQueue"
 UPTIMEROBOT_STATUS_PAGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_STATUS_PAGE_URL"))
 UPTIMEROBOT_BADGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_BADGE_URL"))
+AXIOM_API_TOKEN = clean_config_value(os.environ.get("AXIOM_API_TOKEN"))
+AXIOM_DATASET = clean_config_value(os.environ.get("AXIOM_DATASET")) or "office-events"
 OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 OPS_SESSION_COOKIE = "pocket_ops_session"
 DEFAULT_OPS_SESSION_SECONDS = 12 * 60 * 60
@@ -1125,7 +1127,7 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
+    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, AXIOM_API_TOKEN, AXIOM_DATASET, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_BUSINESS_ID = normalize_business_id(os.environ.get("POCKET_DEFAULT_BUSINESS")) or "maison-flou"
@@ -1140,6 +1142,8 @@ def refresh_runtime_config(updates):
     BUFFER_DEFAULT_MODE = clean_config_value(os.environ.get("BUFFER_DEFAULT_MODE")) or "addToQueue"
     UPTIMEROBOT_STATUS_PAGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_STATUS_PAGE_URL"))
     UPTIMEROBOT_BADGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_BADGE_URL"))
+    AXIOM_API_TOKEN = clean_config_value(os.environ.get("AXIOM_API_TOKEN"))
+    AXIOM_DATASET = clean_config_value(os.environ.get("AXIOM_DATASET")) or "office-events"
     OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
     OFFICE_TLDR_TIMEOUT_SECONDS = int(os.environ.get("POCKET_OFFICE_TLDR_TIMEOUT_SECONDS", "45"))
     OFFICE_STATUS_EVENT_LIMIT = int(os.environ.get("POCKET_OFFICE_STATUS_EVENT_LIMIT", "200"))
@@ -3351,6 +3355,14 @@ SETUP_PAGE = """
           <input id="uptimerobot_badge_url" name="uptimerobot_badge_url" type="url" value="{{ uptimerobot_badge_url }}" autocomplete="off" placeholder="Optional badge image URL">
         </div>
         <div class="field">
+          <label for="axiom_api_token">Axiom API token</label>
+          <input id="axiom_api_token" name="axiom_api_token" type="password" autocomplete="off" placeholder="Leave blank to keep existing token">
+        </div>
+        <div class="field">
+          <label for="axiom_dataset">Axiom dataset</label>
+          <input id="axiom_dataset" name="axiom_dataset" type="text" value="{{ axiom_dataset }}" autocomplete="off" placeholder="office-events">
+        </div>
+        <div class="field">
           <label for="gemini_model">Gemini model</label>
           <input id="gemini_model" name="gemini_model" type="text" value="{{ default_model }}" autocomplete="off">
         </div>
@@ -4395,6 +4407,7 @@ def setup_page():
             buffer_channel_id=BUFFER_CHANNEL_ID,
             uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
             uptimerobot_badge_url=UPTIMEROBOT_BADGE_URL,
+            axiom_dataset=AXIOM_DATASET,
             api_key_required=not has_gemini_api_key(),
         )
 
@@ -4410,6 +4423,7 @@ def setup_page():
             buffer_channel_id=BUFFER_CHANNEL_ID,
             uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
             uptimerobot_badge_url=UPTIMEROBOT_BADGE_URL,
+            axiom_dataset=AXIOM_DATASET,
             api_key_required=not has_gemini_api_key(),
         ), 401
 
@@ -4422,6 +4436,8 @@ def setup_page():
     buffer_channel_id = clean_config_value(request.form.get("buffer_channel_id"))
     uptimerobot_status_page_url = clean_config_value(request.form.get("uptimerobot_status_page_url"))
     uptimerobot_badge_url = clean_config_value(request.form.get("uptimerobot_badge_url"))
+    axiom_api_token = clean_config_value(request.form.get("axiom_api_token"))
+    axiom_dataset = clean_config_value(request.form.get("axiom_dataset")) or AXIOM_DATASET
 
     if not gemini_api_key and not has_gemini_api_key():
         return render_template_string(
@@ -4435,6 +4451,7 @@ def setup_page():
             buffer_channel_id=buffer_channel_id,
             uptimerobot_status_page_url=uptimerobot_status_page_url,
             uptimerobot_badge_url=uptimerobot_badge_url,
+            axiom_dataset=axiom_dataset,
             api_key_required=True,
         ), 400
 
@@ -4446,6 +4463,7 @@ def setup_page():
         "BUFFER_DEFAULT_MODE": BUFFER_DEFAULT_MODE,
         "UPTIMEROBOT_STATUS_PAGE_URL": uptimerobot_status_page_url,
         "UPTIMEROBOT_BADGE_URL": uptimerobot_badge_url,
+        "AXIOM_DATASET": axiom_dataset,
     }
     if gemini_api_key:
         updates["GEMINI_API_KEY"] = gemini_api_key
@@ -4453,6 +4471,8 @@ def setup_page():
         updates["POCKET_ACCESS_TOKEN"] = pocket_access_token
     if buffer_api_key:
         updates["BUFFER_API_KEY"] = buffer_api_key
+    if axiom_api_token:
+        updates["AXIOM_API_TOKEN"] = axiom_api_token
 
     try:
         write_env_updates(updates)
@@ -4469,6 +4489,7 @@ def setup_page():
             buffer_channel_id=buffer_channel_id,
             uptimerobot_status_page_url=uptimerobot_status_page_url,
             uptimerobot_badge_url=uptimerobot_badge_url,
+            axiom_dataset=axiom_dataset,
             api_key_required=not has_gemini_api_key(),
         ), 500
 
@@ -4483,6 +4504,7 @@ def setup_page():
         buffer_channel_id=buffer_channel_id,
         uptimerobot_status_page_url=uptimerobot_status_page_url,
         uptimerobot_badge_url=uptimerobot_badge_url,
+        axiom_dataset=axiom_dataset,
         api_key_required=not has_gemini_api_key(),
     )
 
