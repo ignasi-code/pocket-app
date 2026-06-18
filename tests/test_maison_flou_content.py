@@ -61,6 +61,14 @@ class MaisonFlouContentTest(unittest.TestCase):
         self.assertEqual(run_ai.call_count, 2)
         save_sequence.assert_called_once_with(1)
 
+    def test_image_prompt_template_discourages_handbag_repetition(self):
+        template = pocket.read_business_prompt_template("image-description.prompt.txt").lower()
+
+        self.assertIn("do not default to handbags", template)
+        self.assertIn("rotate object categories aggressively", template)
+        self.assertIn("sculptural eyewear", template)
+        self.assertIn("glass perfume vessel", template)
+
     def test_content_endpoint_can_create_buffer_draft(self):
         image_prompt = "A geometric ceramic object against cream plaster, blinding sunlight, Vogue editorial."
         raw_caption = "Objet d’étude 009.\n\nStillness becomes load-bearing.\nThe object edits the room."
