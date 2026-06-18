@@ -170,6 +170,12 @@ UPTIMEROBOT_BADGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_BADGE_URL
 AXIOM_API_TOKEN = clean_config_value(os.environ.get("AXIOM_API_TOKEN"))
 AXIOM_DATASET = clean_config_value(os.environ.get("AXIOM_DATASET")) or "office-events"
 AXIOM_API_BASE_URL = clean_config_value(os.environ.get("AXIOM_API_BASE_URL")) or "https://api.axiom.co"
+CLOUDFLARE_API_TOKEN = clean_config_value(os.environ.get("CLOUDFLARE_API_TOKEN"))
+CLOUDFLARE_ACCOUNT_ID = clean_config_value(os.environ.get("CLOUDFLARE_ACCOUNT_ID"))
+CLOUDFLARE_ZONE_ID = clean_config_value(os.environ.get("CLOUDFLARE_ZONE_ID"))
+CLOUDFLARE_PAGES_PROJECT = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_PROJECT")) or "maison-flou"
+CLOUDFLARE_PAGES_DOMAIN = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_DOMAIN")) or "maisonflou.com"
+CLOUDFLARE_PAGES_OUTPUT_DIR = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_OUTPUT_DIR")) or "sites/maison-flou"
 OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 OPS_SESSION_COOKIE = "pocket_ops_session"
 DEFAULT_OPS_SESSION_SECONDS = 12 * 60 * 60
@@ -1274,7 +1280,7 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, AXIOM_API_TOKEN, AXIOM_DATASET, AXIOM_API_BASE_URL, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
+    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, AXIOM_API_TOKEN, AXIOM_DATASET, AXIOM_API_BASE_URL, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ZONE_ID, CLOUDFLARE_PAGES_PROJECT, CLOUDFLARE_PAGES_DOMAIN, CLOUDFLARE_PAGES_OUTPUT_DIR, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_BUSINESS_ID = normalize_business_id(os.environ.get("POCKET_DEFAULT_BUSINESS")) or "maison-flou"
@@ -1292,6 +1298,12 @@ def refresh_runtime_config(updates):
     AXIOM_API_TOKEN = clean_config_value(os.environ.get("AXIOM_API_TOKEN"))
     AXIOM_DATASET = clean_config_value(os.environ.get("AXIOM_DATASET")) or "office-events"
     AXIOM_API_BASE_URL = clean_config_value(os.environ.get("AXIOM_API_BASE_URL")) or "https://api.axiom.co"
+    CLOUDFLARE_API_TOKEN = clean_config_value(os.environ.get("CLOUDFLARE_API_TOKEN"))
+    CLOUDFLARE_ACCOUNT_ID = clean_config_value(os.environ.get("CLOUDFLARE_ACCOUNT_ID"))
+    CLOUDFLARE_ZONE_ID = clean_config_value(os.environ.get("CLOUDFLARE_ZONE_ID"))
+    CLOUDFLARE_PAGES_PROJECT = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_PROJECT")) or "maison-flou"
+    CLOUDFLARE_PAGES_DOMAIN = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_DOMAIN")) or "maisonflou.com"
+    CLOUDFLARE_PAGES_OUTPUT_DIR = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_OUTPUT_DIR")) or "sites/maison-flou"
     OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
     OFFICE_TLDR_TIMEOUT_SECONDS = int(os.environ.get("POCKET_OFFICE_TLDR_TIMEOUT_SECONDS", "45"))
     OFFICE_STATUS_EVENT_LIMIT = int(os.environ.get("POCKET_OFFICE_STATUS_EVENT_LIMIT", "200"))
@@ -3511,6 +3523,30 @@ SETUP_PAGE = """
           <input id="axiom_dataset" name="axiom_dataset" type="text" value="{{ axiom_dataset }}" autocomplete="off" placeholder="office-events">
         </div>
         <div class="field">
+          <label for="cloudflare_api_token">Cloudflare API token</label>
+          <input id="cloudflare_api_token" name="cloudflare_api_token" type="password" autocomplete="off" placeholder="Leave blank to keep existing token">
+        </div>
+        <div class="field">
+          <label for="cloudflare_account_id">Cloudflare account ID</label>
+          <input id="cloudflare_account_id" name="cloudflare_account_id" type="text" value="{{ cloudflare_account_id }}" autocomplete="off" placeholder="Required for Pages deploy">
+        </div>
+        <div class="field">
+          <label for="cloudflare_zone_id">Cloudflare zone ID</label>
+          <input id="cloudflare_zone_id" name="cloudflare_zone_id" type="text" value="{{ cloudflare_zone_id }}" autocomplete="off" placeholder="Required for maisonflou.com DNS">
+        </div>
+        <div class="field">
+          <label for="cloudflare_pages_project">Cloudflare Pages project</label>
+          <input id="cloudflare_pages_project" name="cloudflare_pages_project" type="text" value="{{ cloudflare_pages_project }}" autocomplete="off" placeholder="maison-flou">
+        </div>
+        <div class="field">
+          <label for="cloudflare_pages_domain">Cloudflare Pages domain</label>
+          <input id="cloudflare_pages_domain" name="cloudflare_pages_domain" type="text" value="{{ cloudflare_pages_domain }}" autocomplete="off" placeholder="maisonflou.com">
+        </div>
+        <div class="field">
+          <label for="cloudflare_pages_output_dir">Cloudflare Pages output directory</label>
+          <input id="cloudflare_pages_output_dir" name="cloudflare_pages_output_dir" type="text" value="{{ cloudflare_pages_output_dir }}" autocomplete="off" placeholder="sites/maison-flou">
+        </div>
+        <div class="field">
           <label for="gemini_model">Gemini model</label>
           <input id="gemini_model" name="gemini_model" type="text" value="{{ default_model }}" autocomplete="off">
         </div>
@@ -4603,6 +4639,11 @@ def setup_page():
             uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
             uptimerobot_badge_url=UPTIMEROBOT_BADGE_URL,
             axiom_dataset=AXIOM_DATASET,
+            cloudflare_account_id=CLOUDFLARE_ACCOUNT_ID,
+            cloudflare_zone_id=CLOUDFLARE_ZONE_ID,
+            cloudflare_pages_project=CLOUDFLARE_PAGES_PROJECT,
+            cloudflare_pages_domain=CLOUDFLARE_PAGES_DOMAIN,
+            cloudflare_pages_output_dir=CLOUDFLARE_PAGES_OUTPUT_DIR,
             api_key_required=not has_gemini_api_key(),
         )
 
@@ -4619,6 +4660,11 @@ def setup_page():
             uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
             uptimerobot_badge_url=UPTIMEROBOT_BADGE_URL,
             axiom_dataset=AXIOM_DATASET,
+            cloudflare_account_id=CLOUDFLARE_ACCOUNT_ID,
+            cloudflare_zone_id=CLOUDFLARE_ZONE_ID,
+            cloudflare_pages_project=CLOUDFLARE_PAGES_PROJECT,
+            cloudflare_pages_domain=CLOUDFLARE_PAGES_DOMAIN,
+            cloudflare_pages_output_dir=CLOUDFLARE_PAGES_OUTPUT_DIR,
             api_key_required=not has_gemini_api_key(),
         ), 401
 
@@ -4633,6 +4679,12 @@ def setup_page():
     uptimerobot_badge_url = clean_config_value(request.form.get("uptimerobot_badge_url"))
     axiom_api_token = clean_config_value(request.form.get("axiom_api_token"))
     axiom_dataset = clean_config_value(request.form.get("axiom_dataset")) or AXIOM_DATASET
+    cloudflare_api_token = clean_config_value(request.form.get("cloudflare_api_token"))
+    cloudflare_account_id = clean_config_value(request.form.get("cloudflare_account_id"))
+    cloudflare_zone_id = clean_config_value(request.form.get("cloudflare_zone_id"))
+    cloudflare_pages_project = clean_config_value(request.form.get("cloudflare_pages_project")) or CLOUDFLARE_PAGES_PROJECT
+    cloudflare_pages_domain = clean_config_value(request.form.get("cloudflare_pages_domain")) or CLOUDFLARE_PAGES_DOMAIN
+    cloudflare_pages_output_dir = clean_config_value(request.form.get("cloudflare_pages_output_dir")) or CLOUDFLARE_PAGES_OUTPUT_DIR
 
     if not gemini_api_key and not has_gemini_api_key():
         return render_template_string(
@@ -4647,6 +4699,11 @@ def setup_page():
             uptimerobot_status_page_url=uptimerobot_status_page_url,
             uptimerobot_badge_url=uptimerobot_badge_url,
             axiom_dataset=axiom_dataset,
+            cloudflare_account_id=cloudflare_account_id,
+            cloudflare_zone_id=cloudflare_zone_id,
+            cloudflare_pages_project=cloudflare_pages_project,
+            cloudflare_pages_domain=cloudflare_pages_domain,
+            cloudflare_pages_output_dir=cloudflare_pages_output_dir,
             api_key_required=True,
         ), 400
 
@@ -4659,6 +4716,11 @@ def setup_page():
         "UPTIMEROBOT_STATUS_PAGE_URL": uptimerobot_status_page_url,
         "UPTIMEROBOT_BADGE_URL": uptimerobot_badge_url,
         "AXIOM_DATASET": axiom_dataset,
+        "CLOUDFLARE_ACCOUNT_ID": cloudflare_account_id,
+        "CLOUDFLARE_ZONE_ID": cloudflare_zone_id,
+        "CLOUDFLARE_PAGES_PROJECT": cloudflare_pages_project,
+        "CLOUDFLARE_PAGES_DOMAIN": cloudflare_pages_domain,
+        "CLOUDFLARE_PAGES_OUTPUT_DIR": cloudflare_pages_output_dir,
     }
     if gemini_api_key:
         updates["GEMINI_API_KEY"] = gemini_api_key
@@ -4668,6 +4730,8 @@ def setup_page():
         updates["BUFFER_API_KEY"] = buffer_api_key
     if axiom_api_token:
         updates["AXIOM_API_TOKEN"] = axiom_api_token
+    if cloudflare_api_token:
+        updates["CLOUDFLARE_API_TOKEN"] = cloudflare_api_token
 
     try:
         write_env_updates(updates)
@@ -4685,6 +4749,11 @@ def setup_page():
             uptimerobot_status_page_url=uptimerobot_status_page_url,
             uptimerobot_badge_url=uptimerobot_badge_url,
             axiom_dataset=axiom_dataset,
+            cloudflare_account_id=cloudflare_account_id,
+            cloudflare_zone_id=cloudflare_zone_id,
+            cloudflare_pages_project=cloudflare_pages_project,
+            cloudflare_pages_domain=cloudflare_pages_domain,
+            cloudflare_pages_output_dir=cloudflare_pages_output_dir,
             api_key_required=not has_gemini_api_key(),
         ), 500
 
@@ -4700,6 +4769,11 @@ def setup_page():
         uptimerobot_status_page_url=uptimerobot_status_page_url,
         uptimerobot_badge_url=uptimerobot_badge_url,
         axiom_dataset=axiom_dataset,
+        cloudflare_account_id=cloudflare_account_id,
+        cloudflare_zone_id=cloudflare_zone_id,
+        cloudflare_pages_project=cloudflare_pages_project,
+        cloudflare_pages_domain=cloudflare_pages_domain,
+        cloudflare_pages_output_dir=cloudflare_pages_output_dir,
         api_key_required=not has_gemini_api_key(),
     )
 
