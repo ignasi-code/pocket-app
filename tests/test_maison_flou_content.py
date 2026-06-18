@@ -64,10 +64,11 @@ class MaisonFlouContentTest(unittest.TestCase):
     def test_image_prompt_template_discourages_handbag_repetition(self):
         template = pocket.read_business_prompt_template("image-description.prompt.txt").lower()
 
-        self.assertIn("do not default to handbags", template)
-        self.assertIn("rotate object categories aggressively", template)
-        self.assertIn("sculptural eyewear", template)
-        self.assertIn("glass perfume vessel", template)
+        self.assertIn("structured leather bag", template)
+        self.assertIn("geometric ceramic object", template)
+        self.assertIn("avant-garde eyewear", template)
+        self.assertIn("vary the object category", template)
+        self.assertIn("do not overuse handbags", template)
 
     def test_content_endpoint_can_create_buffer_draft(self):
         image_prompt = "A geometric ceramic object against cream plaster, blinding sunlight, Vogue editorial."
