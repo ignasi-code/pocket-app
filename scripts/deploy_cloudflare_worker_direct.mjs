@@ -37,6 +37,8 @@ function loadConfig() {
     scriptName: cleanValue(env.CLOUDFLARE_WORKER_SCRIPT) || "maison-flou-api",
     routePattern: cleanValue(env.CLOUDFLARE_WORKER_ROUTE) || "maisonflou.com/api/maison-flou/waitlist*",
     workerPath: path.resolve(ROOT_DIR, cleanValue(env.CLOUDFLARE_WORKER_PATH) || "workers/maison-flou-api/worker.js"),
+    d1DatabaseName: cleanValue(env.CLOUDFLARE_D1_DATABASE) || "maison_flou",
+    resendApiKey: cleanValue(env.RESEND_API_KEY),
     originUrl: cleanValue(env.MAISON_FLOU_WAITLIST_ORIGIN_URL)
       || "https://changes-sic-dans-directive.trycloudflare.com/api/maison-flou/waitlist",
   };
@@ -71,20 +73,123 @@ function renderWorkerSource(config) {
   if (!fs.existsSync(config.workerPath)) {
     throw new Error(`Worker source does not exist: ${config.workerPath}`);
   }
-  return fs
+  const source = fs
     .readFileSync(config.workerPath, "utf8")
     .replaceAll("__MAISON_FLOU_WAITLIST_ORIGIN_URL__", config.originUrl);
+  return source;
 }
 
-async function putWorkerScript(config) {
+async function getOrCreateD1Database(config) {
+  const databases = await apiRequest(`/accounts/${config.accountId}/d1/database`, {
+    token: config.apiToken,
+  });
+  const existing = databases.find((database) => database.name === config.d1DatabaseName);
+  if (existing) return { ...existing, created: false };
+  const created = await apiRequest(`/accounts/${config.accountId}/d1/database`, {
+    token: config.apiToken,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: config.d1DatabaseName }),
+  });
+  return { ...created, created: true };
+}
+
+async function queryD1(config, databaseId, sql, params = []) {
+  return apiRequest(`/accounts/${config.accountId}/d1/database/${databaseId}/query`, {
+    token: config.apiToken,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sql, params }),
+  });
+}
+
+async function queryD1Optional(config, databaseId, sql, params = []) {
+  try {
+    return await queryD1(config, databaseId, sql, params);
+  } catch (error) {
+    const message = String(error.message || error);
+    if (message.includes("duplicate column name")) return null;
+    throw error;
+  }
+}
+
+async function migrateD1(config, databaseId) {
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS waitlist_leads (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT NOT NULL,
+      email TEXT NOT NULL,
+      email_hash TEXT NOT NULL UNIQUE,
+      instagram TEXT NOT NULL DEFAULT '',
+      source TEXT NOT NULL DEFAULT 'maisonflou.com',
+      user_agent TEXT NOT NULL DEFAULT '',
+      remote_addr_hash TEXT NOT NULL DEFAULT '',
+      confirmation_status TEXT NOT NULL DEFAULT 'pending',
+      confirmation_sent_at TEXT NOT NULL DEFAULT '',
+      notification_status TEXT NOT NULL DEFAULT 'pending',
+      notification_sent_at TEXT NOT NULL DEFAULT '',
+      resend_id TEXT NOT NULL DEFAULT ''
+    )`,
+    "ALTER TABLE waitlist_leads ADD COLUMN confirmation_status TEXT NOT NULL DEFAULT 'pending'",
+    "ALTER TABLE waitlist_leads ADD COLUMN confirmation_sent_at TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE waitlist_leads ADD COLUMN notification_status TEXT NOT NULL DEFAULT 'pending'",
+    "ALTER TABLE waitlist_leads ADD COLUMN notification_sent_at TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE waitlist_leads ADD COLUMN resend_id TEXT NOT NULL DEFAULT ''",
+    "CREATE INDEX IF NOT EXISTS idx_waitlist_leads_timestamp ON waitlist_leads(timestamp)",
+    `CREATE TABLE IF NOT EXISTS office_events (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT NOT NULL,
+      business_id TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      status TEXT NOT NULL,
+      subject TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT '',
+      metadata TEXT NOT NULL DEFAULT '{}'
+    )`,
+    "CREATE INDEX IF NOT EXISTS idx_office_events_business_timestamp ON office_events(business_id, timestamp)",
+  ];
+  for (const statement of statements) {
+    if (statement.startsWith("ALTER TABLE")) {
+      await queryD1Optional(config, databaseId, statement);
+    } else {
+      await queryD1(config, databaseId, statement);
+    }
+  }
+}
+
+async function putWorkerScript(config, databaseId) {
   const source = renderWorkerSource(config);
+  const metadata = {
+    main_module: "worker.js",
+    bindings: [
+      {
+        type: "d1",
+        name: "DB",
+        id: databaseId,
+      },
+    ],
+  };
+  const formData = new FormData();
+  formData.append("metadata", JSON.stringify(metadata));
+  formData.append("worker.js", new Blob([source], { type: "application/javascript+module" }), "worker.js");
   return apiRequest(`/accounts/${config.accountId}/workers/scripts/${config.scriptName}`, {
     token: config.apiToken,
     method: "PUT",
-    headers: {
-      "Content-Type": "application/javascript",
-    },
-    body: source,
+    body: formData,
+  });
+}
+
+async function putWorkerSecret(config, name, value) {
+  if (!value) throw new Error(`${name} is required.`);
+  return apiRequest(`/accounts/${config.accountId}/workers/scripts/${config.scriptName}/secrets`, {
+    token: config.apiToken,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      text: value,
+      type: "secret_text",
+    }),
   });
 }
 
@@ -119,17 +224,26 @@ async function main() {
     CLOUDFLARE_API_TOKEN: config.apiToken,
     CLOUDFLARE_ACCOUNT_ID: config.accountId,
     CLOUDFLARE_ZONE_ID: config.zoneId,
-    MAISON_FLOU_WAITLIST_ORIGIN_URL: config.originUrl,
+    RESEND_API_KEY: config.resendApiKey,
   })) {
     if (!value) throw new Error(`${name} is required.`);
   }
 
-  await putWorkerScript(config);
+  const database = await getOrCreateD1Database(config);
+  const databaseId = database.uuid || database.id;
+  if (!databaseId) throw new Error("Cloudflare did not return a D1 database id.");
+  await migrateD1(config, databaseId);
+  await putWorkerScript(config, databaseId);
+  await putWorkerSecret(config, "RESEND_API_KEY", config.resendApiKey);
   const route = await upsertRoute(config);
   console.log(JSON.stringify({
     script: config.scriptName,
     route_pattern: config.routePattern,
-    origin_url: config.originUrl,
+    d1_database: {
+      name: config.d1DatabaseName,
+      id: databaseId,
+      created: Boolean(database.created),
+    },
     route,
   }, null, 2));
 }
