@@ -43,7 +43,7 @@ Control pages:
 - `/store`: Public static-first Shopify storefront prototype with home, collection, product, cart, and mock checkout.
 - `/terminal`: Token-protected browser terminal for pasted shell commands.
 - `/setup`: Save local `.env` config from the browser.
-- `/office/maison-flou`: private mobile office status with AI TLDR, UptimeRobot link, D1 waitlist leads, and content ledger.
+- `/office/maison-flou`: legacy Termux office status. Prefer Cloudflare `/lab`.
 - `/ops`: Unlock once in the browser, or use signed HMAC requests, then run pull, restart, or pull then restart.
 - `/pull`: Run `git pull origin master`.
 - `/restart`: Start a fresh Pocket Server process in the background, then stop the old one.
@@ -63,8 +63,8 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_GEMINI_WORKDIR`: Directory where Gemini runs. Default: this repo.
 - `POCKET_GEMINI_TIMEOUT_SECONDS`: Request timeout. Default: `180`.
 - `POCKET_ACCESS_TOKEN`: Token required by `/terminal` and `/api/terminal`; optional token required by `/api/gpt`, `/fast/api/download`, and `/fast/api/upload`.
-- `POCKET_PUBLIC_BASE_URL`: Public Termux base URL when a Worker needs to call the office node.
-- `POCKET_CONTENT_PUBLISH_URL`: Optional explicit URL for Worker cron to call `/api/maison-flou/content/publish`.
+- `POCKET_PUBLIC_BASE_URL`: Public Termux base URL when Cloudflare needs the phone as a processing origin.
+- `POCKET_CONTENT_PUBLISH_URL`: Optional explicit Termux URL for Cloudflare to request image/caption generation.
 - `POCKET_MAX_PROMPT_LENGTH`: Prompt character limit. Default: `12000`.
 - `POCKET_TERMINAL_SHELL`: Shell used by `/terminal`. Default: detected `bash`, detected `sh`, then `/bin/sh`.
 - `POCKET_TERMINAL_TIMEOUT_SECONDS`: Browser terminal command timeout. Default: `120`.
@@ -82,30 +82,47 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_OPS_HMAC_MAX_AGE_SECONDS`: Maximum accepted signed `/ops` timestamp age. Default: `300`.
 - `CLOUDFLARE_D1_DATABASE`: Maison Flou D1 database name. Default: `maison_flou`.
 - `CLOUDFLARE_WORKER_CRON`: Worker cron trigger. Default: `0 9 * * *` UTC.
+- `CLOUDFLARE_WORKER_ROUTES`: Comma-separated Worker routes. Default includes `maisonflou.com/api/maison-flou/*` and `maisonflou.com/lab*`.
+- `LAB_ACCESS_TOKEN`: Optional dedicated `/lab` token. If unset, `POCKET_ACCESS_TOKEN` is used.
+- `LAB_TRUST_CF_ACCESS`: Set to `1` only after Cloudflare Access protects `/lab`.
+- `BUFFER_MAISON_FLOU_CHANNEL_ID`: Maison Flou Buffer channel override for the Cloudflare Worker.
 - `RESEND_API_KEY`: Resend send-only API key used by the Worker and local tests.
 
 ## Maison Flou office loop
 
-Maison Flou now uses Cloudflare for the public hot path:
+Maison Flou now uses Cloudflare for the public and office hot paths:
 
 ```text
 maisonflou.com waitlist form
   -> Cloudflare Worker
   -> D1 waitlist_leads + office_events
   -> Resend confirmation + atelier notification
+
+maisonflou.com/lab
+  -> Cloudflare Worker
+  -> D1 office_events + content_runs + content_settings + office_tldr_cache
+  -> Buffer API for publishing
+  -> Termux only when image/caption processing is needed
 ```
 
-The private Termux office view reads D1 through the Cloudflare API and merges
-edge events into the local office ledger. Generated social content still runs on
-Termux because image re-encode/crop uses Pillow and local generated assets. The
-publish endpoint is:
+The private Cloudflare lab dashboard is:
+
+```text
+https://maisonflou.com/lab
+```
+
+It is token-gated by the Worker now and should also be protected with
+Cloudflare Access. Generated social content still uses Termux as the processing
+origin while image re-encode/crop relies on local tooling, but Buffer publishing
+and the content ledger are now Cloudflare-owned. The legacy Termux processing
+endpoint is:
 
 ```text
 POST /api/maison-flou/content/publish
 ```
 
-It generates the image prompt, image, square JPEG derivative, caption, stores a
-local content record, and publishes directly to Buffer with `shareNow`.
+Cloudflare calls it with Buffer disabled, receives image/caption payloads, then
+publishes through the Worker and records the run in D1.
 
 Deploy the Worker/D1 schema/cron with:
 
@@ -116,6 +133,9 @@ node scripts/deploy_cloudflare_worker_direct.mjs
 The Worker has a `scheduled()` handler and a daily cron. Its D1 setting
 `content_scheduler_enabled` defaults to `false`, so cron ticks are logged but do
 not publish until explicitly enabled.
+
+For Cloudflare Worker Git builds, use `workers/maison-flou-api/wrangler.toml`
+as the deploy root/config and set the same secrets in the Cloudflare dashboard.
 
 ## Store prototype
 

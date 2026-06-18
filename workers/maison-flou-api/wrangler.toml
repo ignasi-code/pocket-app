@@ -1,0 +1,16 @@
+name = "maison-flou-api"
+main = "worker.js"
+compatibility_date = "2026-06-18"
+
+routes = [
+  { pattern = "maisonflou.com/api/maison-flou/*", zone_name = "maisonflou.com" },
+  { pattern = "maisonflou.com/lab*", zone_name = "maisonflou.com" }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "maison_flou"
+database_id = "d5318291-9b8f-411f-8dda-83c0e946f2d0"
+
+[triggers]
+crons = ["0 9 * * *"]

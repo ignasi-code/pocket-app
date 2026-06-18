@@ -30,16 +30,30 @@ function readEnvFile(filePath) {
 
 function loadConfig() {
   const env = { ...readEnvFile(path.join(ROOT_DIR, ".env")), ...process.env };
+  const routePattern = cleanValue(env.CLOUDFLARE_WORKER_ROUTE) || "maisonflou.com/api/maison-flou/waitlist*";
+  const workerRoutes = [
+    routePattern,
+    "maisonflou.com/api/maison-flou/*",
+    "maisonflou.com/lab*",
+    ...cleanValue(env.CLOUDFLARE_WORKER_ROUTES).split(","),
+  ].map(cleanValue).filter(Boolean);
   return {
     apiToken: cleanValue(env.CLOUDFLARE_API_TOKEN),
     accountId: cleanValue(env.CLOUDFLARE_ACCOUNT_ID),
     zoneId: cleanValue(env.CLOUDFLARE_ZONE_ID),
     scriptName: cleanValue(env.CLOUDFLARE_WORKER_SCRIPT) || "maison-flou-api",
-    routePattern: cleanValue(env.CLOUDFLARE_WORKER_ROUTE) || "maisonflou.com/api/maison-flou/waitlist*",
+    routePattern,
+    workerRoutes: [...new Set(workerRoutes)],
     workerPath: path.resolve(ROOT_DIR, cleanValue(env.CLOUDFLARE_WORKER_PATH) || "workers/maison-flou-api/worker.js"),
     d1DatabaseName: cleanValue(env.CLOUDFLARE_D1_DATABASE) || "maison_flou",
     workerCron: cleanValue(env.CLOUDFLARE_WORKER_CRON) || "0 9 * * *",
     resendApiKey: cleanValue(env.RESEND_API_KEY),
+    bufferApiKey: cleanValue(env.BUFFER_API_KEY),
+    bufferChannelId: cleanValue(env.BUFFER_MAISON_FLOU_CHANNEL_ID) || cleanValue(env.BUFFER_CHANNEL_ID),
+    geminiApiKey: cleanValue(env.GEMINI_API_KEY),
+    labAccessToken: cleanValue(env.LAB_ACCESS_TOKEN),
+    labAllowedEmails: cleanValue(env.LAB_ALLOWED_EMAILS),
+    labTrustCfAccess: cleanValue(env.LAB_TRUST_CF_ACCESS),
     pocketAccessToken: cleanValue(env.POCKET_ACCESS_TOKEN),
     pocketContentPublishUrl: cleanValue(env.POCKET_CONTENT_PUBLISH_URL)
       || (cleanValue(env.POCKET_PUBLIC_BASE_URL)
@@ -170,6 +184,14 @@ async function migrateD1(config, databaseId) {
       metadata TEXT NOT NULL DEFAULT '{}'
     )`,
     "CREATE INDEX IF NOT EXISTS idx_content_runs_timestamp ON content_runs(timestamp)",
+    `CREATE TABLE IF NOT EXISTS office_tldr_cache (
+      business_id TEXT PRIMARY KEY,
+      signature TEXT NOT NULL DEFAULT '',
+      text TEXT NOT NULL DEFAULT '',
+      source TEXT NOT NULL DEFAULT '',
+      generated_at TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL DEFAULT ''
+    )`,
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_enabled', 'false', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_mode', 'publish', datetime('now'))",
   ];
@@ -258,6 +280,14 @@ async function upsertRoute(config) {
   });
 }
 
+async function upsertRoutes(config) {
+  const results = [];
+  for (const routePattern of config.workerRoutes) {
+    results.push(await upsertRoute({ ...config, routePattern }));
+  }
+  return results;
+}
+
 async function main() {
   const config = loadConfig();
   for (const [name, value] of Object.entries({
@@ -277,18 +307,24 @@ async function main() {
   await putWorkerSecret(config, "RESEND_API_KEY", config.resendApiKey);
   await putOptionalWorkerSecret(config, "POCKET_ACCESS_TOKEN", config.pocketAccessToken);
   await putOptionalWorkerSecret(config, "POCKET_CONTENT_PUBLISH_URL", config.pocketContentPublishUrl);
-  const route = await upsertRoute(config);
+  await putOptionalWorkerSecret(config, "BUFFER_API_KEY", config.bufferApiKey);
+  await putOptionalWorkerSecret(config, "BUFFER_CHANNEL_ID", config.bufferChannelId);
+  await putOptionalWorkerSecret(config, "GEMINI_API_KEY", config.geminiApiKey);
+  await putOptionalWorkerSecret(config, "LAB_ACCESS_TOKEN", config.labAccessToken);
+  await putOptionalWorkerSecret(config, "LAB_ALLOWED_EMAILS", config.labAllowedEmails);
+  await putOptionalWorkerSecret(config, "LAB_TRUST_CF_ACCESS", config.labTrustCfAccess);
+  const routes = await upsertRoutes(config);
   const schedules = await upsertSchedules(config);
   console.log(JSON.stringify({
     script: config.scriptName,
-    route_pattern: config.routePattern,
+    route_patterns: config.workerRoutes,
     cron: config.workerCron,
     d1_database: {
       name: config.d1DatabaseName,
       id: databaseId,
       created: Boolean(database.created),
     },
-    route,
+    routes,
     schedules,
   }, null, 2));
 }
