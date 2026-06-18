@@ -27,28 +27,29 @@ class MaisonFlouContentTest(unittest.TestCase):
 
         with patch("app.select_maison_flou_object_category", return_value=category) as select_category:
             with patch("app.record_maison_flou_category_event") as record_category:
-                with patch("app.read_maison_flou_sequence", return_value=0):
-                    with patch("app.save_maison_flou_sequence") as save_sequence:
-                        with patch("app.generate_maison_flou_image", return_value={
-                            "filename": "objet-001-original.png",
-                            "url": "http://localhost/media/maison-flou/objet-001-original.png",
-                            "mime_type": "image/png",
-                            "width": 928,
-                            "height": 1152,
-                            "model": "gemini-3.1-flash-image",
-                        }):
-                            with patch("app.square_maison_flou_image", return_value={
-                                "filename": "objet-001-square.jpg",
-                                "url": "http://localhost/media/maison-flou/objet-001-square.jpg",
-                                "mime_type": "image/jpeg",
-                                "width": 1080,
-                                "height": 1080,
-                                "source_filename": "objet-001-original.png",
-                                "quality": 88,
-                                "method": "square_screenshot_copy",
+                with patch("app.safe_append_office_activity_event") as append_activity:
+                    with patch("app.read_maison_flou_sequence", return_value=0):
+                        with patch("app.save_maison_flou_sequence") as save_sequence:
+                            with patch("app.generate_maison_flou_image", return_value={
+                                "filename": "objet-001-original.png",
+                                "url": "http://localhost/media/maison-flou/objet-001-original.png",
+                                "mime_type": "image/png",
+                                "width": 928,
+                                "height": 1152,
+                                "model": "gemini-3.1-flash-image",
                             }):
-                                with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
-                                    response = self.client.post("/api/maison-flou/content", json={})
+                                with patch("app.square_maison_flou_image", return_value={
+                                    "filename": "objet-001-square.jpg",
+                                    "url": "http://localhost/media/maison-flou/objet-001-square.jpg",
+                                    "mime_type": "image/jpeg",
+                                    "width": 1080,
+                                    "height": 1080,
+                                    "source_filename": "objet-001-original.png",
+                                    "quality": 88,
+                                    "method": "square_screenshot_copy",
+                                }):
+                                    with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
+                                        response = self.client.post("/api/maison-flou/content", json={})
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
@@ -74,6 +75,7 @@ class MaisonFlouContentTest(unittest.TestCase):
         select_category.assert_called_once_with("")
         record_category.assert_called_once()
         self.assertEqual(record_category.call_args.args[0]["category_id"], "leather-objects")
+        append_activity.assert_called_once()
         save_sequence.assert_called_once_with(1)
 
     def test_image_prompt_template_keeps_object_direction_minimal(self):
@@ -111,31 +113,32 @@ class MaisonFlouContentTest(unittest.TestCase):
                 "post_type": "post",
             }):
                 with patch("app.create_post", return_value={"post": {"id": "draft-id"}}) as create_post:
-                    with patch("app.save_maison_flou_sequence") as save_sequence:
-                        with patch("app.generate_maison_flou_image", return_value={
-                            "filename": "objet-009-original.png",
-                            "url": "http://localhost/media/maison-flou/objet-009-original.png",
-                            "mime_type": "image/png",
-                            "width": 928,
-                            "height": 1152,
-                            "model": "gemini-3.1-flash-image",
-                        }):
-                            with patch("app.square_maison_flou_image", return_value={
-                                "filename": "objet-009-square.jpg",
-                                "url": "http://localhost/media/maison-flou/objet-009-square.jpg",
-                                "mime_type": "image/jpeg",
-                                "width": 1080,
-                                "height": 1080,
-                                "source_filename": "objet-009-original.png",
-                                "quality": 88,
-                                "method": "square_screenshot_copy",
+                    with patch("app.safe_append_office_activity_event") as append_activity:
+                        with patch("app.save_maison_flou_sequence") as save_sequence:
+                            with patch("app.generate_maison_flou_image", return_value={
+                                "filename": "objet-009-original.png",
+                                "url": "http://localhost/media/maison-flou/objet-009-original.png",
+                                "mime_type": "image/png",
+                                "width": 928,
+                                "height": 1152,
+                                "model": "gemini-3.1-flash-image",
                             }):
-                                with patch("app.run_gemini_text", return_value=raw_caption):
-                                    response = self.client.post("/api/maison-flou/content", json={
-                                        "object_number": 9,
-                                        "image_prompt": image_prompt,
-                                        "draft_buffer": True,
-                                    })
+                                with patch("app.square_maison_flou_image", return_value={
+                                    "filename": "objet-009-square.jpg",
+                                    "url": "http://localhost/media/maison-flou/objet-009-square.jpg",
+                                    "mime_type": "image/jpeg",
+                                    "width": 1080,
+                                    "height": 1080,
+                                    "source_filename": "objet-009-original.png",
+                                    "quality": 88,
+                                    "method": "square_screenshot_copy",
+                                }):
+                                    with patch("app.run_gemini_text", return_value=raw_caption):
+                                        response = self.client.post("/api/maison-flou/content", json={
+                                            "object_number": 9,
+                                            "image_prompt": image_prompt,
+                                            "draft_buffer": True,
+                                        })
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
@@ -150,6 +153,7 @@ class MaisonFlouContentTest(unittest.TestCase):
         self.assertEqual(kwargs["image_width"], 1080)
         self.assertEqual(kwargs["image_height"], 1080)
         self.assertTrue(kwargs["save_to_draft"])
+        self.assertEqual(append_activity.call_count, 2)
         save_sequence.assert_not_called()
 
     def test_gemini_timeout_with_byte_output_is_json_error(self):

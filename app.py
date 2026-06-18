@@ -225,6 +225,10 @@ MAISON_FLOU_DEFAULT_IMAGE_HEIGHT = 1350
 MAISON_FLOU_DEFAULT_IMAGE_MODEL = clean_config_value(os.environ.get("MAISON_FLOU_IMAGE_MODEL")) or "gemini-3.1-flash-image"
 MAISON_FLOU_SQUARE_IMAGE_SIZE = int(os.environ.get("MAISON_FLOU_SQUARE_IMAGE_SIZE", "1080"))
 MAISON_FLOU_SQUARE_IMAGE_QUALITY = int(os.environ.get("MAISON_FLOU_SQUARE_IMAGE_QUALITY", "88"))
+OFFICE_ACTIVITY_LOG_NAME = "activity.log.jsonl"
+OFFICE_TLDR_CACHE_NAME = "daily-status-tldr.json"
+OFFICE_TLDR_TIMEOUT_SECONDS = int(os.environ.get("POCKET_OFFICE_TLDR_TIMEOUT_SECONDS", "45"))
+OFFICE_STATUS_EVENT_LIMIT = int(os.environ.get("POCKET_OFFICE_STATUS_EVENT_LIMIT", "200"))
 
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True
@@ -511,6 +515,308 @@ def build_image_prompt_with_category(template, category):
         f"{template}\n\n"
         f"Object category for this generation: {category['prompt']}."
     )
+
+
+def office_utc_timestamp():
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+def office_today_utc():
+    return time.strftime("%Y-%m-%d", time.gmtime())
+
+
+def office_activity_runtime_dir(business_id):
+    business_id = resolve_business_id(business_id)
+    return BUSINESSES_DIR / business_id / "runtime"
+
+
+def office_activity_log_path(business_id):
+    return office_activity_runtime_dir(business_id) / OFFICE_ACTIVITY_LOG_NAME
+
+
+def office_tldr_cache_path(business_id):
+    return office_activity_runtime_dir(business_id) / OFFICE_TLDR_CACHE_NAME
+
+
+def sanitize_activity_event_type(value):
+    text = clean_config_value(value).lower().replace("_", ".").replace("-", ".")
+    text = re.sub(r"[^a-z0-9.]+", ".", text)
+    text = re.sub(r"\.+", ".", text).strip(".")
+    return text or "office.event"
+
+
+def sanitize_activity_status(value):
+    text = clean_config_value(value).lower().replace("-", "_")
+    if text in {"ok", "info", "warning", "error", "failed", "needs_review"}:
+        return text
+    return "info"
+
+
+def activity_event_id(event):
+    raw = json.dumps(event, ensure_ascii=True, sort_keys=True)
+    return hashlib.sha256(f"{raw}:{time.time_ns()}".encode("utf-8")).hexdigest()[:16]
+
+
+def append_office_activity_event(
+    business_id,
+    event_type,
+    message="",
+    subject="",
+    status="ok",
+    metadata=None,
+    timestamp=None,
+):
+    business_id = resolve_business_id(business_id)
+    if metadata is None:
+        metadata = {}
+    elif not isinstance(metadata, dict):
+        metadata = {"value": metadata}
+
+    event = {
+        "timestamp": clean_config_value(timestamp) or office_utc_timestamp(),
+        "business_id": business_id,
+        "event_type": sanitize_activity_event_type(event_type),
+        "status": sanitize_activity_status(status),
+        "subject": clean_config_value(subject),
+        "message": clean_config_value(message),
+        "metadata": metadata,
+    }
+    event["id"] = activity_event_id(event)
+
+    path = office_activity_log_path(business_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as log_file:
+        log_file.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+    os.chmod(path, 0o600)
+    return event
+
+
+def safe_append_office_activity_event(*args, **kwargs):
+    try:
+        return append_office_activity_event(*args, **kwargs)
+    except Exception:
+        return None
+
+
+def read_office_activity_events(business_id, limit=None):
+    path = office_activity_log_path(business_id)
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+
+    if limit:
+        try:
+            limit = max(1, int(limit))
+        except (TypeError, ValueError):
+            limit = OFFICE_STATUS_EVENT_LIMIT
+        lines = lines[-limit * 2:]
+
+    events = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(event, dict):
+            event["event_type"] = sanitize_activity_event_type(event.get("event_type"))
+            event["status"] = sanitize_activity_status(event.get("status"))
+            event["timestamp"] = clean_config_value(event.get("timestamp"))
+            event["subject"] = clean_config_value(event.get("subject"))
+            event["message"] = clean_config_value(event.get("message"))
+            events.append(event)
+
+    if limit:
+        return events[-limit:]
+    return events
+
+
+def office_event_day(event):
+    timestamp = clean_config_value(event.get("timestamp"))
+    return timestamp[:10] if re.match(r"^\d{4}-\d{2}-\d{2}", timestamp) else ""
+
+
+def office_event_display(event):
+    subject = clean_config_value(event.get("subject"))
+    message = clean_config_value(event.get("message"))
+    if subject and message:
+        return f"{subject}: {message}"
+    return subject or message or event.get("event_type", "office.event")
+
+
+def office_event_counts(events):
+    counts = {
+        "generated": 0,
+        "drafted": 0,
+        "published": 0,
+        "emails": 0,
+        "replies": 0,
+        "leads": 0,
+        "sales": 0,
+        "needs_review": 0,
+        "failed": 0,
+    }
+    for event in events:
+        event_type = event.get("event_type", "")
+        status = event.get("status", "")
+        if event_type in {"content.generated", "image.generated", "caption.generated"}:
+            counts["generated"] += 1
+        if event_type in {"content.drafted", "buffer.drafted", "social.drafted"}:
+            counts["drafted"] += 1
+        if event_type in {"content.published", "buffer.published", "social.published"}:
+            counts["published"] += 1
+        if event_type.startswith("email."):
+            counts["emails"] += 1
+        if event_type in {"email.replied", "email.reply.sent"}:
+            counts["replies"] += 1
+        if event_type.startswith("lead."):
+            counts["leads"] += 1
+        if event_type.startswith("sale.") or event_type.startswith("order."):
+            counts["sales"] += 1
+        if status == "needs_review" or event_type.endswith(".needs_review"):
+            counts["needs_review"] += 1
+        if status in {"error", "failed"} or event_type.endswith(".failed"):
+            counts["failed"] += 1
+    return counts
+
+
+def build_office_status_payload(business_id, day=None, limit=None):
+    business_id = resolve_business_id(business_id)
+    day = clean_config_value(day) or office_today_utc()
+    events = read_office_activity_events(business_id, limit or OFFICE_STATUS_EVENT_LIMIT)
+    day_events = [event for event in events if office_event_day(event) == day]
+    latest_events = list(reversed(day_events[-12:]))
+    counts = office_event_counts(day_events)
+    last_event = latest_events[0] if latest_events else None
+
+    if counts["failed"]:
+        status = "Attention needed"
+    elif counts["needs_review"]:
+        status = "Needs review"
+    elif day_events:
+        status = "Running normally"
+    else:
+        status = "No activity logged today"
+
+    return {
+        "business_id": business_id,
+        "day": day,
+        "status": status,
+        "event_count": len(day_events),
+        "last_action": last_event.get("timestamp") if last_event else "",
+        "last_action_label": office_event_display(last_event) if last_event else "",
+        "counts": counts,
+        "latest_events": latest_events,
+    }
+
+
+def fallback_office_tldr(summary):
+    counts = summary.get("counts", {})
+    if not summary.get("event_count"):
+        return "No office activity has been logged today."
+    if counts.get("failed"):
+        return f"{counts['failed']} issue needs attention. Review the latest office actions before the next run."
+    parts = []
+    if counts.get("published"):
+        parts.append(f"published {counts['published']}")
+    if counts.get("generated"):
+        parts.append(f"generated {counts['generated']}")
+    if counts.get("leads"):
+        parts.append(f"captured {counts['leads']} lead")
+    if counts.get("replies"):
+        parts.append(f"sent {counts['replies']} reply")
+    return f"Today the office {', '.join(parts)}." if parts else "The office logged activity today with no urgent action required."
+
+
+def build_office_tldr_prompt(summary):
+    compact = {
+        "business_id": summary.get("business_id"),
+        "day": summary.get("day"),
+        "status": summary.get("status"),
+        "counts": summary.get("counts"),
+        "latest_events": [
+            {
+                "time": event.get("timestamp"),
+                "event_type": event.get("event_type"),
+                "status": event.get("status"),
+                "subject": event.get("subject"),
+                "message": event.get("message"),
+            }
+            for event in summary.get("latest_events", [])[:8]
+        ],
+    }
+    return (
+        "Write one calm mobile dashboard TLDR for this autonomous office activity. "
+        "Maximum 28 words. No bullets. No intro. Mention blockers only if present.\n\n"
+        f"{json.dumps(compact, ensure_ascii=False, sort_keys=True)}"
+    )
+
+
+def office_tldr_signature(summary):
+    latest_id = ""
+    if summary.get("latest_events"):
+        latest_id = clean_config_value(summary["latest_events"][0].get("id"))
+    raw = f"{summary.get('day')}:{summary.get('event_count')}:{latest_id}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def read_office_tldr_cache(business_id):
+    try:
+        data = json.loads(office_tldr_cache_path(business_id).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def write_office_tldr_cache(business_id, data):
+    path = office_tldr_cache_path(business_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.chmod(path, 0o600)
+
+
+def generate_office_tldr(summary, refresh=False):
+    business_id = summary["business_id"]
+    signature = office_tldr_signature(summary)
+    cached = read_office_tldr_cache(business_id)
+    if not refresh and cached.get("signature") == signature and cached.get("text"):
+        return {**cached, "cached": True}
+
+    fallback = fallback_office_tldr(summary)
+    try:
+        text = clean_ai_output(run_gemini_text(
+            build_office_tldr_prompt(summary),
+            args=MAISON_FLOU_GEMINI_ARGS,
+            timeout_seconds=OFFICE_TLDR_TIMEOUT_SECONDS,
+        ))
+    except GeminiCliError as exc:
+        return {
+            "text": fallback,
+            "source": "fallback",
+            "cached": False,
+            "error": str(exc),
+            "signature": signature,
+        }
+
+    text = " ".join(text.split())
+    if not text:
+        text = fallback
+        source = "fallback"
+    else:
+        source = "gemini"
+
+    result = {
+        "text": text,
+        "source": source,
+        "cached": False,
+        "signature": signature,
+        "generated_at": office_utc_timestamp(),
+    }
+    write_office_tldr_cache(business_id, result)
+    return result
 
 
 def read_maison_flou_sequence():
@@ -819,7 +1125,7 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, OPS_HMAC_SECRET
+    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_BUSINESS_ID = normalize_business_id(os.environ.get("POCKET_DEFAULT_BUSINESS")) or "maison-flou"
@@ -835,6 +1141,8 @@ def refresh_runtime_config(updates):
     UPTIMEROBOT_STATUS_PAGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_STATUS_PAGE_URL"))
     UPTIMEROBOT_BADGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_BADGE_URL"))
     OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
+    OFFICE_TLDR_TIMEOUT_SECONDS = int(os.environ.get("POCKET_OFFICE_TLDR_TIMEOUT_SECONDS", "45"))
+    OFFICE_STATUS_EVENT_LIMIT = int(os.environ.get("POCKET_OFFICE_STATUS_EVENT_LIMIT", "200"))
 
 
 def request_token():
@@ -3765,6 +4073,287 @@ def store_pulse():
     return apply_no_store_headers(response)
 
 
+OFFICE_STATUS_PAGE = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ business_label }} Office</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f4ef;
+      color: #171717;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f6f4ef; color: #171717; }
+    main { width: min(100%, 520px); margin: 0 auto; padding: 18px 16px 28px; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 4px 0 18px; }
+    h1 { margin: 0; font-size: 22px; line-height: 1.05; font-weight: 680; letter-spacing: 0; }
+    .subtle { color: #68635b; font-size: 13px; line-height: 1.35; }
+    .pill { border: 1px solid #d7d0c3; border-radius: 999px; padding: 6px 10px; font-size: 12px; white-space: nowrap; background: #fffdf8; }
+    section { border-top: 1px solid #d9d2c6; padding: 16px 0; }
+    section:first-of-type { border-top: 0; }
+    .label { margin: 0 0 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #6d675e; }
+    .tldr { border: 1px solid #d6cec0; border-radius: 8px; padding: 14px; background: #fffdf8; }
+    .tldr p { margin: 0; font-size: 18px; line-height: 1.3; }
+    .status-line { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 620; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #248f54; flex: 0 0 auto; }
+    .dot.warn { background: #a56b00; }
+    .dot.error { background: #b42318; }
+    .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #d9d2c6; border: 1px solid #d9d2c6; border-radius: 8px; overflow: hidden; }
+    .metric { min-height: 64px; padding: 12px; background: #fffdf8; }
+    .metric strong { display: block; font-size: 24px; line-height: 1; margin-bottom: 5px; }
+    .metric span { display: block; color: #6d675e; font-size: 12px; }
+    .actions { display: grid; gap: 0; border-top: 1px solid #ddd6ca; }
+    .action { display: grid; grid-template-columns: 54px 1fr; gap: 10px; padding: 12px 0; border-bottom: 1px solid #ddd6ca; }
+    .time { color: #6d675e; font-size: 13px; }
+    .event-main { font-size: 14px; line-height: 1.35; }
+    .event-main strong { display: block; font-size: 14px; }
+    .event-main span { display: block; color: #6d675e; margin-top: 2px; }
+    .toolbar { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+    button, input {
+      min-height: 42px;
+      border: 1px solid #cfc7ba;
+      border-radius: 8px;
+      background: #fffdf8;
+      color: #171717;
+      font: inherit;
+      padding: 9px 11px;
+    }
+    button { cursor: pointer; font-weight: 650; }
+    input { width: 100%; }
+    .auth { display: none; border: 1px solid #d6cec0; border-radius: 8px; padding: 12px; background: #fffdf8; margin-bottom: 14px; }
+    .auth.visible { display: block; }
+    .empty { color: #6d675e; font-size: 14px; padding: 12px 0; }
+    @media (min-width: 720px) {
+      main { padding-top: 28px; }
+      h1 { font-size: 26px; }
+      .metrics { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>{{ business_label }} Office</h1>
+        <div class="subtle"><span id="day">Today</span> · Live</div>
+      </div>
+      <div class="pill" id="event-count">0 events</div>
+    </header>
+
+    <form class="auth" id="auth-form">
+      <p class="label">Access token</p>
+      <input id="token" name="token" type="password" autocomplete="current-password" placeholder="Pocket token">
+      <div class="toolbar">
+        <button type="submit">Unlock</button>
+      </div>
+    </form>
+
+    <section class="tldr">
+      <p class="label">AI TLDR</p>
+      <p id="tldr">Loading office summary...</p>
+      <div class="toolbar">
+        <button type="button" id="refresh-tldr">Refresh TLDR</button>
+        <span class="subtle" id="tldr-source"></span>
+      </div>
+    </section>
+
+    <section>
+      <p class="label">Status</p>
+      <div class="status-line"><span class="dot" id="status-dot"></span><span id="status">Loading</span></div>
+      <div class="subtle" id="last-action">Checking latest activity...</div>
+    </section>
+
+    <section>
+      <p class="label">Today</p>
+      <div class="metrics" id="metrics"></div>
+    </section>
+
+    <section>
+      <p class="label">Latest Actions</p>
+      <div class="actions" id="actions"></div>
+    </section>
+  </main>
+  <script>
+    const businessId = {{ business_id|tojson }};
+    const authRequired = {{ auth_required|tojson }};
+    const authForm = document.getElementById("auth-form");
+    const tokenInput = document.getElementById("token");
+    const storageKey = `pocket-office-token:${businessId}`;
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get("token") || "";
+    if (urlToken) localStorage.setItem(storageKey, urlToken);
+    tokenInput.value = localStorage.getItem(storageKey) || "";
+
+    function token() { return localStorage.getItem(storageKey) || tokenInput.value || ""; }
+    function headers() { return token() ? {"X-Pocket-Token": token()} : {}; }
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[char]));
+    }
+    function timeLabel(timestamp) {
+      if (!timestamp || timestamp.length < 16) return "";
+      return timestamp.slice(11, 16);
+    }
+    async function fetchJson(path, options = {}) {
+      const response = await fetch(path, {...options, headers: {...headers(), ...(options.headers || {})}});
+      if (response.status === 401) {
+        authForm.classList.add("visible");
+        throw new Error("Unauthorized");
+      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      return data;
+    }
+    function renderMetrics(counts) {
+      const metrics = [
+        ["Generated", counts.generated],
+        ["Published", counts.published],
+        ["Drafted", counts.drafted],
+        ["Review", counts.needs_review],
+        ["Emails", counts.emails],
+        ["Replies", counts.replies],
+        ["Leads", counts.leads],
+        ["Sales", counts.sales],
+      ];
+      document.getElementById("metrics").innerHTML = metrics.map(([label, value]) => (
+        `<div class="metric"><strong>${Number(value || 0)}</strong><span>${label}</span></div>`
+      )).join("");
+    }
+    function renderActions(events) {
+      const target = document.getElementById("actions");
+      if (!events.length) {
+        target.innerHTML = `<div class="empty">No actions logged for this day.</div>`;
+        return;
+      }
+      target.innerHTML = events.map(event => `
+        <div class="action">
+          <div class="time">${escapeHtml(timeLabel(event.timestamp))}</div>
+          <div class="event-main">
+            <strong>${escapeHtml(event.subject || event.event_type)}</strong>
+            <span>${escapeHtml(event.message || event.event_type)}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+    function renderStatus(data) {
+      authForm.classList.remove("visible");
+      document.getElementById("day").textContent = data.day || "Today";
+      document.getElementById("event-count").textContent = `${data.event_count || 0} events`;
+      document.getElementById("status").textContent = data.status || "Unknown";
+      document.getElementById("last-action").textContent = data.last_action_label ? `Last action: ${data.last_action_label}` : "No logged action yet.";
+      const dot = document.getElementById("status-dot");
+      dot.className = "dot";
+      if ((data.counts || {}).failed) dot.classList.add("error");
+      else if ((data.counts || {}).needs_review) dot.classList.add("warn");
+      renderMetrics(data.counts || {});
+      renderActions(data.latest_events || []);
+    }
+    async function loadStatus() {
+      const data = await fetchJson(`/api/office/${businessId}/status`);
+      renderStatus(data);
+      return data;
+    }
+    async function loadTldr(refresh = false) {
+      const data = await fetchJson(`/api/office/${businessId}/tldr${refresh ? "?refresh=1" : ""}`);
+      document.getElementById("tldr").textContent = data.text || "No summary available.";
+      document.getElementById("tldr-source").textContent = data.source ? `${data.source}${data.cached ? " · cached" : ""}` : "";
+    }
+    authForm.addEventListener("submit", event => {
+      event.preventDefault();
+      localStorage.setItem(storageKey, tokenInput.value);
+      loadStatus().then(() => loadTldr(true)).catch(error => {
+        document.getElementById("status").textContent = error.message;
+      });
+    });
+    document.getElementById("refresh-tldr").addEventListener("click", () => {
+      document.getElementById("tldr").textContent = "Refreshing...";
+      loadTldr(true).catch(error => document.getElementById("tldr").textContent = error.message);
+    });
+    loadStatus().then(() => loadTldr(false)).catch(error => {
+      document.getElementById("status").textContent = error.message;
+      if (authRequired) authForm.classList.add("visible");
+    });
+  </script>
+</body>
+</html>
+"""
+
+
+@app.route("/office")
+@app.route("/office/")
+def office_default_page():
+    return office_status_page(DEFAULT_BUSINESS_ID)
+
+
+@app.route("/office/<business_id>")
+@app.route("/office/<business_id>/")
+def office_status_page(business_id):
+    try:
+        business_id = resolve_business_id(business_id)
+    except ValueError:
+        abort(404)
+    return render_template_string(
+        OFFICE_STATUS_PAGE,
+        business_id=business_id,
+        business_label=business_id.replace("-", " ").title(),
+        auth_required=bool(POCKET_ACCESS_TOKEN),
+    )
+
+
+@app.route("/api/office/<business_id>/status")
+def office_status_api(business_id):
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    try:
+        payload = build_office_status_payload(
+            business_id,
+            day=request.args.get("day"),
+            limit=request.args.get("limit"),
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(payload)
+
+
+@app.route("/api/office/<business_id>/tldr", methods=["GET", "POST"])
+def office_tldr_api(business_id):
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    data = request.get_json(silent=True) or {}
+    refresh = request_bool(data.get("refresh"), default=request.args.get("refresh") == "1")
+    try:
+        summary = build_office_status_payload(business_id, day=request.args.get("day") or data.get("day"))
+        return jsonify(generate_office_tldr(summary, refresh=refresh))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/office/<business_id>/activity", methods=["POST"])
+def office_activity_api(business_id):
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    data = request.get_json(silent=True) or {}
+    try:
+        event = append_office_activity_event(
+            business_id,
+            data.get("event_type"),
+            message=data.get("message"),
+            subject=data.get("subject"),
+            status=data.get("status") or "ok",
+            metadata=data.get("metadata") if isinstance(data.get("metadata"), dict) else {},
+            timestamp=data.get("timestamp"),
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"event": event})
+
+
 @app.route("/health")
 def health():
     return jsonify({
@@ -3999,6 +4588,21 @@ def buffer_post():
         )
     except BufferApiError as exc:
         return jsonify({"error": str(exc)}), 400
+
+    event_type = "content.drafted" if save_to_draft else "content.published" if mode == "shareNow" else "content.queued"
+    safe_append_office_activity_event(
+        business["business_id"],
+        event_type,
+        subject="Buffer post",
+        message=f"{mode} accepted by Buffer",
+        metadata={
+            "channel_id": channel_id,
+            "mode": mode,
+            "save_to_draft": save_to_draft,
+            "image_url": image_url,
+            "buffer_post_id": ((result or {}).get("post") or {}).get("id") if isinstance(result, dict) else "",
+        },
+    )
     return jsonify({"business_id": business["business_id"], "channel_id": channel_id, "result": result})
 
 
@@ -4171,6 +4775,34 @@ def maison_flou_content():
             "image_source": image_source,
             "drafted_to_buffer": bool(response.get("buffer")),
         })
+
+    if record_activity:
+        safe_append_office_activity_event(
+            business_id,
+            "content.generated",
+            subject=f"Objet {object_number}",
+            message=f"{image_source} content generated",
+            metadata={
+                "object_number": object_number,
+                "object_category": public_maison_flou_category(object_category),
+                "image_url": image_url,
+                "image_source": image_source,
+                "image_model": image_model,
+                "square_image": square_image,
+            },
+        )
+        if response.get("buffer"):
+            safe_append_office_activity_event(
+                business_id,
+                "content.drafted",
+                subject=f"Objet {object_number}",
+                message="Buffer draft created",
+                metadata={
+                    "object_number": object_number,
+                    "image_url": image_url,
+                    "buffer_post_id": (((response.get("buffer") or {}).get("result") or {}).get("post") or {}).get("id"),
+                },
+            )
 
     if auto_sequence:
         save_maison_flou_sequence(int(object_number))
