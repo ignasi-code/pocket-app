@@ -706,6 +706,7 @@ def office_event_counts(events):
         "emails": 0,
         "replies": 0,
         "leads": 0,
+        "lead_events": 0,
         "sales": 0,
         "needs_review": 0,
         "failed": 0,
@@ -724,6 +725,7 @@ def office_event_counts(events):
         if event_type in {"email.replied", "email.reply.sent"}:
             counts["replies"] += 1
         if event_type.startswith("lead."):
+            counts["lead_events"] += 1
             counts["leads"] += 1
         if event_type.startswith("sale.") or event_type.startswith("order."):
             counts["sales"] += 1
@@ -744,6 +746,14 @@ def build_office_status_payload(business_id, day=None, limit=None):
     day_events = [event for event in events if office_event_day(event) == day]
     latest_events = list(reversed(day_events[-12:]))
     counts = office_event_counts(day_events)
+    stats = {}
+    if business_id == MAISON_FLOU_BUSINESS_ID:
+        try:
+            waitlist_leads = read_maison_flou_waitlist_leads(limit=250, reveal=False)
+            counts["leads"] = len(waitlist_leads)
+            stats["waitlist_leads"] = len(waitlist_leads)
+        except Exception as exc:
+            stats["waitlist_error"] = str(exc)
     last_event = latest_events[0] if latest_events else None
 
     if counts["failed"]:
@@ -763,6 +773,7 @@ def build_office_status_payload(business_id, day=None, limit=None):
         "last_action": last_event.get("timestamp") if last_event else "",
         "last_action_label": office_event_display(last_event) if last_event else "",
         "counts": counts,
+        "stats": stats,
         "latest_events": latest_events,
     }
 
@@ -4691,6 +4702,7 @@ OFFICE_STATUS_PAGE = """
         ["Emails", counts.emails],
         ["Replies", counts.replies],
         ["Leads", counts.leads],
+        ["Lead Events", counts.lead_events],
         ["Sales", counts.sales],
       ];
       document.getElementById("metrics").innerHTML = metrics.map(([label, value]) => (
