@@ -28,3 +28,5 @@ API calls can select this module with `business=maison-flou`.
 
 Generated image files are stored locally under the ignored business runtime
 folder and exposed through `/media/maison-flou/<filename>` for Buffer ingestion.
+The default publishable image is a center-cropped square JPEG derivative of the
+original Gemini image.

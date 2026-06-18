@@ -1,4 +1,6 @@
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import app as pocket
@@ -20,15 +22,24 @@ class MaisonFlouContentTest(unittest.TestCase):
         with patch("app.read_maison_flou_sequence", return_value=0):
             with patch("app.save_maison_flou_sequence") as save_sequence:
                 with patch("app.generate_maison_flou_image", return_value={
-                    "filename": "objet-001-test.png",
-                    "url": "http://localhost/media/maison-flou/objet-001-test.png",
+                    "filename": "objet-001-original.png",
+                    "url": "http://localhost/media/maison-flou/objet-001-original.png",
                     "mime_type": "image/png",
-                    "width": 1024,
-                    "height": 1024,
+                    "width": 928,
+                    "height": 1152,
                     "model": "gemini-3.1-flash-image",
                 }):
-                    with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
-                        response = self.client.post("/api/maison-flou/content", json={})
+                    with patch("app.square_maison_flou_image", return_value={
+                        "filename": "objet-001-square.jpg",
+                        "url": "http://localhost/media/maison-flou/objet-001-square.jpg",
+                        "mime_type": "image/jpeg",
+                        "width": 1080,
+                        "height": 1080,
+                        "source_filename": "objet-001-original.png",
+                        "quality": 88,
+                    }):
+                        with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
+                            response = self.client.post("/api/maison-flou/content", json={})
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
@@ -39,10 +50,12 @@ class MaisonFlouContentTest(unittest.TestCase):
         self.assertIn("Objet d’étude 001.", data["caption"])
         self.assertIn("Allocation for Collection 01 is strictly limited.", data["caption"])
         self.assertIn("maisonflou.com", data["caption"])
-        self.assertEqual(data["image_source"], "gemini")
-        self.assertIn("/media/maison-flou/objet-001-test.png", data["image_url"])
-        self.assertEqual(data["image_width"], 1024)
-        self.assertEqual(data["image_height"], 1024)
+        self.assertEqual(data["image_source"], "gemini_square")
+        self.assertIn("/media/maison-flou/objet-001-square.jpg", data["image_url"])
+        self.assertEqual(data["image_width"], 1080)
+        self.assertEqual(data["image_height"], 1080)
+        self.assertEqual(data["original_image_file"]["filename"], "objet-001-original.png")
+        self.assertEqual(data["image_file"]["source_filename"], "objet-001-original.png")
         self.assertEqual(run_ai.call_count, 2)
         save_sequence.assert_called_once_with(1)
 
@@ -62,19 +75,28 @@ class MaisonFlouContentTest(unittest.TestCase):
                 with patch("app.create_post", return_value={"post": {"id": "draft-id"}}) as create_post:
                     with patch("app.save_maison_flou_sequence") as save_sequence:
                         with patch("app.generate_maison_flou_image", return_value={
-                            "filename": "objet-009-test.png",
-                            "url": "http://localhost/media/maison-flou/objet-009-test.png",
+                            "filename": "objet-009-original.png",
+                            "url": "http://localhost/media/maison-flou/objet-009-original.png",
                             "mime_type": "image/png",
-                            "width": 1024,
-                            "height": 1024,
+                            "width": 928,
+                            "height": 1152,
                             "model": "gemini-3.1-flash-image",
                         }):
-                            with patch("app.run_gemini_text", return_value=raw_caption):
-                                response = self.client.post("/api/maison-flou/content", json={
-                                    "object_number": 9,
-                                    "image_prompt": image_prompt,
-                                    "draft_buffer": True,
-                                })
+                            with patch("app.square_maison_flou_image", return_value={
+                                "filename": "objet-009-square.jpg",
+                                "url": "http://localhost/media/maison-flou/objet-009-square.jpg",
+                                "mime_type": "image/jpeg",
+                                "width": 1080,
+                                "height": 1080,
+                                "source_filename": "objet-009-original.png",
+                                "quality": 88,
+                            }):
+                                with patch("app.run_gemini_text", return_value=raw_caption):
+                                    response = self.client.post("/api/maison-flou/content", json={
+                                        "object_number": 9,
+                                        "image_prompt": image_prompt,
+                                        "draft_buffer": True,
+                                    })
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
@@ -85,8 +107,9 @@ class MaisonFlouContentTest(unittest.TestCase):
         create_post.assert_called_once()
         kwargs = create_post.call_args.kwargs
         self.assertEqual(kwargs["channel_id"], "channel")
-        self.assertEqual(kwargs["image_width"], 1024)
-        self.assertEqual(kwargs["image_height"], 1024)
+        self.assertEqual(kwargs["image_url"], "http://localhost/media/maison-flou/objet-009-square.jpg")
+        self.assertEqual(kwargs["image_width"], 1080)
+        self.assertEqual(kwargs["image_height"], 1080)
         self.assertTrue(kwargs["save_to_draft"])
         save_sequence.assert_not_called()
 
@@ -105,6 +128,37 @@ class MaisonFlouContentTest(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 504)
         self.assertIn("partial stdout", context.exception.payload["output"])
         self.assertIn("partial stderr", context.exception.payload["output"])
+
+    def test_square_processor_center_crops_and_reencodes_jpeg(self):
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "source.jpg"
+            Image.new("RGB", (80, 100), color=(200, 100, 50)).save(source_path, format="JPEG")
+
+            image_info = {
+                "filename": "source.jpg",
+                "path": str(source_path),
+                "url": "http://localhost/media/maison-flou/source.jpg",
+                "mime_type": "image/jpeg",
+                "width": 80,
+                "height": 100,
+                "model": "gemini-3.1-flash-image",
+            }
+
+            with patch("app.MAISON_FLOU_IMAGES_DIR", temp_path):
+                with patch("app.maison_flou_media_url", side_effect=lambda name: f"http://localhost/media/maison-flou/{name}"):
+                    result = pocket.square_maison_flou_image(image_info, size=64, quality=80)
+
+            output_path = temp_path / result["filename"]
+            self.assertTrue(output_path.exists())
+            self.assertEqual(result["width"], 64)
+            self.assertEqual(result["height"], 64)
+            self.assertEqual(result["mime_type"], "image/jpeg")
+            with Image.open(output_path) as output:
+                self.assertEqual(output.size, (64, 64))
+                self.assertEqual(output.format, "JPEG")
 
 
 if __name__ == "__main__":

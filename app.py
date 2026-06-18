@@ -220,6 +220,8 @@ MAISON_FLOU_IMAGES_DIR = MAISON_FLOU_RUNTIME_DIR / "images"
 MAISON_FLOU_DEFAULT_IMAGE_WIDTH = 1080
 MAISON_FLOU_DEFAULT_IMAGE_HEIGHT = 1350
 MAISON_FLOU_DEFAULT_IMAGE_MODEL = clean_config_value(os.environ.get("MAISON_FLOU_IMAGE_MODEL")) or "gemini-3.1-flash-image"
+MAISON_FLOU_SQUARE_IMAGE_SIZE = int(os.environ.get("MAISON_FLOU_SQUARE_IMAGE_SIZE", "1080"))
+MAISON_FLOU_SQUARE_IMAGE_QUALITY = int(os.environ.get("MAISON_FLOU_SQUARE_IMAGE_QUALITY", "88"))
 
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True
@@ -539,6 +541,49 @@ def generate_maison_flou_image(image_prompt, object_number, model=None):
         }
 
     raise GeminiCliError("Gemini image API did not return an image.", 502)
+
+
+def square_maison_flou_image(image_info, size=None, quality=None):
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise GeminiCliError("Pillow is required for Maison Flou square image processing.", 500) from exc
+
+    source_path = Path(image_info["path"])
+    size = int(size or MAISON_FLOU_SQUARE_IMAGE_SIZE)
+    quality = int(quality or MAISON_FLOU_SQUARE_IMAGE_QUALITY)
+    quality = max(1, min(quality, 95))
+
+    try:
+        with Image.open(source_path) as source:
+            image = source.convert("RGB")
+            width, height = image.size
+            side = min(width, height)
+            left = max(0, (width - side) // 2)
+            top = max(0, (height - side) // 2)
+            image = image.crop((left, top, left + side, top + side))
+            if size > 0 and image.size != (size, size):
+                image = image.resize((size, size), Image.Resampling.LANCZOS)
+
+            digest = hashlib.sha256(image.tobytes()).hexdigest()[:12]
+            square_filename = f"{source_path.stem}-square-{digest}.jpg"
+            square_path = MAISON_FLOU_IMAGES_DIR / square_filename
+            MAISON_FLOU_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+            image.save(square_path, format="JPEG", quality=quality, optimize=True)
+            os.chmod(square_path, 0o600)
+    except OSError as exc:
+        raise GeminiCliError(f"Could not process square image: {exc}", 500) from exc
+
+    return {
+        "filename": square_filename,
+        "path": str(square_path),
+        "url": maison_flou_media_url(square_filename),
+        "mime_type": "image/jpeg",
+        "width": image.size[0],
+        "height": image.size[1],
+        "source_filename": image_info["filename"],
+        "quality": quality,
+    }
 
 
 def setup_is_open():
@@ -3825,6 +3870,7 @@ def maison_flou_content():
 
     image_model = clean_config_value(data.get("image_model")) or MAISON_FLOU_DEFAULT_IMAGE_MODEL
     image_url = clean_config_value(data.get("image_url"))
+    square_image = request_bool(data.get("square_image"), default=True)
     image_prompt = clean_ai_output(data.get("image_prompt"))
 
     try:
@@ -3849,6 +3895,7 @@ def maison_flou_content():
         if not caption:
             return jsonify({"error": "Caption generation returned empty output."}), 502
         generated_image = None
+        processed_image = None
         if image_url:
             try:
                 image_width = int(data.get("image_width") or MAISON_FLOU_DEFAULT_IMAGE_WIDTH)
@@ -3860,10 +3907,15 @@ def maison_flou_content():
             image_source = "provided"
         else:
             generated_image = generate_maison_flou_image(image_prompt, object_number, model=image_model)
-            image_url = generated_image["url"]
-            image_width = generated_image["width"] or MAISON_FLOU_DEFAULT_IMAGE_WIDTH
-            image_height = generated_image["height"] or MAISON_FLOU_DEFAULT_IMAGE_HEIGHT
+            publish_image = generated_image
             image_source = "gemini"
+            if square_image:
+                processed_image = square_maison_flou_image(generated_image)
+                publish_image = processed_image
+                image_source = "gemini_square"
+            image_url = publish_image["url"]
+            image_width = publish_image["width"] or MAISON_FLOU_DEFAULT_IMAGE_WIDTH
+            image_height = publish_image["height"] or MAISON_FLOU_DEFAULT_IMAGE_HEIGHT
     except GeminiCliError as exc:
         return jsonify(exc.payload), exc.status_code
 
@@ -3879,9 +3931,21 @@ def maison_flou_content():
         "image_model": image_model,
     }
     if generated_image:
-        response["image_file"] = {
+        response["original_image_file"] = {
             "filename": generated_image["filename"],
             "mime_type": generated_image["mime_type"],
+            "width": generated_image["width"],
+            "height": generated_image["height"],
+            "url": generated_image["url"],
+        }
+    if processed_image:
+        response["image_file"] = {
+            "filename": processed_image["filename"],
+            "mime_type": processed_image["mime_type"],
+            "width": processed_image["width"],
+            "height": processed_image["height"],
+            "source_filename": processed_image["source_filename"],
+            "quality": processed_image["quality"],
         }
 
     if request_bool(data.get("draft_buffer"), default=False):
