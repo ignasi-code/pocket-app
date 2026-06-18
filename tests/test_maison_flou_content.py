@@ -18,35 +18,44 @@ class MaisonFlouContentTest(unittest.TestCase):
     def test_content_endpoint_generates_prompt_caption_and_url(self):
         image_prompt = "A structured white leather bag on sun-bleached stone, razor sharp shadows, 35mm grain."
         raw_caption = "Objet d’étude 001.\n\nSpace folds into a quiet edge.\nForm waits without asking."
+        category = {
+            "id": "leather-objects",
+            "label": "Bags / clutches / leather objects",
+            "prompt": "bags, clutches, structured leather goods, folded leather objects, or small architectural leather forms",
+            "weight": 25.0,
+        }
 
-        with patch("app.read_maison_flou_sequence", return_value=0):
-            with patch("app.save_maison_flou_sequence") as save_sequence:
-                with patch("app.generate_maison_flou_image", return_value={
-                    "filename": "objet-001-original.png",
-                    "url": "http://localhost/media/maison-flou/objet-001-original.png",
-                    "mime_type": "image/png",
-                    "width": 928,
-                    "height": 1152,
-                    "model": "gemini-3.1-flash-image",
-                }):
-                    with patch("app.square_maison_flou_image", return_value={
-                        "filename": "objet-001-square.jpg",
-                        "url": "http://localhost/media/maison-flou/objet-001-square.jpg",
-                        "mime_type": "image/jpeg",
-                        "width": 1080,
-                        "height": 1080,
-                        "source_filename": "objet-001-original.png",
-                        "quality": 88,
-                        "method": "square_screenshot_copy",
-                    }):
-                        with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
-                            response = self.client.post("/api/maison-flou/content", json={})
+        with patch("app.select_maison_flou_object_category", return_value=category) as select_category:
+            with patch("app.record_maison_flou_category_event") as record_category:
+                with patch("app.read_maison_flou_sequence", return_value=0):
+                    with patch("app.save_maison_flou_sequence") as save_sequence:
+                        with patch("app.generate_maison_flou_image", return_value={
+                            "filename": "objet-001-original.png",
+                            "url": "http://localhost/media/maison-flou/objet-001-original.png",
+                            "mime_type": "image/png",
+                            "width": 928,
+                            "height": 1152,
+                            "model": "gemini-3.1-flash-image",
+                        }):
+                            with patch("app.square_maison_flou_image", return_value={
+                                "filename": "objet-001-square.jpg",
+                                "url": "http://localhost/media/maison-flou/objet-001-square.jpg",
+                                "mime_type": "image/jpeg",
+                                "width": 1080,
+                                "height": 1080,
+                                "source_filename": "objet-001-original.png",
+                                "quality": 88,
+                                "method": "square_screenshot_copy",
+                            }):
+                                with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
+                                    response = self.client.post("/api/maison-flou/content", json={})
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
 
         self.assertEqual(data["business_id"], "maison-flou")
         self.assertEqual(data["object_number"], "001")
+        self.assertEqual(data["object_category"]["id"], "leather-objects")
         self.assertEqual(data["image_prompt"], image_prompt)
         self.assertIn("Objet d’étude 001.", data["caption"])
         self.assertIn("Allocation for Collection 01 is strictly limited.", data["caption"])
@@ -59,16 +68,34 @@ class MaisonFlouContentTest(unittest.TestCase):
         self.assertEqual(data["image_file"]["source_filename"], "objet-001-original.png")
         self.assertEqual(data["image_file"]["method"], "square_screenshot_copy")
         self.assertEqual(run_ai.call_count, 2)
+        image_prompt_instruction = run_ai.call_args_list[0].args[0]
+        self.assertIn("Object category for this generation:", image_prompt_instruction)
+        self.assertIn("structured leather goods", image_prompt_instruction)
+        select_category.assert_called_once_with("")
+        record_category.assert_called_once()
+        self.assertEqual(record_category.call_args.args[0]["category_id"], "leather-objects")
         save_sequence.assert_called_once_with(1)
 
-    def test_image_prompt_template_discourages_handbag_repetition(self):
+    def test_image_prompt_template_keeps_object_direction_minimal(self):
         template = pocket.read_business_prompt_template("image-description.prompt.txt").lower()
 
-        self.assertIn("structured leather bag", template)
-        self.assertIn("geometric ceramic object", template)
-        self.assertIn("avant-garde eyewear", template)
-        self.assertIn("vary the object category", template)
-        self.assertIn("do not overuse handbags", template)
+        self.assertIn("one architectural luxury object", template)
+        self.assertNotIn("e.g.", template)
+        self.assertNotIn("vary the object category", template)
+        self.assertNotIn("do not overuse handbags", template)
+
+    def test_object_category_config_matches_reference_mix(self):
+        categories = pocket.load_maison_flou_object_categories()
+        labels_and_prompts = " ".join(
+            f"{category['label']} {category['prompt']}"
+            for category in categories
+        ).lower()
+
+        self.assertEqual(sum(category["weight"] for category in categories), 100)
+        self.assertIn("leather-objects", {category["id"] for category in categories})
+        self.assertIn("draped-textiles", {category["id"] for category in categories})
+        self.assertNotIn("chair", labels_and_prompts)
+        self.assertNotIn("furniture", labels_and_prompts)
 
     def test_content_endpoint_can_create_buffer_draft(self):
         image_prompt = "A geometric ceramic object against cream plaster, blinding sunlight, Vogue editorial."

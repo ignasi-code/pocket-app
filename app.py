@@ -5,6 +5,7 @@ import html as html_lib
 import hmac
 import os
 import platform
+import random
 import re
 import shlex
 import shutil
@@ -216,6 +217,8 @@ MAISON_FLOU_BUSINESS_ID = "maison-flou"
 MAISON_FLOU_PROMPTS_DIR = BUSINESSES_DIR / MAISON_FLOU_BUSINESS_ID / "prompts"
 MAISON_FLOU_RUNTIME_DIR = BUSINESSES_DIR / MAISON_FLOU_BUSINESS_ID / "runtime"
 MAISON_FLOU_SEQUENCE_PATH = MAISON_FLOU_RUNTIME_DIR / "object-sequence.txt"
+MAISON_FLOU_CATEGORY_CONFIG_PATH = MAISON_FLOU_PROMPTS_DIR / "object-categories.json"
+MAISON_FLOU_CATEGORY_HISTORY_PATH = MAISON_FLOU_RUNTIME_DIR / "category-history.json"
 MAISON_FLOU_IMAGES_DIR = MAISON_FLOU_RUNTIME_DIR / "images"
 MAISON_FLOU_DEFAULT_IMAGE_WIDTH = 1080
 MAISON_FLOU_DEFAULT_IMAGE_HEIGHT = 1350
@@ -353,6 +356,161 @@ def read_business_prompt_template(name):
         return path.read_text(encoding="utf-8").strip()
     except OSError as exc:
         raise GeminiCliError(f"Prompt template not found: {path}", 500) from exc
+
+
+def normalize_maison_flou_category_id(value):
+    text = clean_config_value(value).lower().replace("_", "-")
+    text = re.sub(r"[^a-z0-9-]+", "-", text)
+    return re.sub(r"-+", "-", text).strip("-")
+
+
+def load_maison_flou_object_categories():
+    try:
+        raw_categories = json.loads(MAISON_FLOU_CATEGORY_CONFIG_PATH.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise GeminiCliError(
+            f"Maison Flou category config not found: {MAISON_FLOU_CATEGORY_CONFIG_PATH}",
+            500,
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise GeminiCliError("Maison Flou category config is invalid JSON.", 500) from exc
+
+    if not isinstance(raw_categories, list):
+        raise GeminiCliError("Maison Flou category config must be a list.", 500)
+
+    categories = []
+    for raw_category in raw_categories:
+        if not isinstance(raw_category, dict):
+            continue
+        category_id = normalize_maison_flou_category_id(raw_category.get("id"))
+        label = clean_config_value(raw_category.get("label"))
+        prompt = clean_config_value(raw_category.get("prompt"))
+        try:
+            weight = float(raw_category.get("weight"))
+        except (TypeError, ValueError):
+            weight = 0
+        if category_id and label and prompt and weight > 0:
+            categories.append({
+                "id": category_id,
+                "label": label,
+                "prompt": prompt,
+                "weight": weight,
+            })
+
+    if not categories:
+        raise GeminiCliError("Maison Flou category config has no usable categories.", 500)
+    return categories
+
+
+def public_maison_flou_category(category):
+    if not category:
+        return None
+    weight = category.get("weight")
+    if isinstance(weight, float) and weight.is_integer():
+        weight = int(weight)
+    return {
+        "id": category["id"],
+        "label": category["label"],
+        "weight": weight,
+    }
+
+
+def resolve_maison_flou_object_category(value, categories=None):
+    raw_value = clean_config_value(value)
+    if not raw_value:
+        return None
+
+    categories = categories or load_maison_flou_object_categories()
+    category_id = normalize_maison_flou_category_id(raw_value)
+    for category in categories:
+        if category["id"] == category_id:
+            return category
+        if normalize_maison_flou_category_id(category["label"]) == category_id:
+            return category
+
+    raise ValueError(f"Unknown Maison Flou object_category: {raw_value}")
+
+
+def read_maison_flou_category_history():
+    try:
+        data = json.loads(MAISON_FLOU_CATEGORY_HISTORY_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+
+    if isinstance(data, dict):
+        data = data.get("events", [])
+    if not isinstance(data, list):
+        return []
+    return [event for event in data if isinstance(event, dict)]
+
+
+def record_maison_flou_category_event(event):
+    history = read_maison_flou_category_history()
+    next_event = dict(event or {})
+    next_event["recorded_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    history.append(next_event)
+    history = history[-500:]
+
+    MAISON_FLOU_RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+    MAISON_FLOU_CATEGORY_HISTORY_PATH.write_text(
+        json.dumps({"events": history}, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(MAISON_FLOU_CATEGORY_HISTORY_PATH, 0o600)
+
+
+def select_maison_flou_object_category(requested=None):
+    categories = load_maison_flou_object_categories()
+    if clean_config_value(requested):
+        return resolve_maison_flou_object_category(requested, categories=categories)
+
+    history = read_maison_flou_category_history()
+    category_ids = {category["id"] for category in categories}
+    counts = {category["id"]: 0 for category in categories}
+    for event in history:
+        category_id = normalize_maison_flou_category_id(event.get("category_id"))
+        if category_id in counts:
+            counts[category_id] += 1
+
+    total_count = sum(counts.values())
+    total_weight = sum(category["weight"] for category in categories)
+    recent_ids = [
+        normalize_maison_flou_category_id(event.get("category_id"))
+        for event in history[-3:]
+        if normalize_maison_flou_category_id(event.get("category_id")) in category_ids
+    ]
+
+    scores = []
+    for category in categories:
+        score = float(category["weight"])
+        if total_count and total_weight:
+            target_share = category["weight"] / total_weight
+            actual_share = counts[category["id"]] / total_count
+            if actual_share > target_share:
+                score *= max(0.2, target_share / actual_share)
+            elif actual_share > 0:
+                score *= min(2.5, target_share / actual_share)
+            else:
+                score *= 2.0
+
+        if recent_ids and category["id"] == recent_ids[-1]:
+            score *= 0.1
+        elif category["id"] in recent_ids[-2:]:
+            score *= 0.35
+
+        scores.append(max(score, 0.01))
+
+    return random.choices(categories, weights=scores, k=1)[0]
+
+
+def build_image_prompt_with_category(template, category):
+    template = str(template or "").strip()
+    if not category:
+        return template
+    return (
+        f"{template}\n\n"
+        f"Object category for this generation: {category['prompt']}."
+    )
 
 
 def read_maison_flou_sequence():
@@ -3877,14 +4035,23 @@ def maison_flou_content():
     image_url = clean_config_value(data.get("image_url"))
     square_image = request_bool(data.get("square_image"), default=True)
     image_prompt = clean_ai_output(data.get("image_prompt"))
+    requested_category = clean_config_value(data.get("object_category") or data.get("category"))
+    record_activity = request_bool(data.get("record_activity"), default=True)
+    object_category = None
 
     try:
         if not image_prompt:
+            object_category = select_maison_flou_object_category(requested_category)
             image_prompt = clean_ai_output(run_gemini_text(
-                read_business_prompt_template("image-description.prompt.txt"),
+                build_image_prompt_with_category(
+                    read_business_prompt_template("image-description.prompt.txt"),
+                    object_category,
+                ),
                 args=MAISON_FLOU_GEMINI_ARGS,
                 timeout_seconds=MAISON_FLOU_GEMINI_TIMEOUT_SECONDS,
             ))
+        elif requested_category:
+            object_category = resolve_maison_flou_object_category(requested_category)
         if not image_prompt:
             return jsonify({"error": "Image prompt generation returned empty output."}), 502
         caption_template = read_business_prompt_template("caption.prompt.txt")
@@ -3923,6 +4090,8 @@ def maison_flou_content():
             image_height = publish_image["height"] or MAISON_FLOU_DEFAULT_IMAGE_HEIGHT
     except GeminiCliError as exc:
         return jsonify(exc.payload), exc.status_code
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     response = {
         "business_id": business_id,
@@ -3935,6 +4104,8 @@ def maison_flou_content():
         "image_height": image_height,
         "image_model": image_model,
     }
+    if object_category:
+        response["object_category"] = public_maison_flou_category(object_category)
     if generated_image:
         response["original_image_file"] = {
             "filename": generated_image["filename"],
@@ -3988,6 +4159,18 @@ def maison_flou_content():
             "save_to_draft": save_to_draft,
             "result": buffer_result,
         }
+
+    if record_activity and object_category:
+        record_maison_flou_category_event({
+            "business_id": business_id,
+            "object_number": object_number,
+            "category_id": object_category["id"],
+            "category_label": object_category["label"],
+            "image_prompt": image_prompt,
+            "image_url": image_url,
+            "image_source": image_source,
+            "drafted_to_buffer": bool(response.get("buffer")),
+        })
 
     if auto_sequence:
         save_maison_flou_sequence(int(object_number))

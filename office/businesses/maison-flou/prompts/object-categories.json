@@ -1,0 +1,38 @@
+[
+  {
+    "id": "leather-objects",
+    "label": "Bags / clutches / leather objects",
+    "weight": 25,
+    "prompt": "bags, clutches, structured leather goods, folded leather objects, or small architectural leather forms"
+  },
+  {
+    "id": "draped-textiles",
+    "label": "Draped textiles / garment fragments",
+    "weight": 25,
+    "prompt": "draped luxury textiles, garment fragments, sculptural fabric forms, or folded couture textile objects"
+  },
+  {
+    "id": "wearable-accessories",
+    "label": "Eyewear / jewelry / hair objects / belts",
+    "weight": 18,
+    "prompt": "sculptural eyewear, stone jewelry forms, metal hair objects, architectural belts, or other wearable accessories"
+  },
+  {
+    "id": "footwear-forms",
+    "label": "Shoes / abstract footwear",
+    "weight": 12,
+    "prompt": "abstract footwear, sculptural shoes, sandal forms, or impossible shoe-like luxury objects"
+  },
+  {
+    "id": "vessels",
+    "label": "Perfume / glass / ceramic / vessel objects",
+    "weight": 12,
+    "prompt": "glass perfume vessels, geometric ceramic objects, impossible vases, or small craft vessels"
+  },
+  {
+    "id": "experimental-objects",
+    "label": "Experimental tech / impossible luxury objects",
+    "weight": 8,
+    "prompt": "experimental tech-luxury objects, impossible luxury instruments, conceptual closures, or non-obvious fashion objects"
+  }
+]

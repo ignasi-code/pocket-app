@@ -32,3 +32,12 @@ The default publishable image is a center-cropped square JPEG derivative of the
 original Gemini image. The square derivative is produced from a fresh RGB pixel
 canvas before JPEG encoding, mirroring a screenshot-style copy instead of
 carrying source image metadata forward.
+
+## Content mix
+
+The creative prompt stays deliberately minimal. Product-category direction lives
+in `prompts/object-categories.json` so the office can steer the generated grid
+toward a reference-brand mix without hardcoding one object type into every
+prompt. Successful generated objects write an ignored runtime category history
+file, which lets the selector reduce recent repetition and support future office
+activity reports.
