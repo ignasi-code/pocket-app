@@ -111,7 +111,7 @@ class OfficeActivityTest(unittest.TestCase):
         self.assertEqual(calls[1][0], "POST")
         self.assertEqual(calls[1][1], "/v2/datasets")
         self.assertEqual(calls[2][0], "POST")
-        self.assertEqual(calls[2][1], "/v1/ingest/maison-flou-office")
+        self.assertEqual(calls[2][1], "/v1/datasets/maison-flou-office/ingest")
         self.assertEqual(calls[2][2][0]["event_type"], "content.published")
 
     def test_axiom_dataset_name_is_valid(self):

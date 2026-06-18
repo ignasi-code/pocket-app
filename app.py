@@ -950,7 +950,7 @@ def sync_office_activity_to_axiom(business_id, limit=250):
         }
 
     payload = [axiom_event_payload(event) for event in events]
-    axiom_api_request("POST", f"/v1/ingest/{dataset}", payload)
+    axiom_api_request("POST", f"/v1/datasets/{dataset}/ingest", payload)
     write_axiom_cursor(business_id, {
         "dataset": dataset,
         "last_event_id": events[-1].get("id"),
