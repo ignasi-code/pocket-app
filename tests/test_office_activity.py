@@ -77,6 +77,47 @@ class OfficeActivityTest(unittest.TestCase):
         self.assertEqual(data["source"], "fallback")
         self.assertIn("published", data["text"])
 
+    def test_axiom_sync_creates_dataset_and_writes_cursor(self):
+        calls = []
+
+        def fake_axiom_request(method, path, payload=None):
+            calls.append((method, path, payload))
+            if method == "GET" and path == "/v2/datasets":
+                return {"datasets": []}
+            return {"ok": True}
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch("app.BUSINESSES_DIR", Path(temp_dir)):
+                with patch("app.AXIOM_API_TOKEN", "axiom-token"):
+                    with patch("app.AXIOM_DATASET", "maison-flou-office"):
+                        with patch("app.axiom_api_request", side_effect=fake_axiom_request):
+                            pocket.append_office_activity_event(
+                                "maison-flou",
+                                "content.published",
+                                subject="Objet 013",
+                                message="Buffer accepted",
+                                timestamp="2026-06-18T08:00:00Z",
+                            )
+
+                            result = pocket.sync_office_activity_to_axiom("maison-flou")
+
+                cursor = pocket.read_axiom_cursor("maison-flou")
+
+        self.assertEqual(result["dataset"], "maison-flou-office")
+        self.assertTrue(result["created_dataset"])
+        self.assertEqual(result["sent"], 1)
+        self.assertTrue(cursor["last_event_id"])
+        self.assertEqual(calls[0], ("GET", "/v2/datasets", None))
+        self.assertEqual(calls[1][0], "POST")
+        self.assertEqual(calls[1][1], "/v2/datasets")
+        self.assertEqual(calls[2][0], "POST")
+        self.assertEqual(calls[2][1], "/v1/ingest/maison-flou-office")
+        self.assertEqual(calls[2][2][0]["event_type"], "content.published")
+
+    def test_axiom_dataset_name_is_valid(self):
+        with patch("app.AXIOM_DATASET", "Maison Flou Office!!"):
+            self.assertEqual(pocket.axiom_dataset_name("maison-flou"), "maison-flou-office")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -169,6 +169,7 @@ UPTIMEROBOT_STATUS_PAGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_STA
 UPTIMEROBOT_BADGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_BADGE_URL"))
 AXIOM_API_TOKEN = clean_config_value(os.environ.get("AXIOM_API_TOKEN"))
 AXIOM_DATASET = clean_config_value(os.environ.get("AXIOM_DATASET")) or "office-events"
+AXIOM_API_BASE_URL = clean_config_value(os.environ.get("AXIOM_API_BASE_URL")) or "https://api.axiom.co"
 OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 OPS_SESSION_COOKIE = "pocket_ops_session"
 DEFAULT_OPS_SESSION_SECONDS = 12 * 60 * 60
@@ -229,6 +230,7 @@ MAISON_FLOU_SQUARE_IMAGE_SIZE = int(os.environ.get("MAISON_FLOU_SQUARE_IMAGE_SIZ
 MAISON_FLOU_SQUARE_IMAGE_QUALITY = int(os.environ.get("MAISON_FLOU_SQUARE_IMAGE_QUALITY", "88"))
 OFFICE_ACTIVITY_LOG_NAME = "activity.log.jsonl"
 OFFICE_TLDR_CACHE_NAME = "daily-status-tldr.json"
+OFFICE_AXIOM_CURSOR_NAME = "axiom-sync-cursor.json"
 OFFICE_TLDR_TIMEOUT_SECONDS = int(os.environ.get("POCKET_OFFICE_TLDR_TIMEOUT_SECONDS", "45"))
 OFFICE_STATUS_EVENT_LIMIT = int(os.environ.get("POCKET_OFFICE_STATUS_EVENT_LIMIT", "200"))
 
@@ -821,6 +823,150 @@ def generate_office_tldr(summary, refresh=False):
     return result
 
 
+class AxiomApiError(RuntimeError):
+    pass
+
+
+def sanitize_axiom_dataset_name(value):
+    text = clean_config_value(value).lower().replace("_", "-")
+    text = re.sub(r"[^a-z0-9-]+", "-", text)
+    text = re.sub(r"-+", "-", text).strip("-")
+    return text[:128] or "office-events"
+
+
+def axiom_dataset_name(business_id=None):
+    configured = sanitize_axiom_dataset_name(AXIOM_DATASET)
+    if configured and configured != "per-business":
+        return configured
+    return sanitize_axiom_dataset_name(f"{resolve_business_id(business_id)}-office")
+
+
+def axiom_cursor_path(business_id):
+    return office_activity_runtime_dir(business_id) / OFFICE_AXIOM_CURSOR_NAME
+
+
+def read_axiom_cursor(business_id):
+    try:
+        data = json.loads(axiom_cursor_path(business_id).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def write_axiom_cursor(business_id, data):
+    path = axiom_cursor_path(business_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.chmod(path, 0o600)
+
+
+def axiom_api_request(method, path, payload=None):
+    if not AXIOM_API_TOKEN:
+        raise AxiomApiError("AXIOM_API_TOKEN is not configured.")
+
+    url = f"{AXIOM_API_BASE_URL.rstrip('/')}/{path.lstrip('/')}"
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    headers = {
+        "Authorization": f"Bearer {AXIOM_API_TOKEN}",
+        "Content-Type": "application/json",
+        "User-Agent": "pocket-office-axiom/0.1",
+    }
+    api_request = UrlRequest(url, data=body, headers=headers, method=method.upper())
+    try:
+        with urlopen(api_request, timeout=30) as response:
+            raw = response.read().decode("utf-8")
+    except HTTPError as exc:
+        detail = read_http_error(exc)
+        raise AxiomApiError(f"Axiom HTTP {exc.code}: {detail[:1000]}") from exc
+    except URLError as exc:
+        raise AxiomApiError(f"Axiom network error: {exc}") from exc
+
+    if not raw.strip():
+        return {}
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise AxiomApiError(f"Axiom returned invalid JSON: {raw[:500]}") from exc
+
+
+def axiom_dataset_exists(dataset):
+    data = axiom_api_request("GET", "/v2/datasets")
+    datasets = data.get("datasets") if isinstance(data, dict) else data
+    if not isinstance(datasets, list):
+        return False
+    return any(item.get("name") == dataset for item in datasets if isinstance(item, dict))
+
+
+def ensure_axiom_dataset(dataset=None):
+    dataset = sanitize_axiom_dataset_name(dataset or AXIOM_DATASET)
+    if axiom_dataset_exists(dataset):
+        return {"dataset": dataset, "created": False}
+
+    axiom_api_request("POST", "/v2/datasets", {
+        "description": "Pocket office activity events",
+        "kind": "axiom:events:v1",
+        "name": dataset,
+        "retentionDays": 30,
+    })
+    return {"dataset": dataset, "created": True}
+
+
+def axiom_event_payload(event):
+    metadata = event.get("metadata") if isinstance(event.get("metadata"), dict) else {}
+    return {
+        "_time": event.get("timestamp") or office_utc_timestamp(),
+        "id": event.get("id"),
+        "business_id": event.get("business_id"),
+        "event_type": event.get("event_type"),
+        "status": event.get("status"),
+        "subject": event.get("subject"),
+        "message": event.get("message"),
+        "metadata": metadata,
+    }
+
+
+def unsynced_office_activity_events(business_id, limit=250):
+    events = read_office_activity_events(business_id, limit=10000)
+    cursor = read_axiom_cursor(business_id)
+    last_id = clean_config_value(cursor.get("last_event_id"))
+    if last_id:
+        for index, event in enumerate(events):
+            if clean_config_value(event.get("id")) == last_id:
+                return events[index + 1:index + 1 + int(limit)]
+    return events[-int(limit):]
+
+
+def sync_office_activity_to_axiom(business_id, limit=250):
+    business_id = resolve_business_id(business_id)
+    dataset = axiom_dataset_name(business_id)
+    dataset_result = ensure_axiom_dataset(dataset)
+    events = unsynced_office_activity_events(business_id, limit=limit)
+    if not events:
+        return {
+            "business_id": business_id,
+            "dataset": dataset,
+            "created_dataset": dataset_result["created"],
+            "sent": 0,
+        }
+
+    payload = [axiom_event_payload(event) for event in events]
+    axiom_api_request("POST", f"/v1/ingest/{dataset}", payload)
+    write_axiom_cursor(business_id, {
+        "dataset": dataset,
+        "last_event_id": events[-1].get("id"),
+        "last_event_timestamp": events[-1].get("timestamp"),
+        "synced_at": office_utc_timestamp(),
+        "sent": len(events),
+    })
+    return {
+        "business_id": business_id,
+        "dataset": dataset,
+        "created_dataset": dataset_result["created"],
+        "sent": len(events),
+        "last_event_id": events[-1].get("id"),
+    }
+
+
 def read_maison_flou_sequence():
     try:
         value = int(MAISON_FLOU_SEQUENCE_PATH.read_text(encoding="utf-8").strip())
@@ -1127,7 +1273,7 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, AXIOM_API_TOKEN, AXIOM_DATASET, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
+    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, AXIOM_API_TOKEN, AXIOM_DATASET, AXIOM_API_BASE_URL, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_BUSINESS_ID = normalize_business_id(os.environ.get("POCKET_DEFAULT_BUSINESS")) or "maison-flou"
@@ -1144,6 +1290,7 @@ def refresh_runtime_config(updates):
     UPTIMEROBOT_BADGE_URL = clean_config_value(os.environ.get("UPTIMEROBOT_BADGE_URL"))
     AXIOM_API_TOKEN = clean_config_value(os.environ.get("AXIOM_API_TOKEN"))
     AXIOM_DATASET = clean_config_value(os.environ.get("AXIOM_DATASET")) or "office-events"
+    AXIOM_API_BASE_URL = clean_config_value(os.environ.get("AXIOM_API_BASE_URL")) or "https://api.axiom.co"
     OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
     OFFICE_TLDR_TIMEOUT_SECONDS = int(os.environ.get("POCKET_OFFICE_TLDR_TIMEOUT_SECONDS", "45"))
     OFFICE_STATUS_EVENT_LIMIT = int(os.environ.get("POCKET_OFFICE_STATUS_EVENT_LIMIT", "200"))
@@ -4364,6 +4511,32 @@ def office_activity_api(business_id):
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     return jsonify({"event": event})
+
+
+@app.route("/api/office/<business_id>/axiom/ensure", methods=["POST"])
+def office_axiom_ensure_api(business_id):
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    try:
+        dataset = axiom_dataset_name(business_id)
+        return jsonify(ensure_axiom_dataset(dataset))
+    except (ValueError, AxiomApiError) as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/office/<business_id>/axiom/sync", methods=["POST"])
+def office_axiom_sync_api(business_id):
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    data = request.get_json(silent=True) or {}
+    try:
+        limit = max(1, min(int(data.get("limit") or request.args.get("limit") or 250), 1000))
+    except (TypeError, ValueError):
+        limit = 250
+    try:
+        return jsonify(sync_office_activity_to_axiom(business_id, limit=limit))
+    except (ValueError, AxiomApiError) as exc:
+        return jsonify({"error": str(exc)}), 400
 
 
 @app.route("/health")
