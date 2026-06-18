@@ -202,6 +202,7 @@ STORE_CART_UPSELL_HANDLES = [
     "the-paprika-necklace-duo",
     "the-netted-stone-pendant",
 ]
+MAISON_FLOU_SITE_DIR = BASE_DIR / "sites" / "maison-flou"
 PWA_DIR = BASE_DIR / "pages" / "pwa"
 PWA_BROWSER_CACHE_SECONDS = 300
 PWA_DATA_BROWSER_CACHE_SECONDS = 3600
@@ -4230,6 +4231,27 @@ def store_pulse():
     request.get_json(silent=True)
     response = Response(status=204)
     return apply_no_store_headers(response)
+
+
+def maison_flou_site_file(path="index.html"):
+    safe_path = Path(str(path or "index.html"))
+    if safe_path.is_absolute() or ".." in safe_path.parts:
+        abort(404)
+    target = MAISON_FLOU_SITE_DIR / safe_path
+    if not target.is_file():
+        abort(404)
+    return send_file(target)
+
+
+@app.route("/maison-flou")
+@app.route("/maison-flou/")
+def maison_flou_site_preview():
+    return maison_flou_site_file("index.html")
+
+
+@app.route("/assets/<path:filename>")
+def maison_flou_site_assets(filename):
+    return maison_flou_site_file(Path("assets") / filename)
 
 
 OFFICE_STATUS_PAGE = """
