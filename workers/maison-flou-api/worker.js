@@ -3,6 +3,8 @@ const MAX_BODY_BYTES = 16 * 1024;
 const FROM_EMAIL = "Maison Flou <atelier@maisonflou.com>";
 const REPLY_TO_EMAIL = "atelier@maisonflou.com";
 const ATELIER_EMAIL = "atelier@maisonflou.com";
+const DEFAULT_SCHEDULER_ENABLED = "false";
+const DEFAULT_SCHEDULER_MODE = "publish";
 const ALLOWED_ORIGINS = new Set([
   "https://maisonflou.com",
   "https://www.maisonflou.com",
@@ -93,6 +95,138 @@ async function appendOfficeEvent(env, eventType, subject, message, status = "ok"
     JSON.stringify(metadata)
   ).run();
   return id;
+}
+
+async function getContentSetting(env, key, fallback = "") {
+  const row = await env.DB.prepare(
+    "SELECT value FROM content_settings WHERE key = ? LIMIT 1"
+  ).bind(key).first();
+  return cleanText(row && row.value, 500) || fallback;
+}
+
+async function setContentSetting(env, key, value) {
+  await env.DB.prepare(
+    `INSERT INTO content_settings (key, value, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+  ).bind(key, String(value || ""), utcTimestamp()).run();
+}
+
+function schedulerEnabled(value) {
+  return ["1", "true", "yes", "on", "enabled"].includes(String(value || "").trim().toLowerCase());
+}
+
+async function logContentRun(env, data) {
+  const id = crypto.randomUUID();
+  await env.DB.prepare(
+    `INSERT INTO content_runs (
+      id, timestamp, status, trigger, object_number, image_url, caption, buffer_post_id, metadata
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    id,
+    utcTimestamp(),
+    cleanText(data.status, 40) || "logged",
+    cleanText(data.trigger, 80),
+    cleanText(data.object_number, 12),
+    cleanText(data.image_url, 500),
+    String(data.caption || "").slice(0, 5000),
+    cleanText(data.buffer_post_id, 120),
+    JSON.stringify(data.metadata || {})
+  ).run();
+  return id;
+}
+
+async function handleScheduled(controller, env) {
+  if (!env.DB) return;
+  await setContentSetting(env, "scheduler_last_seen_at", utcTimestamp());
+  await setContentSetting(env, "scheduler_last_cron", controller.cron || "");
+
+  const enabled = schedulerEnabled(await getContentSetting(env, "content_scheduler_enabled", DEFAULT_SCHEDULER_ENABLED));
+  if (!enabled) {
+    await appendOfficeEvent(
+      env,
+      "content.scheduler.idle",
+      "Content scheduler idle",
+      "Cron fired, but autonomous publishing is disabled in D1 settings.",
+      "info",
+      { cron: controller.cron || "", runtime: "cloudflare_worker" }
+    );
+    return;
+  }
+
+  const publishUrl = cleanText(env.POCKET_CONTENT_PUBLISH_URL, 500);
+  const token = cleanText(env.POCKET_ACCESS_TOKEN, 500);
+  if (!publishUrl || !token) {
+    await appendOfficeEvent(
+      env,
+      "content.scheduler.needs_review",
+      "Content scheduler missing origin",
+      "Autonomous publishing is enabled, but Termux publish URL or token is not configured.",
+      "needs_review",
+      { cron: controller.cron || "", runtime: "cloudflare_worker" }
+    );
+    return;
+  }
+
+  const mode = await getContentSetting(env, "content_scheduler_mode", DEFAULT_SCHEDULER_MODE);
+  const response = await fetch(publishUrl, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "X-Pocket-Token": token,
+      "User-Agent": "maison-flou-scheduler/0.1 (+https://maisonflou.com)",
+    },
+    body: JSON.stringify({
+      publish_buffer: mode !== "draft",
+      draft_buffer: mode === "draft",
+      source: "cloudflare-cron",
+      record_activity: true,
+    }),
+  });
+  const text = await response.text();
+  let payload;
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { raw: text.slice(0, 1000) };
+  }
+
+  if (!response.ok) {
+    await logContentRun(env, {
+      status: "failed",
+      trigger: "cloudflare-cron",
+      metadata: { cron: controller.cron || "", response_status: response.status, payload },
+    });
+    await appendOfficeEvent(
+      env,
+      "content.scheduler.failed",
+      "Content scheduler failed",
+      "The scheduled publishing request failed.",
+      "failed",
+      { cron: controller.cron || "", response_status: response.status, runtime: "cloudflare_worker" }
+    );
+    throw new Error(`Scheduled publish failed: ${response.status}`);
+  }
+
+  const bufferPostId = (((payload.buffer || {}).result || {}).post || {}).id || "";
+  await logContentRun(env, {
+    status: mode === "draft" ? "drafted" : "published",
+    trigger: "cloudflare-cron",
+    object_number: payload.object_number || "",
+    image_url: payload.image_url || "",
+    caption: payload.caption || "",
+    buffer_post_id: bufferPostId,
+    metadata: { cron: controller.cron || "", source: payload.image_source || "", post_record: payload.post_record || {} },
+  });
+  await appendOfficeEvent(
+    env,
+    mode === "draft" ? "content.drafted" : "content.published",
+    `Objet ${payload.object_number || ""}`.trim(),
+    mode === "draft" ? "Scheduled Buffer draft created." : "Scheduled Buffer post published.",
+    "ok",
+    { cron: controller.cron || "", buffer_post_id: bufferPostId, runtime: "cloudflare_worker" }
+  );
 }
 
 function confirmationEmail() {
@@ -375,5 +509,8 @@ async function handleRequest(request, env) {
 export default {
   async fetch(request, env) {
     return handleRequest(request, env);
+  },
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(handleScheduled(controller, env));
   },
 };

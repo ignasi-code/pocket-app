@@ -101,6 +101,46 @@ A business can be moved to another Android phone or temporarily run from another
 
 Local `.env` files are intentionally excluded from Git.
 
+## Maison Flou Current Runtime
+
+```text
+Public site
+  -> Cloudflare Pages
+
+Waitlist
+  -> Cloudflare Worker
+  -> Cloudflare D1
+  -> Resend
+  -> Gmail via Cloudflare Email Routing
+
+Office status
+  -> Termux Pocket Office
+  -> local activity JSONL
+  -> Cloudflare D1 office_events
+  -> Axiom optional sync
+
+Content publishing
+  -> Termux Gemini + Pillow re-encode/crop
+  -> local content ledger
+  -> Buffer shareNow
+```
+
+The Worker has a cron-ready `scheduled()` handler. The daily trigger is installed
+through Cloudflare, but D1 setting `content_scheduler_enabled=false` keeps it
+idle by default. Enabling it later lets the Worker call the protected Termux
+publish endpoint using `POCKET_CONTENT_PUBLISH_URL` and `POCKET_ACCESS_TOKEN`.
+
+### Rebuild Checklist
+
+1. Clone the repo on the new phone or machine.
+2. Copy or recreate `.env` from `.env.example`.
+3. Install Termux packages and Python requirements.
+4. Run `node scripts/deploy_cloudflare_worker_direct.mjs` to recreate D1 schema,
+   Worker secrets, route, and cron trigger.
+5. Start Pocket with `POCKET_HOST=0.0.0.0 POCKET_PORT=5052 python run_pocket.py`.
+6. Open `/office/maison-flou` and confirm D1 leads, office events, and Buffer
+   publishing status.
+
 ## Backlog: Office Activity Logs
 
 Each business should keep a lightweight activity ledger so we can answer:

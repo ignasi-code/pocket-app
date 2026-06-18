@@ -43,6 +43,7 @@ Control pages:
 - `/store`: Public static-first Shopify storefront prototype with home, collection, product, cart, and mock checkout.
 - `/terminal`: Token-protected browser terminal for pasted shell commands.
 - `/setup`: Save local `.env` config from the browser.
+- `/office/maison-flou`: private mobile office status with AI TLDR, UptimeRobot link, D1 waitlist leads, and content ledger.
 - `/ops`: Unlock once in the browser, or use signed HMAC requests, then run pull, restart, or pull then restart.
 - `/pull`: Run `git pull origin master`.
 - `/restart`: Start a fresh Pocket Server process in the background, then stop the old one.
@@ -62,6 +63,8 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_GEMINI_WORKDIR`: Directory where Gemini runs. Default: this repo.
 - `POCKET_GEMINI_TIMEOUT_SECONDS`: Request timeout. Default: `180`.
 - `POCKET_ACCESS_TOKEN`: Token required by `/terminal` and `/api/terminal`; optional token required by `/api/gpt`, `/fast/api/download`, and `/fast/api/upload`.
+- `POCKET_PUBLIC_BASE_URL`: Public Termux base URL when a Worker needs to call the office node.
+- `POCKET_CONTENT_PUBLISH_URL`: Optional explicit URL for Worker cron to call `/api/maison-flou/content/publish`.
 - `POCKET_MAX_PROMPT_LENGTH`: Prompt character limit. Default: `12000`.
 - `POCKET_TERMINAL_SHELL`: Shell used by `/terminal`. Default: detected `bash`, detected `sh`, then `/bin/sh`.
 - `POCKET_TERMINAL_TIMEOUT_SECONDS`: Browser terminal command timeout. Default: `120`.
@@ -77,6 +80,42 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_OPS_SESSION_SECONDS`: How long `/ops` stays unlocked in one browser after a valid token. Default: `43200`.
 - `POCKET_OPS_HMAC_SECRET`: Optional dedicated secret for signed `/ops` automation requests. If unset, `/ops` uses `POCKET_ACCESS_TOKEN` for HMAC signing.
 - `POCKET_OPS_HMAC_MAX_AGE_SECONDS`: Maximum accepted signed `/ops` timestamp age. Default: `300`.
+- `CLOUDFLARE_D1_DATABASE`: Maison Flou D1 database name. Default: `maison_flou`.
+- `CLOUDFLARE_WORKER_CRON`: Worker cron trigger. Default: `0 9 * * *` UTC.
+- `RESEND_API_KEY`: Resend send-only API key used by the Worker and local tests.
+
+## Maison Flou office loop
+
+Maison Flou now uses Cloudflare for the public hot path:
+
+```text
+maisonflou.com waitlist form
+  -> Cloudflare Worker
+  -> D1 waitlist_leads + office_events
+  -> Resend confirmation + atelier notification
+```
+
+The private Termux office view reads D1 through the Cloudflare API and merges
+edge events into the local office ledger. Generated social content still runs on
+Termux because image re-encode/crop uses Pillow and local generated assets. The
+publish endpoint is:
+
+```text
+POST /api/maison-flou/content/publish
+```
+
+It generates the image prompt, image, square JPEG derivative, caption, stores a
+local content record, and publishes directly to Buffer with `shareNow`.
+
+Deploy the Worker/D1 schema/cron with:
+
+```bash
+node scripts/deploy_cloudflare_worker_direct.mjs
+```
+
+The Worker has a `scheduled()` handler and a daily cron. Its D1 setting
+`content_scheduler_enabled` defaults to `false`, so cron ticks are logged but do
+not publish until explicitly enabled.
 
 ## Store prototype
 

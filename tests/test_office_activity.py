@@ -40,7 +40,8 @@ class OfficeActivityTest(unittest.TestCase):
                     timestamp="2026-06-18T08:05:00Z",
                 )
 
-                response = self.client.get("/api/office/maison-flou/status?day=2026-06-18")
+                with patch("app.read_maison_flou_edge_events", return_value=[]):
+                    response = self.client.get("/api/office/maison-flou/status?day=2026-06-18")
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
@@ -50,6 +51,45 @@ class OfficeActivityTest(unittest.TestCase):
         self.assertEqual(data["counts"]["published"], 1)
         self.assertEqual(data["counts"]["leads"], 1)
         self.assertEqual(data["latest_events"][0]["subject"], "Lead 001")
+
+    def test_activity_log_merges_cloudflare_worker_events(self):
+        edge_events = [{
+            "id": "edge-1",
+            "timestamp": "2026-06-18T09:00:00Z",
+            "business_id": "maison-flou",
+            "event_type": "lead.waitlist.captured",
+            "status": "ok",
+            "subject": "Registry request captured",
+            "message": "Stored in D1",
+            "metadata": {"runtime": "cloudflare_worker"},
+        }]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch("app.BUSINESSES_DIR", Path(temp_dir)):
+                with patch("app.read_maison_flou_edge_events", return_value=edge_events):
+                    response = self.client.get("/api/office/maison-flou/status?day=2026-06-18")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["event_count"], 1)
+        self.assertEqual(data["counts"]["leads"], 1)
+        self.assertEqual(data["latest_events"][0]["metadata"]["runtime"], "cloudflare_worker")
+
+    def test_waitlist_admin_masks_email_by_default(self):
+        with patch("app.read_maison_flou_waitlist_leads", return_value=[{
+            "email": "i*****i@example.com",
+            "email_revealed": False,
+            "email_hash": "hash",
+            "timestamp": "2026-06-18T09:00:00Z",
+        }]) as read_leads:
+            response = self.client.get("/api/maison-flou/waitlist/leads")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertTrue(data["masked"])
+        self.assertEqual(data["leads"][0]["email"], "i*****i@example.com")
+        read_leads.assert_called_once()
+        self.assertFalse(read_leads.call_args.kwargs["reveal"])
 
     def test_activity_api_requires_token_when_configured(self):
         pocket.POCKET_ACCESS_TOKEN = "secret"
@@ -69,8 +109,9 @@ class OfficeActivityTest(unittest.TestCase):
                     message="Buffer accepted",
                     timestamp=pocket.office_utc_timestamp(),
                 )
-                with patch("app.run_gemini_text", side_effect=pocket.GeminiCliError("no ai")):
-                    response = self.client.get("/api/office/maison-flou/tldr")
+                with patch("app.read_maison_flou_edge_events", return_value=[]):
+                    with patch("app.run_gemini_text", side_effect=pocket.GeminiCliError("no ai")):
+                        response = self.client.get("/api/office/maison-flou/tldr")
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()

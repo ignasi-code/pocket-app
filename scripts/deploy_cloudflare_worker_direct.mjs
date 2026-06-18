@@ -38,7 +38,13 @@ function loadConfig() {
     routePattern: cleanValue(env.CLOUDFLARE_WORKER_ROUTE) || "maisonflou.com/api/maison-flou/waitlist*",
     workerPath: path.resolve(ROOT_DIR, cleanValue(env.CLOUDFLARE_WORKER_PATH) || "workers/maison-flou-api/worker.js"),
     d1DatabaseName: cleanValue(env.CLOUDFLARE_D1_DATABASE) || "maison_flou",
+    workerCron: cleanValue(env.CLOUDFLARE_WORKER_CRON) || "0 9 * * *",
     resendApiKey: cleanValue(env.RESEND_API_KEY),
+    pocketAccessToken: cleanValue(env.POCKET_ACCESS_TOKEN),
+    pocketContentPublishUrl: cleanValue(env.POCKET_CONTENT_PUBLISH_URL)
+      || (cleanValue(env.POCKET_PUBLIC_BASE_URL)
+        ? `${cleanValue(env.POCKET_PUBLIC_BASE_URL).replace(/\/+$/, "")}/api/maison-flou/content/publish`
+        : ""),
     originUrl: cleanValue(env.MAISON_FLOU_WAITLIST_ORIGIN_URL)
       || "https://changes-sic-dans-directive.trycloudflare.com/api/maison-flou/waitlist",
   };
@@ -147,6 +153,25 @@ async function migrateD1(config, databaseId) {
       metadata TEXT NOT NULL DEFAULT '{}'
     )`,
     "CREATE INDEX IF NOT EXISTS idx_office_events_business_timestamp ON office_events(business_id, timestamp)",
+    `CREATE TABLE IF NOT EXISTS content_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL DEFAULT ''
+    )`,
+    `CREATE TABLE IF NOT EXISTS content_runs (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT NOT NULL,
+      status TEXT NOT NULL,
+      trigger TEXT NOT NULL DEFAULT '',
+      object_number TEXT NOT NULL DEFAULT '',
+      image_url TEXT NOT NULL DEFAULT '',
+      caption TEXT NOT NULL DEFAULT '',
+      buffer_post_id TEXT NOT NULL DEFAULT '',
+      metadata TEXT NOT NULL DEFAULT '{}'
+    )`,
+    "CREATE INDEX IF NOT EXISTS idx_content_runs_timestamp ON content_runs(timestamp)",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_enabled', 'false', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_mode', 'publish', datetime('now'))",
   ];
   for (const statement of statements) {
     if (statement.startsWith("ALTER TABLE")) {
@@ -193,6 +218,21 @@ async function putWorkerSecret(config, name, value) {
   });
 }
 
+async function putOptionalWorkerSecret(config, name, value) {
+  if (!value) return null;
+  return putWorkerSecret(config, name, value);
+}
+
+async function upsertSchedules(config) {
+  if (!config.workerCron) return null;
+  return apiRequest(`/accounts/${config.accountId}/workers/scripts/${config.scriptName}/schedules`, {
+    token: config.apiToken,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify([{ cron: config.workerCron }]),
+  });
+}
+
 async function upsertRoute(config) {
   const routes = await apiRequest(`/zones/${config.zoneId}/workers/routes`, {
     token: config.apiToken,
@@ -235,16 +275,21 @@ async function main() {
   await migrateD1(config, databaseId);
   await putWorkerScript(config, databaseId);
   await putWorkerSecret(config, "RESEND_API_KEY", config.resendApiKey);
+  await putOptionalWorkerSecret(config, "POCKET_ACCESS_TOKEN", config.pocketAccessToken);
+  await putOptionalWorkerSecret(config, "POCKET_CONTENT_PUBLISH_URL", config.pocketContentPublishUrl);
   const route = await upsertRoute(config);
+  const schedules = await upsertSchedules(config);
   console.log(JSON.stringify({
     script: config.scriptName,
     route_pattern: config.routePattern,
+    cron: config.workerCron,
     d1_database: {
       name: config.d1DatabaseName,
       id: databaseId,
       created: Boolean(database.created),
     },
     route,
+    schedules,
   }, null, 2));
 }
 

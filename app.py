@@ -235,6 +235,7 @@ MAISON_FLOU_CATEGORY_CONFIG_PATH = MAISON_FLOU_PROMPTS_DIR / "object-categories.
 MAISON_FLOU_CATEGORY_HISTORY_PATH = MAISON_FLOU_RUNTIME_DIR / "category-history.json"
 MAISON_FLOU_IMAGES_DIR = MAISON_FLOU_RUNTIME_DIR / "images"
 MAISON_FLOU_WAITLIST_PATH = MAISON_FLOU_RUNTIME_DIR / "waitlist.jsonl"
+MAISON_FLOU_POSTS_PATH = MAISON_FLOU_RUNTIME_DIR / "content-posts.jsonl"
 MAISON_FLOU_WAITLIST_MAX_BYTES = int(os.environ.get("MAISON_FLOU_WAITLIST_MAX_BYTES", str(16 * 1024)))
 MAISON_FLOU_DEFAULT_IMAGE_WIDTH = 1080
 MAISON_FLOU_DEFAULT_IMAGE_HEIGHT = 1350
@@ -664,6 +665,39 @@ def office_event_display(event):
     return subject or message or event.get("event_type", "office.event")
 
 
+def append_runtime_jsonl(path, record):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as log_file:
+        log_file.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    os.chmod(path, 0o600)
+    return record
+
+
+def read_runtime_jsonl(path, limit=None):
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+
+    if limit:
+        try:
+            limit = max(1, int(limit))
+        except (TypeError, ValueError):
+            limit = 50
+        lines = lines[-limit * 2:]
+
+    records = []
+    for line in lines:
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict):
+            records.append(record)
+
+    return records[-limit:] if limit else records
+
+
 def office_event_counts(events):
     counts = {
         "generated": 0,
@@ -704,6 +738,9 @@ def build_office_status_payload(business_id, day=None, limit=None):
     business_id = resolve_business_id(business_id)
     day = clean_config_value(day) or office_today_utc()
     events = read_office_activity_events(business_id, limit or OFFICE_STATUS_EVENT_LIMIT)
+    if business_id == MAISON_FLOU_BUSINESS_ID:
+        events = [*events, *read_maison_flou_edge_events(limit or OFFICE_STATUS_EVENT_LIMIT)]
+        events = sorted(events, key=lambda event: clean_config_value(event.get("timestamp")))
     day_events = [event for event in events if office_event_day(event) == day]
     latest_events = list(reversed(day_events[-12:]))
     counts = office_event_counts(day_events)
@@ -838,6 +875,152 @@ def generate_office_tldr(summary, refresh=False):
 
 class AxiomApiError(RuntimeError):
     pass
+
+
+class CloudflareApiError(RuntimeError):
+    pass
+
+
+def cloudflare_api_request(method, path, payload=None):
+    if not CLOUDFLARE_API_TOKEN:
+        raise CloudflareApiError("CLOUDFLARE_API_TOKEN is not configured.")
+    if not CLOUDFLARE_ACCOUNT_ID:
+        raise CloudflareApiError("CLOUDFLARE_ACCOUNT_ID is not configured.")
+
+    url = f"https://api.cloudflare.com/client/v4/{path.lstrip('/')}"
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    headers = {
+        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+        "Content-Type": "application/json",
+        "User-Agent": "pocket-office-cloudflare/0.1",
+    }
+    api_request = UrlRequest(url, data=body, headers=headers, method=method.upper())
+    try:
+        with urlopen(api_request, timeout=30) as response:
+            raw = response.read().decode("utf-8")
+    except HTTPError as exc:
+        detail = read_http_error(exc)
+        raise CloudflareApiError(f"Cloudflare HTTP {exc.code}: {detail[:1000]}") from exc
+    except URLError as exc:
+        raise CloudflareApiError(f"Cloudflare network error: {exc}") from exc
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise CloudflareApiError(f"Cloudflare returned invalid JSON: {raw[:500]}") from exc
+    if data.get("success") is False:
+        raise CloudflareApiError(f"Cloudflare API error: {json.dumps(data.get('errors') or data, ensure_ascii=True)[:1000]}")
+    return data.get("result")
+
+
+def maison_flou_d1_database_name():
+    return clean_config_value(os.environ.get("CLOUDFLARE_D1_DATABASE")) or "maison_flou"
+
+
+def maison_flou_d1_database_id():
+    databases = cloudflare_api_request("GET", f"/accounts/{CLOUDFLARE_ACCOUNT_ID}/d1/database")
+    for database in databases or []:
+        if isinstance(database, dict) and database.get("name") == maison_flou_d1_database_name():
+            return database.get("uuid") or database.get("id")
+    raise CloudflareApiError(f"D1 database not found: {maison_flou_d1_database_name()}")
+
+
+def maison_flou_d1_query(sql, params=None):
+    database_id = maison_flou_d1_database_id()
+    result = cloudflare_api_request(
+        "POST",
+        f"/accounts/{CLOUDFLARE_ACCOUNT_ID}/d1/database/{database_id}/query",
+        {"sql": sql, "params": list(params or [])},
+    )
+    if isinstance(result, list) and result:
+        return result[0].get("results") or []
+    if isinstance(result, dict):
+        return result.get("results") or []
+    return []
+
+
+def parse_json_object(value):
+    if isinstance(value, dict):
+        return value
+    try:
+        data = json.loads(str(value or "{}"))
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def mask_email_address(email):
+    email = clean_config_value(email)
+    if "@" not in email:
+        return email
+    local, domain = email.split("@", 1)
+    if len(local) <= 1:
+        masked_local = "*"
+    elif len(local) == 2:
+        masked_local = f"{local[0]}*"
+    else:
+        masked_local = f"{local[0]}{'*' * min(len(local) - 2, 6)}{local[-1]}"
+    return f"{masked_local}@{domain}"
+
+
+def read_maison_flou_edge_events(limit=80):
+    try:
+        rows = maison_flou_d1_query(
+            """SELECT id, timestamp, business_id, event_type, status, subject, message, metadata
+               FROM office_events
+               WHERE business_id = ?
+               ORDER BY timestamp DESC
+               LIMIT ?""",
+            [MAISON_FLOU_BUSINESS_ID, int(limit or 80)],
+        )
+    except (CloudflareApiError, ValueError):
+        return []
+
+    events = []
+    for row in reversed(rows):
+        if not isinstance(row, dict):
+            continue
+        events.append({
+            "id": clean_config_value(row.get("id")),
+            "timestamp": clean_config_value(row.get("timestamp")),
+            "business_id": clean_config_value(row.get("business_id")) or MAISON_FLOU_BUSINESS_ID,
+            "event_type": sanitize_activity_event_type(row.get("event_type")),
+            "status": sanitize_activity_status(row.get("status")),
+            "subject": clean_config_value(row.get("subject")),
+            "message": clean_config_value(row.get("message")),
+            "metadata": {**parse_json_object(row.get("metadata")), "runtime": "cloudflare_worker"},
+        })
+    return events
+
+
+def read_maison_flou_waitlist_leads(limit=50, reveal=False):
+    rows = maison_flou_d1_query(
+        """SELECT id, timestamp, email, email_hash, instagram, source,
+                  confirmation_status, confirmation_sent_at, notification_status, notification_sent_at
+           FROM waitlist_leads
+           ORDER BY timestamp DESC
+           LIMIT ?""",
+        [max(1, min(int(limit or 50), 250))],
+    )
+    leads = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        email = clean_config_value(row.get("email"))
+        leads.append({
+            "id": clean_config_value(row.get("id")),
+            "timestamp": clean_config_value(row.get("timestamp")),
+            "email": email if reveal else mask_email_address(email),
+            "email_revealed": bool(reveal),
+            "email_hash": clean_config_value(row.get("email_hash")),
+            "instagram": clean_config_value(row.get("instagram")),
+            "source": clean_config_value(row.get("source")),
+            "confirmation_status": clean_config_value(row.get("confirmation_status")),
+            "confirmation_sent_at": clean_config_value(row.get("confirmation_sent_at")),
+            "notification_status": clean_config_value(row.get("notification_status")),
+            "notification_sent_at": clean_config_value(row.get("notification_sent_at")),
+        })
+    return leads
 
 
 def sanitize_axiom_dataset_name(value):
@@ -1214,6 +1397,24 @@ def square_maison_flou_image(image_info, size=None, quality=None):
         "quality": quality,
         "method": "square_screenshot_copy",
     }
+
+
+def maison_flou_post_record_id(record):
+    raw = json.dumps(record, ensure_ascii=True, sort_keys=True)
+    return hashlib.sha256(f"{raw}:{time.time_ns()}".encode("utf-8")).hexdigest()[:16]
+
+
+def append_maison_flou_post_record(record):
+    next_record = dict(record or {})
+    next_record.setdefault("timestamp", office_utc_timestamp())
+    next_record.setdefault("business_id", MAISON_FLOU_BUSINESS_ID)
+    next_record["id"] = maison_flou_post_record_id(next_record)
+    return append_runtime_jsonl(MAISON_FLOU_POSTS_PATH, next_record)
+
+
+def read_maison_flou_post_records(limit=30):
+    records = read_runtime_jsonl(MAISON_FLOU_POSTS_PATH, limit=limit)
+    return list(reversed(records))
 
 
 def setup_is_open():
@@ -4356,6 +4557,12 @@ OFFICE_STATUS_PAGE = """
     .event-main { font-size: 14px; line-height: 1.35; }
     .event-main strong { display: block; font-size: 14px; }
     .event-main span { display: block; color: #6d675e; margin-top: 2px; }
+    .compact-list { display: grid; gap: 1px; border: 1px solid #d9d2c6; border-radius: 8px; overflow: hidden; background: #d9d2c6; }
+    .compact-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; padding: 12px; background: #fffdf8; font-size: 14px; line-height: 1.35; }
+    .compact-row strong { display: block; font-size: 14px; overflow-wrap: anywhere; }
+    .compact-row span { display: block; color: #6d675e; font-size: 12px; margin-top: 3px; }
+    .small-action { min-height: 32px; padding: 6px 9px; font-size: 12px; }
+    a.inline-link { color: inherit; text-decoration: none; border-bottom: 1px solid #8b8478; }
     .toolbar { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
     button, input {
       min-height: 42px;
@@ -4417,8 +4624,30 @@ OFFICE_STATUS_PAGE = """
     </section>
 
     <section>
+      <p class="label">Monitoring</p>
+      {% if uptimerobot_status_page_url %}
+        <div class="status-line"><span class="dot"></span><a class="inline-link" href="{{ uptimerobot_status_page_url }}" target="_blank" rel="noopener">Open UptimeRobot status</a></div>
+      {% else %}
+        <div class="empty">UptimeRobot status page is not configured.</div>
+      {% endif %}
+    </section>
+
+    <section>
       <p class="label">Latest Actions</p>
       <div class="actions" id="actions"></div>
+    </section>
+
+    <section>
+      <p class="label">Waitlist</p>
+      <div class="compact-list" id="waitlist"></div>
+      <div class="toolbar">
+        <button type="button" id="reveal-leads">Reveal emails</button>
+      </div>
+    </section>
+
+    <section>
+      <p class="label">Content Ledger</p>
+      <div class="compact-list" id="posts"></div>
     </section>
   </main>
   <script>
@@ -4484,6 +4713,41 @@ OFFICE_STATUS_PAGE = """
         </div>
       `).join("");
     }
+    function renderWaitlist(leads) {
+      const target = document.getElementById("waitlist");
+      if (!leads.length) {
+        target.innerHTML = `<div class="compact-row"><div><strong>No leads yet.</strong><span>D1 waitlist is empty.</span></div></div>`;
+        return;
+      }
+      target.innerHTML = leads.map(lead => `
+        <div class="compact-row">
+          <div>
+            <strong>${escapeHtml(lead.email || lead.email_hash || "lead")}</strong>
+            <span>${escapeHtml(timeLabel(lead.timestamp))} · ${escapeHtml(lead.instagram ? "@" + lead.instagram : "no instagram")} · email ${escapeHtml(lead.confirmation_status || "unknown")}</span>
+          </div>
+          <button class="small-action" type="button" data-copy="${escapeHtml(lead.email || "")}">Copy</button>
+        </div>
+      `).join("");
+      target.querySelectorAll("[data-copy]").forEach(button => {
+        button.addEventListener("click", () => navigator.clipboard && navigator.clipboard.writeText(button.dataset.copy || ""));
+      });
+    }
+    function renderPosts(posts) {
+      const target = document.getElementById("posts");
+      if (!posts.length) {
+        target.innerHTML = `<div class="compact-row"><div><strong>No post records yet.</strong><span>Generated content will appear here.</span></div></div>`;
+        return;
+      }
+      target.innerHTML = posts.map(post => `
+        <div class="compact-row">
+          <div>
+            <strong>Objet ${escapeHtml(post.object_number || "")}</strong>
+            <span>${escapeHtml(post.buffer_status || post.status || "stored")} · ${escapeHtml(post.image_source || "")}</span>
+          </div>
+          ${post.image_url ? `<a class="small-action inline-link" href="${escapeHtml(post.image_url)}" target="_blank" rel="noopener">Image</a>` : ""}
+        </div>
+      `).join("");
+    }
     function renderStatus(data) {
       authForm.classList.remove("visible");
       document.getElementById("day").textContent = data.day || "Today";
@@ -4507,6 +4771,14 @@ OFFICE_STATUS_PAGE = """
       document.getElementById("tldr").textContent = data.text || "No summary available.";
       document.getElementById("tldr-source").textContent = data.source ? `${data.source}${data.cached ? " · cached" : ""}` : "";
     }
+    async function loadWaitlist(reveal = false) {
+      const data = await fetchJson(`/api/maison-flou/waitlist/leads${reveal ? "?reveal=1" : ""}`);
+      renderWaitlist(data.leads || []);
+    }
+    async function loadPosts() {
+      const data = await fetchJson("/api/maison-flou/posts");
+      renderPosts(data.posts || []);
+    }
     authForm.addEventListener("submit", event => {
       event.preventDefault();
       localStorage.setItem(storageKey, tokenInput.value);
@@ -4518,10 +4790,13 @@ OFFICE_STATUS_PAGE = """
       document.getElementById("tldr").textContent = "Refreshing...";
       loadTldr(true).catch(error => document.getElementById("tldr").textContent = error.message);
     });
+    document.getElementById("reveal-leads").addEventListener("click", () => loadWaitlist(true));
     loadStatus().then(() => loadTldr(false)).catch(error => {
       document.getElementById("status").textContent = error.message;
       if (authRequired) authForm.classList.add("visible");
     });
+    loadWaitlist(false).catch(() => {});
+    loadPosts().catch(() => {});
   </script>
 </body>
 </html>
@@ -4546,6 +4821,7 @@ def office_status_page(business_id):
         business_id=business_id,
         business_label=business_id.replace("-", " ").title(),
         auth_required=bool(POCKET_ACCESS_TOKEN),
+        uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
     )
 
 
@@ -5296,7 +5572,35 @@ def maison_flou_media(filename):
     return send_file(image_path)
 
 
+@app.route("/api/maison-flou/waitlist/leads")
+def maison_flou_waitlist_leads_api():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    try:
+        limit = max(1, min(int(request.args.get("limit") or 30), 250))
+    except (TypeError, ValueError):
+        limit = 30
+    reveal = request.args.get("reveal") == "1"
+    try:
+        leads = read_maison_flou_waitlist_leads(limit=limit, reveal=reveal)
+    except CloudflareApiError as exc:
+        return jsonify({"error": str(exc), "leads": []}), 502
+    return jsonify({"business_id": MAISON_FLOU_BUSINESS_ID, "leads": leads, "masked": not reveal})
+
+
+@app.route("/api/maison-flou/posts")
+def maison_flou_posts_api():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    try:
+        limit = max(1, min(int(request.args.get("limit") or 20), 100))
+    except (TypeError, ValueError):
+        limit = 20
+    return jsonify({"business_id": MAISON_FLOU_BUSINESS_ID, "posts": read_maison_flou_post_records(limit=limit)})
+
+
 @app.route("/api/maison-flou/content", methods=["POST"])
+@app.route("/api/maison-flou/content/publish", methods=["POST"])
 def maison_flou_content():
     if access_denied():
         return jsonify({"error": "Invalid Pocket access token."}), 401
@@ -5320,6 +5624,9 @@ def maison_flou_content():
     image_prompt = clean_ai_output(data.get("image_prompt"))
     requested_category = clean_config_value(data.get("object_category") or data.get("category"))
     record_activity = request_bool(data.get("record_activity"), default=True)
+    publish_buffer = request_bool(data.get("publish_buffer"), default=request.path.endswith("/publish"))
+    draft_buffer = request_bool(data.get("draft_buffer"), default=False)
+    buffer_requested = publish_buffer or draft_buffer
     object_category = None
 
     try:
@@ -5408,15 +5715,15 @@ def maison_flou_content():
             "method": processed_image["method"],
         }
 
-    if request_bool(data.get("draft_buffer"), default=False):
+    if buffer_requested:
         if not BUFFER_API_KEY:
             return jsonify({"error": "BUFFER_API_KEY is not configured."}), 400
         business = get_business_buffer_config(business_id)
         channel_id = clean_config_value(data.get("channel_id")) or business["channel_id"]
-        mode = clean_config_value(data.get("mode")) or business["default_mode"]
+        mode = clean_config_value(data.get("mode")) or ("shareNow" if publish_buffer else business["default_mode"])
         scheduling_type = clean_config_value(data.get("scheduling_type")) or "automatic"
         due_at = clean_config_value(data.get("due_at"))
-        save_to_draft = request_bool(data.get("save_to_draft"), default=True)
+        save_to_draft = request_bool(data.get("save_to_draft"), default=not publish_buffer)
 
         try:
             buffer_result = create_post(
@@ -5439,6 +5746,7 @@ def maison_flou_content():
 
         response["buffer"] = {
             "channel_id": channel_id,
+            "mode": mode,
             "save_to_draft": save_to_draft,
             "result": buffer_result,
         }
@@ -5452,8 +5760,9 @@ def maison_flou_content():
             "image_prompt": image_prompt,
             "image_url": image_url,
             "image_source": image_source,
-            "drafted_to_buffer": bool(response.get("buffer")),
-        })
+                "drafted_to_buffer": bool(response.get("buffer") and response["buffer"].get("save_to_draft")),
+                "published_to_buffer": bool(response.get("buffer") and not response["buffer"].get("save_to_draft")),
+            })
 
     if record_activity:
         safe_append_office_activity_event(
@@ -5471,17 +5780,48 @@ def maison_flou_content():
             },
         )
         if response.get("buffer"):
+            event_type = "content.drafted" if response["buffer"].get("save_to_draft") else "content.published"
+            event_message = "Buffer draft created" if response["buffer"].get("save_to_draft") else "Buffer post published"
             safe_append_office_activity_event(
                 business_id,
-                "content.drafted",
+                event_type,
                 subject=f"Objet {object_number}",
-                message="Buffer draft created",
+                message=event_message,
                 metadata={
                     "object_number": object_number,
                     "image_url": image_url,
+                    "mode": response["buffer"].get("mode"),
+                    "save_to_draft": response["buffer"].get("save_to_draft"),
                     "buffer_post_id": (((response.get("buffer") or {}).get("result") or {}).get("post") or {}).get("id"),
                 },
             )
+
+    post_record = append_maison_flou_post_record({
+        "object_number": object_number,
+        "status": "published" if response.get("buffer") and not response["buffer"].get("save_to_draft") else "generated",
+        "buffer_status": (
+            "drafted" if response.get("buffer") and response["buffer"].get("save_to_draft")
+            else "published" if response.get("buffer")
+            else "not_sent"
+        ),
+        "image_prompt": image_prompt,
+        "caption": caption,
+        "image_url": image_url,
+        "image_source": image_source,
+        "image_width": image_width,
+        "image_height": image_height,
+        "image_model": image_model,
+        "object_category": public_maison_flou_category(object_category),
+        "original_image_file": response.get("original_image_file"),
+        "image_file": response.get("image_file"),
+        "buffer": response.get("buffer"),
+    })
+    response["post_record"] = {
+        "id": post_record["id"],
+        "timestamp": post_record["timestamp"],
+        "status": post_record["status"],
+        "buffer_status": post_record["buffer_status"],
+    }
 
     if auto_sequence:
         save_maison_flou_sequence(int(object_number))
