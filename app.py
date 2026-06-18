@@ -234,6 +234,8 @@ MAISON_FLOU_SEQUENCE_PATH = MAISON_FLOU_RUNTIME_DIR / "object-sequence.txt"
 MAISON_FLOU_CATEGORY_CONFIG_PATH = MAISON_FLOU_PROMPTS_DIR / "object-categories.json"
 MAISON_FLOU_CATEGORY_HISTORY_PATH = MAISON_FLOU_RUNTIME_DIR / "category-history.json"
 MAISON_FLOU_IMAGES_DIR = MAISON_FLOU_RUNTIME_DIR / "images"
+MAISON_FLOU_WAITLIST_PATH = MAISON_FLOU_RUNTIME_DIR / "waitlist.jsonl"
+MAISON_FLOU_WAITLIST_MAX_BYTES = int(os.environ.get("MAISON_FLOU_WAITLIST_MAX_BYTES", str(16 * 1024)))
 MAISON_FLOU_DEFAULT_IMAGE_WIDTH = 1080
 MAISON_FLOU_DEFAULT_IMAGE_HEIGHT = 1350
 MAISON_FLOU_DEFAULT_IMAGE_MODEL = clean_config_value(os.environ.get("MAISON_FLOU_IMAGE_MODEL")) or "gemini-3.1-flash-image"
@@ -4896,6 +4898,207 @@ def send_resend_email(to_email, subject, html_body, text_body="", from_email=Non
         return json.loads(raw)
     except json.JSONDecodeError as exc:
         raise ResendApiError(f"Resend returned invalid JSON: {raw[:500]}", 502) from exc
+
+
+def maison_flou_public_json_response(payload=None, status=200):
+    response = jsonify(payload or {})
+    response.status_code = status
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def normalize_waitlist_email(value):
+    email = clean_config_value(value).lower()
+    if not email or len(email) > 254:
+        return ""
+    if not re.fullmatch(r"[^@\s]{1,64}@[^@\s]{1,255}\.[^@\s]{2,24}", email):
+        return ""
+    return email
+
+
+def sanitize_waitlist_text(value, limit=160):
+    text = re.sub(r"[\x00-\x1f\x7f]+", " ", clean_config_value(value))
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:limit].strip()
+
+
+def waitlist_email_hash(email):
+    return hashlib.sha256(email.encode("utf-8")).hexdigest()[:16]
+
+
+def read_maison_flou_waitlist_entries():
+    try:
+        lines = MAISON_FLOU_WAITLIST_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+
+    entries = []
+    for line in lines:
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(entry, dict):
+            entries.append(entry)
+    return entries
+
+
+def find_maison_flou_waitlist_entry(email):
+    email_hash = waitlist_email_hash(email)
+    for entry in reversed(read_maison_flou_waitlist_entries()):
+        if entry.get("email_hash") == email_hash or normalize_waitlist_email(entry.get("email")) == email:
+            return entry
+    return None
+
+
+def append_maison_flou_waitlist_entry(entry):
+    MAISON_FLOU_WAITLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with MAISON_FLOU_WAITLIST_PATH.open("a", encoding="utf-8") as log_file:
+        log_file.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+    os.chmod(MAISON_FLOU_WAITLIST_PATH, 0o600)
+
+
+def build_maison_flou_waitlist_confirmation():
+    html_body = """
+<!doctype html>
+<html>
+  <body style="margin:0;background:#f4f1ea;color:#161513;font-family:Georgia,'Times New Roman',serif;">
+    <div style="max-width:560px;margin:0 auto;padding:42px 24px;">
+      <div style="font-size:13px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:46px;">MAISON FLOU</div>
+      <h1 style="font-size:30px;line-height:1.05;font-weight:400;margin:0 0 22px;">Registry request received.</h1>
+      <p style="font:15px/1.7 Arial,sans-serif;color:#5f594f;margin:0 0 22px;">Your request for Collection 01 has entered the atelier register.</p>
+      <p style="font:15px/1.7 Arial,sans-serif;color:#5f594f;margin:0 0 34px;">Allocation remains strictly limited. Further access will be issued from the atelier when available.</p>
+      <p style="font:12px/1.6 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;margin:0;">maisonflou.com</p>
+    </div>
+  </body>
+</html>
+""".strip()
+    text_body = (
+        "MAISON FLOU\n\n"
+        "Registry request received.\n\n"
+        "Your request for Collection 01 has entered the atelier register.\n\n"
+        "Allocation remains strictly limited. Further access will be issued from the atelier when available.\n\n"
+        "maisonflou.com"
+    )
+    return html_body, text_body
+
+
+def build_maison_flou_waitlist_notification(entry):
+    email = html_lib.escape(entry.get("email", ""))
+    instagram = html_lib.escape(entry.get("instagram", "") or "not provided")
+    source = html_lib.escape(entry.get("source", "") or "maisonflou.com")
+    html_body = (
+        "<p>New Maison Flou registry request.</p>"
+        f"<p>Email: {email}<br>Instagram: {instagram}<br>Source: {source}</p>"
+    )
+    text_body = (
+        "New Maison Flou registry request.\n\n"
+        f"Email: {entry.get('email', '')}\n"
+        f"Instagram: {entry.get('instagram', '') or 'not provided'}\n"
+        f"Source: {entry.get('source', '') or 'maisonflou.com'}"
+    )
+    return html_body, text_body
+
+
+@app.route("/api/maison-flou/waitlist", methods=["OPTIONS", "POST"])
+def maison_flou_waitlist():
+    if request.method == "OPTIONS":
+        return maison_flou_public_json_response({}, status=204)
+    if request.content_length and request.content_length > MAISON_FLOU_WAITLIST_MAX_BYTES:
+        return maison_flou_public_json_response({"ok": False, "error": "payload_too_large"}, status=413)
+
+    data = request.get_json(silent=True) if request.is_json else request.form.to_dict()
+    data = data if isinstance(data, dict) else {}
+    if any(sanitize_waitlist_text(data.get(field), 80) for field in {"website", "url", "company"}):
+        return maison_flou_public_json_response({"ok": True, "status": "received"})
+
+    email = normalize_waitlist_email(data.get("email"))
+    if not email:
+        return maison_flou_public_json_response({"ok": False, "error": "valid_email_required"}, status=400)
+
+    email_hash = waitlist_email_hash(email)
+    instagram = sanitize_waitlist_text(data.get("instagram"), 80).lstrip("@")
+    source = sanitize_waitlist_text(data.get("source"), 120) or "maisonflou.com"
+    existing = find_maison_flou_waitlist_entry(email)
+    if existing:
+        safe_append_office_activity_event(
+            MAISON_FLOU_BUSINESS_ID,
+            "lead.waitlist.duplicate",
+            subject="Registry request duplicate",
+            message="A repeated Maison Flou registry request was received.",
+            status="info",
+            metadata={"email_hash": email_hash, "source": source},
+        )
+        return maison_flou_public_json_response({"ok": True, "status": "already_registered"})
+
+    entry = {
+        "timestamp": office_utc_timestamp(),
+        "email": email,
+        "email_hash": email_hash,
+        "instagram": instagram,
+        "source": source,
+        "user_agent": sanitize_waitlist_text(request.headers.get("User-Agent"), 220),
+        "remote_addr_hash": waitlist_email_hash(clean_config_value(request.headers.get("CF-Connecting-IP") or request.remote_addr)),
+    }
+    append_maison_flou_waitlist_entry(entry)
+
+    html_body, text_body = build_maison_flou_waitlist_confirmation()
+    try:
+        result = send_resend_email(
+            email,
+            "MAISON FLOU registry request received",
+            html_body,
+            text_body=text_body,
+        )
+    except ResendApiError as exc:
+        safe_append_office_activity_event(
+            MAISON_FLOU_BUSINESS_ID,
+            "lead.waitlist.email_failed",
+            subject="Registry confirmation failed",
+            message="A Maison Flou registry request was stored but confirmation email failed.",
+            status="failed",
+            metadata={"email_hash": email_hash, "source": source, "error": str(exc)[:500]},
+        )
+        return maison_flou_public_json_response({"ok": False, "error": "confirmation_failed"}, status=502)
+
+    safe_append_office_activity_event(
+        MAISON_FLOU_BUSINESS_ID,
+        "lead.waitlist.captured",
+        subject="Registry request captured",
+        message="A Maison Flou registry request was stored and confirmation email was sent.",
+        status="ok",
+        metadata={
+            "email_hash": email_hash,
+            "has_instagram": bool(instagram),
+            "source": source,
+            "resend_id": result.get("id"),
+        },
+    )
+
+    notify_email = RESEND_REPLY_TO_EMAIL or "atelier@maisonflou.com"
+    if notify_email:
+        notify_html, notify_text = build_maison_flou_waitlist_notification(entry)
+        try:
+            send_resend_email(
+                notify_email,
+                "New Maison Flou registry request",
+                notify_html,
+                text_body=notify_text,
+            )
+        except ResendApiError as exc:
+            safe_append_office_activity_event(
+                MAISON_FLOU_BUSINESS_ID,
+                "lead.waitlist.notify_failed",
+                subject="Registry notification failed",
+                message="Confirmation was sent, but the atelier notification failed.",
+                status="needs_review",
+                metadata={"email_hash": email_hash, "error": str(exc)[:500]},
+            )
+
+    return maison_flou_public_json_response({"ok": True, "status": "registered"})
 
 
 @app.route("/api/buffer/status")

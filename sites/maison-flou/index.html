@@ -189,6 +189,63 @@
       max-width: 840px;
     }
 
+    .registry-form {
+      display: grid;
+      gap: 10px;
+      width: min(100%, 390px);
+      justify-self: start;
+    }
+
+    .registry-form input {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid var(--ink);
+      border-radius: 0;
+      background: transparent;
+      color: var(--ink);
+      padding: 0 14px;
+      font: 13px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: .04em;
+    }
+
+    .registry-form input::placeholder { color: rgba(22, 21, 19, .54); }
+
+    .registry-form button {
+      min-height: 48px;
+      border: 1px solid var(--ink);
+      border-radius: 0;
+      background: var(--ink);
+      color: var(--white);
+      padding: 0 18px;
+      cursor: pointer;
+      font: 12px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .registry-form button:disabled {
+      cursor: wait;
+      opacity: .68;
+    }
+
+    .registry-status {
+      min-height: 18px;
+      margin: 0;
+      color: var(--muted);
+      font: 12px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .trap,
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
     .registry-link {
       justify-self: start;
       min-height: 48px;
@@ -284,7 +341,17 @@
         <h2>Allocation for Collection 01 is strictly limited.</h2>
         <p>Registry access is reviewed manually while the atelier remains closed to public commerce.</p>
       </div>
-      <a class="registry-link" href="mailto:registry@maisonflou.com?subject=Registry%20access">Request Access</a>
+      <form class="registry-form" id="registry-form" action="https://changes-sic-dans-directive.trycloudflare.com/api/maison-flou/waitlist" method="post">
+        <label class="visually-hidden" for="registry-email">Email address</label>
+        <input id="registry-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="Email address" required>
+        <label class="visually-hidden" for="registry-instagram">Instagram</label>
+        <input id="registry-instagram" name="instagram" type="text" autocomplete="off" placeholder="Instagram (optional)">
+        <label class="trap" for="registry-website">Website</label>
+        <input class="trap" id="registry-website" name="website" type="text" tabindex="-1" autocomplete="off">
+        <input type="hidden" name="source" value="maisonflou.com">
+        <button type="submit">Request Access</button>
+        <p class="registry-status" id="registry-status" aria-live="polite"></p>
+      </form>
     </section>
   </main>
 
@@ -292,5 +359,37 @@
     <span>MAISON FLOU</span>
     <span>Paris / Mediterranean / Online</span>
   </footer>
+  <script>
+    const registryForm = document.getElementById("registry-form");
+    const registryStatus = document.getElementById("registry-status");
+
+    registryForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = registryForm.querySelector("button");
+      const formData = new FormData(registryForm);
+      const payload = Object.fromEntries(formData.entries());
+
+      button.disabled = true;
+      registryStatus.textContent = "";
+
+      try {
+        const response = await fetch(registryForm.action, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error("request failed");
+        registryForm.reset();
+        registryStatus.textContent = "Registry request received.";
+      } catch (error) {
+        registryStatus.textContent = "Request could not be completed.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
