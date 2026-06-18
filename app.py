@@ -4711,8 +4711,8 @@ def setup_page():
     axiom_dataset = clean_config_value(request.form.get("axiom_dataset")) or AXIOM_DATASET
     resend_api_key = clean_config_value(request.form.get("resend_api_key"))
     resend_from_email = clean_config_value(request.form.get("resend_from_email")) or RESEND_FROM_EMAIL
-    resend_reply_to_email = clean_config_value(request.form.get("resend_reply_to_email"))
-    resend_test_email = clean_config_value(request.form.get("resend_test_email"))
+    resend_reply_to_email = clean_config_value(request.form.get("resend_reply_to_email")) or RESEND_REPLY_TO_EMAIL
+    resend_test_email = clean_config_value(request.form.get("resend_test_email")) or RESEND_TEST_EMAIL
     cloudflare_api_token = clean_config_value(request.form.get("cloudflare_api_token"))
     cloudflare_account_id = clean_config_value(request.form.get("cloudflare_account_id"))
     cloudflare_zone_id = clean_config_value(request.form.get("cloudflare_zone_id"))
@@ -4873,6 +4873,8 @@ def send_resend_email(to_email, subject, html_body, text_body="", from_email=Non
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "pocket-office/0.1 (+https://maisonflou.com)",
         },
         method="POST",
     )
