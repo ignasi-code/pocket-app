@@ -824,7 +824,14 @@ def office_tldr_signature(summary):
     latest_id = ""
     if summary.get("latest_events"):
         latest_id = clean_config_value(summary["latest_events"][0].get("id"))
-    raw = f"{summary.get('day')}:{summary.get('event_count')}:{latest_id}"
+    raw_payload = {
+        "day": summary.get("day"),
+        "event_count": summary.get("event_count"),
+        "latest_id": latest_id,
+        "counts": summary.get("counts") or {},
+        "stats": summary.get("stats") or {},
+    }
+    raw = json.dumps(raw_payload, ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
@@ -858,13 +865,16 @@ def generate_office_tldr(summary, refresh=False):
             timeout_seconds=OFFICE_TLDR_TIMEOUT_SECONDS,
         ))
     except GeminiCliError as exc:
-        return {
+        result = {
             "text": fallback,
             "source": "fallback",
             "cached": False,
             "error": str(exc),
             "signature": signature,
+            "generated_at": office_utc_timestamp(),
         }
+        write_office_tldr_cache(business_id, result)
+        return result
 
     text = " ".join(text.split())
     if not text:

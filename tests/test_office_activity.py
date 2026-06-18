@@ -112,11 +112,30 @@ class OfficeActivityTest(unittest.TestCase):
                 with patch("app.read_maison_flou_edge_events", return_value=[]):
                     with patch("app.run_gemini_text", side_effect=pocket.GeminiCliError("no ai")):
                         response = self.client.get("/api/office/maison-flou/tldr")
+                cached = pocket.read_office_tldr_cache("maison-flou")
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertEqual(data["source"], "fallback")
         self.assertIn("published", data["text"])
+        self.assertEqual(cached["source"], "fallback")
+        self.assertEqual(cached["signature"], data["signature"])
+
+    def test_tldr_signature_changes_when_counts_change(self):
+        summary = {
+            "day": "2026-06-18",
+            "event_count": 2,
+            "latest_events": [{"id": "event-1"}],
+            "counts": {"published": 1, "leads": 1},
+            "stats": {"waitlist_leads": 1},
+        }
+        changed = {
+            **summary,
+            "counts": {"published": 1, "leads": 2},
+            "stats": {"waitlist_leads": 2},
+        }
+
+        self.assertNotEqual(pocket.office_tldr_signature(summary), pocket.office_tldr_signature(changed))
 
     def test_axiom_sync_creates_dataset_and_writes_cursor(self):
         calls = []
