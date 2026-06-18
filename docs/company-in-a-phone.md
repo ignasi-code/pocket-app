@@ -60,3 +60,19 @@ office/
 A business can be moved to another Android phone or temporarily run from another machine if its code, config template, queues, and cloud state are available.
 
 Local `.env` files are intentionally excluded from Git.
+
+## Backlog: Office Activity Logs
+
+Each business should keep a lightweight activity ledger so we can answer:
+
+- what the office loop did today
+- what content was generated, drafted, published, or skipped
+- what external APIs were called
+- what errors happened and whether they recovered
+- what human approvals are waiting
+
+The log should be business-scoped, not just system-scoped. For Maison Flou, examples include generated object number, image URL, caption, Buffer draft ID, publish status, and prompt/model metadata.
+
+Evaluate a free hosted logging service for searchable history and alerts. Axiom was discussed as a strong candidate. Keep a local fallback log on the phone so the office can still report what happened if the external logging service is unavailable.
+
+Future status reports should be generated from these logs, e.g. "what got done at the office today" by business and by loop.
