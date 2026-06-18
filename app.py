@@ -176,6 +176,10 @@ CLOUDFLARE_ZONE_ID = clean_config_value(os.environ.get("CLOUDFLARE_ZONE_ID"))
 CLOUDFLARE_PAGES_PROJECT = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_PROJECT")) or "maison-flou"
 CLOUDFLARE_PAGES_DOMAIN = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_DOMAIN")) or "maisonflou.com"
 CLOUDFLARE_PAGES_OUTPUT_DIR = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_OUTPUT_DIR")) or "sites/maison-flou"
+RESEND_API_KEY = clean_config_value(os.environ.get("RESEND_API_KEY"))
+RESEND_FROM_EMAIL = clean_config_value(os.environ.get("RESEND_FROM_EMAIL")) or "Maison Flou <onboarding@resend.dev>"
+RESEND_REPLY_TO_EMAIL = clean_config_value(os.environ.get("RESEND_REPLY_TO_EMAIL"))
+RESEND_TEST_EMAIL = clean_config_value(os.environ.get("RESEND_TEST_EMAIL"))
 OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
 OPS_SESSION_COOKIE = "pocket_ops_session"
 DEFAULT_OPS_SESSION_SECONDS = 12 * 60 * 60
@@ -1280,7 +1284,7 @@ def write_shared_cloudflare_env(updates):
 
 
 def refresh_runtime_config(updates):
-    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, AXIOM_API_TOKEN, AXIOM_DATASET, AXIOM_API_BASE_URL, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ZONE_ID, CLOUDFLARE_PAGES_PROJECT, CLOUDFLARE_PAGES_DOMAIN, CLOUDFLARE_PAGES_OUTPUT_DIR, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
+    global DEFAULT_BUSINESS_ID, DEFAULT_GEMINI_MODEL, GEMINI_ARGS, MAISON_FLOU_GEMINI_ARGS, MAISON_FLOU_GEMINI_TIMEOUT_SECONDS, POCKET_ACCESS_TOKEN, BUFFER_API_KEY, BUFFER_ORGANIZATION_ID, BUFFER_CHANNEL_ID, BUFFER_DEFAULT_MODE, UPTIMEROBOT_STATUS_PAGE_URL, UPTIMEROBOT_BADGE_URL, AXIOM_API_TOKEN, AXIOM_DATASET, AXIOM_API_BASE_URL, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ZONE_ID, CLOUDFLARE_PAGES_PROJECT, CLOUDFLARE_PAGES_DOMAIN, CLOUDFLARE_PAGES_OUTPUT_DIR, RESEND_API_KEY, RESEND_FROM_EMAIL, RESEND_REPLY_TO_EMAIL, RESEND_TEST_EMAIL, OPS_HMAC_SECRET, OFFICE_TLDR_TIMEOUT_SECONDS, OFFICE_STATUS_EVENT_LIMIT
     for key, value in updates.items():
         os.environ[key] = value
     DEFAULT_BUSINESS_ID = normalize_business_id(os.environ.get("POCKET_DEFAULT_BUSINESS")) or "maison-flou"
@@ -1304,6 +1308,10 @@ def refresh_runtime_config(updates):
     CLOUDFLARE_PAGES_PROJECT = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_PROJECT")) or "maison-flou"
     CLOUDFLARE_PAGES_DOMAIN = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_DOMAIN")) or "maisonflou.com"
     CLOUDFLARE_PAGES_OUTPUT_DIR = clean_config_value(os.environ.get("CLOUDFLARE_PAGES_OUTPUT_DIR")) or "sites/maison-flou"
+    RESEND_API_KEY = clean_config_value(os.environ.get("RESEND_API_KEY"))
+    RESEND_FROM_EMAIL = clean_config_value(os.environ.get("RESEND_FROM_EMAIL")) or "Maison Flou <onboarding@resend.dev>"
+    RESEND_REPLY_TO_EMAIL = clean_config_value(os.environ.get("RESEND_REPLY_TO_EMAIL"))
+    RESEND_TEST_EMAIL = clean_config_value(os.environ.get("RESEND_TEST_EMAIL"))
     OPS_HMAC_SECRET = clean_config_value(os.environ.get("POCKET_OPS_HMAC_SECRET"))
     OFFICE_TLDR_TIMEOUT_SECONDS = int(os.environ.get("POCKET_OFFICE_TLDR_TIMEOUT_SECONDS", "45"))
     OFFICE_STATUS_EVENT_LIMIT = int(os.environ.get("POCKET_OFFICE_STATUS_EVENT_LIMIT", "200"))
@@ -3523,6 +3531,22 @@ SETUP_PAGE = """
           <input id="axiom_dataset" name="axiom_dataset" type="text" value="{{ axiom_dataset }}" autocomplete="off" placeholder="office-events">
         </div>
         <div class="field">
+          <label for="resend_api_key">Resend API key</label>
+          <input id="resend_api_key" name="resend_api_key" type="password" autocomplete="off" placeholder="Leave blank to keep existing key">
+        </div>
+        <div class="field">
+          <label for="resend_from_email">Resend from email</label>
+          <input id="resend_from_email" name="resend_from_email" type="text" value="{{ resend_from_email }}" autocomplete="off" placeholder="Maison Flou <onboarding@resend.dev>">
+        </div>
+        <div class="field">
+          <label for="resend_reply_to_email">Resend reply-to email</label>
+          <input id="resend_reply_to_email" name="resend_reply_to_email" type="email" value="{{ resend_reply_to_email }}" autocomplete="off" placeholder="atelier@maisonflou.com">
+        </div>
+        <div class="field">
+          <label for="resend_test_email">Resend test recipient</label>
+          <input id="resend_test_email" name="resend_test_email" type="email" value="{{ resend_test_email }}" autocomplete="off" placeholder="you@example.com">
+        </div>
+        <div class="field">
           <label for="cloudflare_api_token">Cloudflare API token</label>
           <input id="cloudflare_api_token" name="cloudflare_api_token" type="password" autocomplete="off" placeholder="Leave blank to keep existing token">
         </div>
@@ -4639,6 +4663,9 @@ def setup_page():
             uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
             uptimerobot_badge_url=UPTIMEROBOT_BADGE_URL,
             axiom_dataset=AXIOM_DATASET,
+            resend_from_email=RESEND_FROM_EMAIL,
+            resend_reply_to_email=RESEND_REPLY_TO_EMAIL,
+            resend_test_email=RESEND_TEST_EMAIL,
             cloudflare_account_id=CLOUDFLARE_ACCOUNT_ID,
             cloudflare_zone_id=CLOUDFLARE_ZONE_ID,
             cloudflare_pages_project=CLOUDFLARE_PAGES_PROJECT,
@@ -4660,6 +4687,9 @@ def setup_page():
             uptimerobot_status_page_url=UPTIMEROBOT_STATUS_PAGE_URL,
             uptimerobot_badge_url=UPTIMEROBOT_BADGE_URL,
             axiom_dataset=AXIOM_DATASET,
+            resend_from_email=RESEND_FROM_EMAIL,
+            resend_reply_to_email=RESEND_REPLY_TO_EMAIL,
+            resend_test_email=RESEND_TEST_EMAIL,
             cloudflare_account_id=CLOUDFLARE_ACCOUNT_ID,
             cloudflare_zone_id=CLOUDFLARE_ZONE_ID,
             cloudflare_pages_project=CLOUDFLARE_PAGES_PROJECT,
@@ -4679,6 +4709,10 @@ def setup_page():
     uptimerobot_badge_url = clean_config_value(request.form.get("uptimerobot_badge_url"))
     axiom_api_token = clean_config_value(request.form.get("axiom_api_token"))
     axiom_dataset = clean_config_value(request.form.get("axiom_dataset")) or AXIOM_DATASET
+    resend_api_key = clean_config_value(request.form.get("resend_api_key"))
+    resend_from_email = clean_config_value(request.form.get("resend_from_email")) or RESEND_FROM_EMAIL
+    resend_reply_to_email = clean_config_value(request.form.get("resend_reply_to_email"))
+    resend_test_email = clean_config_value(request.form.get("resend_test_email"))
     cloudflare_api_token = clean_config_value(request.form.get("cloudflare_api_token"))
     cloudflare_account_id = clean_config_value(request.form.get("cloudflare_account_id"))
     cloudflare_zone_id = clean_config_value(request.form.get("cloudflare_zone_id"))
@@ -4699,6 +4733,9 @@ def setup_page():
             uptimerobot_status_page_url=uptimerobot_status_page_url,
             uptimerobot_badge_url=uptimerobot_badge_url,
             axiom_dataset=axiom_dataset,
+            resend_from_email=resend_from_email,
+            resend_reply_to_email=resend_reply_to_email,
+            resend_test_email=resend_test_email,
             cloudflare_account_id=cloudflare_account_id,
             cloudflare_zone_id=cloudflare_zone_id,
             cloudflare_pages_project=cloudflare_pages_project,
@@ -4716,6 +4753,9 @@ def setup_page():
         "UPTIMEROBOT_STATUS_PAGE_URL": uptimerobot_status_page_url,
         "UPTIMEROBOT_BADGE_URL": uptimerobot_badge_url,
         "AXIOM_DATASET": axiom_dataset,
+        "RESEND_FROM_EMAIL": resend_from_email,
+        "RESEND_REPLY_TO_EMAIL": resend_reply_to_email,
+        "RESEND_TEST_EMAIL": resend_test_email,
         "CLOUDFLARE_ACCOUNT_ID": cloudflare_account_id,
         "CLOUDFLARE_ZONE_ID": cloudflare_zone_id,
         "CLOUDFLARE_PAGES_PROJECT": cloudflare_pages_project,
@@ -4730,6 +4770,8 @@ def setup_page():
         updates["BUFFER_API_KEY"] = buffer_api_key
     if axiom_api_token:
         updates["AXIOM_API_TOKEN"] = axiom_api_token
+    if resend_api_key:
+        updates["RESEND_API_KEY"] = resend_api_key
     if cloudflare_api_token:
         updates["CLOUDFLARE_API_TOKEN"] = cloudflare_api_token
 
@@ -4749,6 +4791,9 @@ def setup_page():
             uptimerobot_status_page_url=uptimerobot_status_page_url,
             uptimerobot_badge_url=uptimerobot_badge_url,
             axiom_dataset=axiom_dataset,
+            resend_from_email=resend_from_email,
+            resend_reply_to_email=resend_reply_to_email,
+            resend_test_email=resend_test_email,
             cloudflare_account_id=cloudflare_account_id,
             cloudflare_zone_id=cloudflare_zone_id,
             cloudflare_pages_project=cloudflare_pages_project,
@@ -4769,6 +4814,9 @@ def setup_page():
         uptimerobot_status_page_url=uptimerobot_status_page_url,
         uptimerobot_badge_url=uptimerobot_badge_url,
         axiom_dataset=axiom_dataset,
+        resend_from_email=resend_from_email,
+        resend_reply_to_email=resend_reply_to_email,
+        resend_test_email=resend_test_email,
         cloudflare_account_id=cloudflare_account_id,
         cloudflare_zone_id=cloudflare_zone_id,
         cloudflare_pages_project=cloudflare_pages_project,
@@ -4776,6 +4824,76 @@ def setup_page():
         cloudflare_pages_output_dir=cloudflare_pages_output_dir,
         api_key_required=not has_gemini_api_key(),
     )
+
+
+class ResendApiError(RuntimeError):
+    def __init__(self, message, status_code=502, payload=None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.payload = payload or {"error": message}
+
+
+def send_resend_email(to_email, subject, html_body, text_body="", from_email=None, reply_to_email=None):
+    api_key = RESEND_API_KEY
+    from_email = clean_config_value(from_email) or RESEND_FROM_EMAIL
+    reply_to_email = clean_config_value(reply_to_email) or RESEND_REPLY_TO_EMAIL
+    subject = clean_config_value(subject)
+    html_body = str(html_body or "").strip()
+    text_body = str(text_body or "").strip()
+
+    recipients = to_email if isinstance(to_email, list) else [to_email]
+    recipients = [clean_config_value(recipient) for recipient in recipients if clean_config_value(recipient)]
+
+    if not api_key:
+        raise ResendApiError("RESEND_API_KEY is not configured.", 400)
+    if not from_email:
+        raise ResendApiError("RESEND_FROM_EMAIL is not configured.", 400)
+    if not recipients:
+        raise ResendApiError("A recipient email is required.", 400)
+    if not subject:
+        raise ResendApiError("Email subject is required.", 400)
+    if not html_body:
+        raise ResendApiError("Email HTML body is required.", 400)
+
+    payload = {
+        "from": from_email,
+        "to": recipients,
+        "subject": subject,
+        "html": html_body,
+    }
+    if text_body:
+        payload["text"] = text_body
+    if reply_to_email:
+        payload["reply_to"] = reply_to_email
+
+    request_body = json.dumps(payload).encode("utf-8")
+    api_request = UrlRequest(
+        "https://api.resend.com/emails",
+        data=request_body,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(api_request, timeout=30) as response:
+            raw = response.read().decode("utf-8")
+    except HTTPError as exc:
+        body = read_http_error(exc)
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            payload = {"error": body}
+        raise ResendApiError(f"Resend HTTP {exc.code}: {body}", exc.code, payload) from exc
+    except URLError as exc:
+        raise ResendApiError(f"Resend network error: {exc}", 502) from exc
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ResendApiError(f"Resend returned invalid JSON: {raw[:500]}", 502) from exc
 
 
 @app.route("/api/buffer/status")
@@ -4816,6 +4934,71 @@ def buffer_organizations():
     except BufferApiError as exc:
         return jsonify({"error": str(exc)}), 502
     return jsonify({"organizations": organizations})
+
+
+@app.route("/api/resend/status")
+def resend_status():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+    return jsonify({
+        "configured": bool(RESEND_API_KEY),
+        "from_email": RESEND_FROM_EMAIL,
+        "reply_to_email": RESEND_REPLY_TO_EMAIL,
+        "test_email": RESEND_TEST_EMAIL,
+    })
+
+
+@app.route("/api/resend/test", methods=["POST"])
+def resend_test_email():
+    if access_denied():
+        return jsonify({"error": "Invalid Pocket access token."}), 401
+
+    data = request.get_json(silent=True) or {}
+    to_email = clean_config_value(data.get("to")) or RESEND_TEST_EMAIL
+    from_email = clean_config_value(data.get("from")) or RESEND_FROM_EMAIL
+    reply_to_email = clean_config_value(data.get("reply_to")) or RESEND_REPLY_TO_EMAIL
+    subject = clean_config_value(data.get("subject")) or "MAISON FLOU transmission test"
+    html_body = str(data.get("html") or "").strip() or (
+        "<p>Registry transmission confirmed.</p>"
+        "<p>MAISON FLOU now has outbound email capability.</p>"
+    )
+    text_body = str(data.get("text") or "").strip() or (
+        "Registry transmission confirmed.\n\n"
+        "MAISON FLOU now has outbound email capability."
+    )
+
+    try:
+        result = send_resend_email(
+            to_email,
+            subject,
+            html_body,
+            text_body=text_body,
+            from_email=from_email,
+            reply_to_email=reply_to_email,
+        )
+    except ResendApiError as exc:
+        status_code = exc.status_code if 400 <= exc.status_code < 600 else 502
+        return jsonify(exc.payload), status_code
+
+    safe_append_office_activity_event(
+        MAISON_FLOU_BUSINESS_ID,
+        "email.sent",
+        subject="Resend validation",
+        message="Resend validation email sent",
+        metadata={
+            "to": to_email,
+            "from": from_email,
+            "reply_to": reply_to_email,
+            "resend_id": result.get("id"),
+        },
+    )
+    return jsonify({
+        "ok": True,
+        "to": to_email,
+        "from": from_email,
+        "reply_to": reply_to_email,
+        "resend": result,
+    })
 
 
 @app.route("/api/buffer/channels")

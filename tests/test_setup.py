@@ -21,6 +21,10 @@ class SetupPageTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("axiom_api_token", html)
         self.assertIn("axiom_dataset", html)
+        self.assertIn("resend_api_key", html)
+        self.assertIn("resend_from_email", html)
+        self.assertIn("resend_reply_to_email", html)
+        self.assertIn("resend_test_email", html)
         self.assertIn("cloudflare_api_token", html)
         self.assertIn("cloudflare_account_id", html)
         self.assertIn("cloudflare_zone_id", html)
@@ -44,6 +48,10 @@ class SetupPageTest(unittest.TestCase):
                             "uptimerobot_badge_url": "",
                             "axiom_api_token": "axiom-secret",
                             "axiom_dataset": "maison-flou-office",
+                            "resend_api_key": "resend-secret",
+                            "resend_from_email": "Maison Flou <onboarding@resend.dev>",
+                            "resend_reply_to_email": "atelier@maisonflou.com",
+                            "resend_test_email": "test@example.com",
                             "cloudflare_api_token": "cf-secret",
                             "cloudflare_account_id": "account-id",
                             "cloudflare_zone_id": "zone-id",
@@ -56,6 +64,10 @@ class SetupPageTest(unittest.TestCase):
         updates = write_env.call_args.args[0]
         self.assertEqual(updates["AXIOM_API_TOKEN"], "axiom-secret")
         self.assertEqual(updates["AXIOM_DATASET"], "maison-flou-office")
+        self.assertEqual(updates["RESEND_API_KEY"], "resend-secret")
+        self.assertEqual(updates["RESEND_FROM_EMAIL"], "Maison Flou <onboarding@resend.dev>")
+        self.assertEqual(updates["RESEND_REPLY_TO_EMAIL"], "atelier@maisonflou.com")
+        self.assertEqual(updates["RESEND_TEST_EMAIL"], "test@example.com")
         self.assertEqual(updates["CLOUDFLARE_API_TOKEN"], "cf-secret")
         self.assertEqual(updates["CLOUDFLARE_ACCOUNT_ID"], "account-id")
         self.assertEqual(updates["CLOUDFLARE_ZONE_ID"], "zone-id")
