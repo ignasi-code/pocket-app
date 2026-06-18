@@ -25,3 +25,6 @@ Business-owned routing lives in `office/businesses/maison-flou/.env`:
 - `BUFFER_POST_TYPE`
 
 API calls can select this module with `business=maison-flou`.
+
+Generated image files are stored locally under the ignored business runtime
+folder and exposed through `/media/maison-flou/<filename>` for Buffer ingestion.

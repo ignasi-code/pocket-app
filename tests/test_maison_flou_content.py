@@ -19,8 +19,16 @@ class MaisonFlouContentTest(unittest.TestCase):
 
         with patch("app.read_maison_flou_sequence", return_value=0):
             with patch("app.save_maison_flou_sequence") as save_sequence:
-                with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
-                    response = self.client.post("/api/maison-flou/content", json={})
+                with patch("app.generate_maison_flou_image", return_value={
+                    "filename": "objet-001-test.png",
+                    "url": "http://localhost/media/maison-flou/objet-001-test.png",
+                    "mime_type": "image/png",
+                    "width": 1024,
+                    "height": 1024,
+                    "model": "gemini-3.1-flash-image",
+                }):
+                    with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
+                        response = self.client.post("/api/maison-flou/content", json={})
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
@@ -31,8 +39,10 @@ class MaisonFlouContentTest(unittest.TestCase):
         self.assertIn("Objet d’étude 001.", data["caption"])
         self.assertIn("Allocation for Collection 01 is strictly limited.", data["caption"])
         self.assertIn("maisonflou.com", data["caption"])
-        self.assertIn("image.pollinations.ai/prompt/", data["image_url"])
-        self.assertIn("nologo=true", data["image_url"])
+        self.assertEqual(data["image_source"], "gemini")
+        self.assertIn("/media/maison-flou/objet-001-test.png", data["image_url"])
+        self.assertEqual(data["image_width"], 1024)
+        self.assertEqual(data["image_height"], 1024)
         self.assertEqual(run_ai.call_count, 2)
         save_sequence.assert_called_once_with(1)
 
@@ -51,12 +61,20 @@ class MaisonFlouContentTest(unittest.TestCase):
             }):
                 with patch("app.create_post", return_value={"post": {"id": "draft-id"}}) as create_post:
                     with patch("app.save_maison_flou_sequence") as save_sequence:
-                        with patch("app.run_gemini_text", return_value=raw_caption):
-                            response = self.client.post("/api/maison-flou/content", json={
-                                "object_number": 9,
-                                "image_prompt": image_prompt,
-                                "draft_buffer": True,
-                            })
+                        with patch("app.generate_maison_flou_image", return_value={
+                            "filename": "objet-009-test.png",
+                            "url": "http://localhost/media/maison-flou/objet-009-test.png",
+                            "mime_type": "image/png",
+                            "width": 1024,
+                            "height": 1024,
+                            "model": "gemini-3.1-flash-image",
+                        }):
+                            with patch("app.run_gemini_text", return_value=raw_caption):
+                                response = self.client.post("/api/maison-flou/content", json={
+                                    "object_number": 9,
+                                    "image_prompt": image_prompt,
+                                    "draft_buffer": True,
+                                })
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
@@ -67,8 +85,8 @@ class MaisonFlouContentTest(unittest.TestCase):
         create_post.assert_called_once()
         kwargs = create_post.call_args.kwargs
         self.assertEqual(kwargs["channel_id"], "channel")
-        self.assertEqual(kwargs["image_width"], 1080)
-        self.assertEqual(kwargs["image_height"], 1350)
+        self.assertEqual(kwargs["image_width"], 1024)
+        self.assertEqual(kwargs["image_height"], 1024)
         self.assertTrue(kwargs["save_to_draft"])
         save_sequence.assert_not_called()
 

@@ -1,3 +1,4 @@
+import base64
 import json
 import hashlib
 import html as html_lib
@@ -14,7 +15,7 @@ import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request as UrlRequest, urlopen
-from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from flask import Flask, Response, abort, jsonify, make_response, render_template, render_template_string, request, send_file
 
@@ -215,9 +216,10 @@ MAISON_FLOU_BUSINESS_ID = "maison-flou"
 MAISON_FLOU_PROMPTS_DIR = BUSINESSES_DIR / MAISON_FLOU_BUSINESS_ID / "prompts"
 MAISON_FLOU_RUNTIME_DIR = BUSINESSES_DIR / MAISON_FLOU_BUSINESS_ID / "runtime"
 MAISON_FLOU_SEQUENCE_PATH = MAISON_FLOU_RUNTIME_DIR / "object-sequence.txt"
+MAISON_FLOU_IMAGES_DIR = MAISON_FLOU_RUNTIME_DIR / "images"
 MAISON_FLOU_DEFAULT_IMAGE_WIDTH = 1080
 MAISON_FLOU_DEFAULT_IMAGE_HEIGHT = 1350
-MAISON_FLOU_DEFAULT_IMAGE_MODEL = "flux"
+MAISON_FLOU_DEFAULT_IMAGE_MODEL = clean_config_value(os.environ.get("MAISON_FLOU_IMAGE_MODEL")) or "gemini-3.1-flash-image"
 
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True
@@ -251,6 +253,13 @@ def process_text(value):
     if isinstance(value, bytes):
         return value.decode("utf-8", "replace")
     return str(value or "")
+
+
+def read_http_error(exc):
+    try:
+        return exc.read().decode("utf-8", "replace")
+    except Exception:
+        return str(exc)
 
 
 class GeminiCliError(RuntimeError):
@@ -401,14 +410,135 @@ def enforce_maison_flou_caption_contract(caption, object_number):
     return text
 
 
-def pollinations_image_url(prompt, width, height, model):
-    query = urlencode({
-        "width": int(width),
-        "height": int(height),
-        "model": clean_config_value(model) or MAISON_FLOU_DEFAULT_IMAGE_MODEL,
-        "nologo": "true",
-    })
-    return f"https://image.pollinations.ai/prompt/{quote(prompt)}?{query}"
+def image_extension(mime_type):
+    mime_type = str(mime_type or "").lower()
+    if "jpeg" in mime_type or "jpg" in mime_type:
+        return "jpg"
+    if "webp" in mime_type:
+        return "webp"
+    return "png"
+
+
+def image_dimensions(image_bytes):
+    if image_bytes.startswith(b"\x89PNG\r\n\x1a\n") and len(image_bytes) >= 24:
+        return int.from_bytes(image_bytes[16:20], "big"), int.from_bytes(image_bytes[20:24], "big")
+
+    if image_bytes.startswith(b"\xff\xd8"):
+        index = 2
+        while index + 9 < len(image_bytes):
+            if image_bytes[index] != 0xFF:
+                index += 1
+                continue
+            marker = image_bytes[index + 1]
+            index += 2
+            if marker in {0xD8, 0xD9}:
+                continue
+            if index + 2 > len(image_bytes):
+                break
+            segment_length = int.from_bytes(image_bytes[index:index + 2], "big")
+            if segment_length < 2:
+                break
+            if marker in {
+                0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
+                0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF,
+            } and index + 7 < len(image_bytes):
+                height = int.from_bytes(image_bytes[index + 3:index + 5], "big")
+                width = int.from_bytes(image_bytes[index + 5:index + 7], "big")
+                return width, height
+            index += segment_length
+
+    return None, None
+
+
+def public_base_url():
+    configured = clean_config_value(os.environ.get("POCKET_PUBLIC_BASE_URL"))
+    if configured:
+        return configured.rstrip("/")
+    return request.url_root.rstrip("/")
+
+
+def maison_flou_media_url(filename):
+    return f"{public_base_url()}/media/maison-flou/{filename}"
+
+
+def gemini_image_prompt(image_prompt):
+    return (
+        f"{image_prompt}\n\n"
+        "Create one vertical 4:5 Instagram editorial product image. "
+        "No text, no logo, no watermark, no frame, no collage."
+    )
+
+
+def generate_maison_flou_image(image_prompt, object_number, model=None):
+    api_key = clean_config_value(os.environ.get("GEMINI_API_KEY"))
+    if not api_key:
+        raise GeminiCliError("GEMINI_API_KEY is not configured.", 400)
+
+    model = clean_config_value(model) or MAISON_FLOU_DEFAULT_IMAGE_MODEL
+    payload = {
+        "contents": [{
+            "parts": [{
+                "text": gemini_image_prompt(image_prompt),
+            }],
+        }],
+    }
+    request_body = json.dumps(payload).encode("utf-8")
+    api_request = UrlRequest(
+        f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent",
+        data=request_body,
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(api_request, timeout=120) as response:
+            raw = response.read().decode("utf-8")
+    except HTTPError as exc:
+        raise GeminiCliError(f"Gemini image API HTTP {exc.code}: {read_http_error(exc)}", 502) from exc
+    except URLError as exc:
+        raise GeminiCliError(f"Gemini image API network error: {exc}", 502) from exc
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise GeminiCliError(f"Gemini image API returned invalid JSON: {raw[:500]}", 502) from exc
+
+    parts = (((data.get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
+    for part in parts:
+        inline_data = part.get("inlineData") or part.get("inline_data")
+        if not inline_data:
+            continue
+        encoded_image = inline_data.get("data")
+        if not encoded_image:
+            continue
+        mime_type = inline_data.get("mimeType") or inline_data.get("mime_type") or "image/png"
+        try:
+            image_bytes = base64.b64decode(encoded_image)
+        except (TypeError, ValueError) as exc:
+            raise GeminiCliError("Gemini image API returned invalid image bytes.", 502) from exc
+
+        width, height = image_dimensions(image_bytes)
+        digest = hashlib.sha256(image_bytes).hexdigest()[:12]
+        extension = image_extension(mime_type)
+        filename = f"objet-{object_number}-{int(time.time())}-{digest}.{extension}"
+        MAISON_FLOU_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+        image_path = MAISON_FLOU_IMAGES_DIR / filename
+        image_path.write_bytes(image_bytes)
+        os.chmod(image_path, 0o600)
+        return {
+            "filename": filename,
+            "path": str(image_path),
+            "url": maison_flou_media_url(filename),
+            "mime_type": mime_type,
+            "width": width,
+            "height": height,
+            "model": model,
+        }
+
+    raise GeminiCliError("Gemini image API did not return an image.", 502)
 
 
 def setup_is_open():
@@ -3664,6 +3794,17 @@ def buffer_post():
     return jsonify({"business_id": business["business_id"], "channel_id": channel_id, "result": result})
 
 
+@app.route("/media/maison-flou/<filename>")
+def maison_flou_media(filename):
+    safe_name = Path(str(filename or "")).name
+    if not safe_name or safe_name != filename:
+        abort(404)
+    image_path = MAISON_FLOU_IMAGES_DIR / safe_name
+    if not image_path.exists():
+        abort(404)
+    return send_file(image_path)
+
+
 @app.route("/api/maison-flou/content", methods=["POST"])
 def maison_flou_content():
     if access_denied():
@@ -3677,20 +3818,13 @@ def maison_flou_content():
     if business_id != MAISON_FLOU_BUSINESS_ID:
         return jsonify({"error": "This endpoint only supports maison-flou."}), 400
 
-    try:
-        image_width = int(data.get("image_width") or MAISON_FLOU_DEFAULT_IMAGE_WIDTH)
-        image_height = int(data.get("image_height") or MAISON_FLOU_DEFAULT_IMAGE_HEIGHT)
-    except (TypeError, ValueError):
-        return jsonify({"error": "image_width and image_height must be integers."}), 400
-    if image_width <= 0 or image_height <= 0:
-        return jsonify({"error": "image_width and image_height must be positive."}), 400
-
     object_number = normalize_object_number(data.get("object_number"))
     auto_sequence = not object_number
     if auto_sequence:
         object_number = next_maison_flou_object_number()
 
     image_model = clean_config_value(data.get("image_model")) or MAISON_FLOU_DEFAULT_IMAGE_MODEL
+    image_url = clean_config_value(data.get("image_url"))
     image_prompt = clean_ai_output(data.get("image_prompt"))
 
     try:
@@ -3714,20 +3848,41 @@ def maison_flou_content():
         )
         if not caption:
             return jsonify({"error": "Caption generation returned empty output."}), 502
+        generated_image = None
+        if image_url:
+            try:
+                image_width = int(data.get("image_width") or MAISON_FLOU_DEFAULT_IMAGE_WIDTH)
+                image_height = int(data.get("image_height") or MAISON_FLOU_DEFAULT_IMAGE_HEIGHT)
+            except (TypeError, ValueError):
+                return jsonify({"error": "image_width and image_height must be integers when image_url is provided."}), 400
+            if image_width <= 0 or image_height <= 0:
+                return jsonify({"error": "image_width and image_height must be positive."}), 400
+            image_source = "provided"
+        else:
+            generated_image = generate_maison_flou_image(image_prompt, object_number, model=image_model)
+            image_url = generated_image["url"]
+            image_width = generated_image["width"] or MAISON_FLOU_DEFAULT_IMAGE_WIDTH
+            image_height = generated_image["height"] or MAISON_FLOU_DEFAULT_IMAGE_HEIGHT
+            image_source = "gemini"
     except GeminiCliError as exc:
         return jsonify(exc.payload), exc.status_code
 
-    image_url = pollinations_image_url(image_prompt, image_width, image_height, image_model)
     response = {
         "business_id": business_id,
         "object_number": object_number,
         "image_prompt": image_prompt,
         "caption": caption,
         "image_url": image_url,
+        "image_source": image_source,
         "image_width": image_width,
         "image_height": image_height,
         "image_model": image_model,
     }
+    if generated_image:
+        response["image_file"] = {
+            "filename": generated_image["filename"],
+            "mime_type": generated_image["mime_type"],
+        }
 
     if request_bool(data.get("draft_buffer"), default=False):
         if not BUFFER_API_KEY:
