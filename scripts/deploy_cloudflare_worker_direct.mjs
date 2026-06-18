@@ -82,7 +82,7 @@ async function putWorkerScript(config) {
     token: config.apiToken,
     method: "PUT",
     headers: {
-      "Content-Type": "application/javascript+module",
+      "Content-Type": "application/javascript",
     },
     body: source,
   });
