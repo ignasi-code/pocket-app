@@ -565,6 +565,10 @@ def square_maison_flou_image(image_info, size=None, quality=None):
             if size > 0 and image.size != (size, size):
                 image = image.resize((size, size), Image.Resampling.LANCZOS)
 
+            canvas = Image.new("RGB", image.size, (255, 255, 255))
+            canvas.paste(image, (0, 0))
+            image = canvas
+
             digest = hashlib.sha256(image.tobytes()).hexdigest()[:12]
             square_filename = f"{source_path.stem}-square-{digest}.jpg"
             square_path = MAISON_FLOU_IMAGES_DIR / square_filename
@@ -583,6 +587,7 @@ def square_maison_flou_image(image_info, size=None, quality=None):
         "height": image.size[1],
         "source_filename": image_info["filename"],
         "quality": quality,
+        "method": "square_screenshot_copy",
     }
 
 
@@ -3946,6 +3951,7 @@ def maison_flou_content():
             "height": processed_image["height"],
             "source_filename": processed_image["source_filename"],
             "quality": processed_image["quality"],
+            "method": processed_image["method"],
         }
 
     if request_bool(data.get("draft_buffer"), default=False):

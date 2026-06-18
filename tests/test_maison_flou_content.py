@@ -37,6 +37,7 @@ class MaisonFlouContentTest(unittest.TestCase):
                         "height": 1080,
                         "source_filename": "objet-001-original.png",
                         "quality": 88,
+                        "method": "square_screenshot_copy",
                     }):
                         with patch("app.run_gemini_text", side_effect=[image_prompt, raw_caption]) as run_ai:
                             response = self.client.post("/api/maison-flou/content", json={})
@@ -56,6 +57,7 @@ class MaisonFlouContentTest(unittest.TestCase):
         self.assertEqual(data["image_height"], 1080)
         self.assertEqual(data["original_image_file"]["filename"], "objet-001-original.png")
         self.assertEqual(data["image_file"]["source_filename"], "objet-001-original.png")
+        self.assertEqual(data["image_file"]["method"], "square_screenshot_copy")
         self.assertEqual(run_ai.call_count, 2)
         save_sequence.assert_called_once_with(1)
 
@@ -90,6 +92,7 @@ class MaisonFlouContentTest(unittest.TestCase):
                                 "height": 1080,
                                 "source_filename": "objet-009-original.png",
                                 "quality": 88,
+                                "method": "square_screenshot_copy",
                             }):
                                 with patch("app.run_gemini_text", return_value=raw_caption):
                                     response = self.client.post("/api/maison-flou/content", json={
@@ -156,6 +159,7 @@ class MaisonFlouContentTest(unittest.TestCase):
             self.assertEqual(result["width"], 64)
             self.assertEqual(result["height"], 64)
             self.assertEqual(result["mime_type"], "image/jpeg")
+            self.assertEqual(result["method"], "square_screenshot_copy")
             with Image.open(output_path) as output:
                 self.assertEqual(output.size, (64, 64))
                 self.assertEqual(output.format, "JPEG")
