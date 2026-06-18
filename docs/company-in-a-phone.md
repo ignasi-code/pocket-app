@@ -33,6 +33,46 @@ iPhone ChatGPT/Codex
 - Secrets stay in `.env` or encrypted storage and are not committed.
 - Important state must be recoverable from Git or cloud services.
 
+## Maison Flou Domain Map
+
+The apex `.com` should never depend on the phone being awake.
+
+```text
+maisonflou.com
+www.maisonflou.com
+  -> Cloudflare Pages
+  -> static brand surface, registry/waitlist, legal/lightweight public pages
+
+office.maisonflou.com
+  -> Cloudflare Tunnel to Termux Pocket Office
+  -> protected by Cloudflare Access
+  -> office dashboard, setup, ops, private status, internal tools
+
+media.maisonflou.com
+  -> Cloudflare Tunnel to restricted Termux media route
+  -> public read-only generated images for Buffer/social ingestion
+  -> must not expose setup, ops, office, terminal, or API routes
+
+api.maisonflou.com
+  -> future Cloudflare Worker or Supabase edge function
+  -> public intake only: waitlist, lead capture, webhooks, queued requests
+  -> should enqueue or store work for the phone to pull later
+
+status.maisonflou.com
+  -> optional redirect/CNAME to UptimeRobot public status page
+```
+
+Initial DNS target:
+
+```text
+apex/www: Cloudflare Pages
+office: protected Cloudflare Tunnel
+media: public media-only tunnel once host routing is restricted in Flask
+api: hold until there is a Worker/Supabase intake path
+```
+
+Do not point `maisonflou.com` or `www.maisonflou.com` at the Termux tunnel.
+
 ## Repo Structure
 
 ```text
