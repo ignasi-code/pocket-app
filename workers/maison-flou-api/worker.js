@@ -9,6 +9,74 @@ const DEFAULT_SCHEDULER_ENABLED = "false";
 const DEFAULT_SCHEDULER_MODE = "publish";
 const DEFAULT_BUSINESS_ID = "maison-flou";
 const DEFAULT_TLDR_MODEL = "gemini-1.5-flash";
+const DEFAULT_TEXT_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image";
+const DEFAULT_IMAGE_SIZE = 1080;
+const DEFAULT_IMAGE_QUALITY = 88;
+const IMAGE_PROMPT_TEMPLATE = `Act as the Creative Director for an elite, hyper-minimalist French fashion house called MAISON FLOU, inspired by Jacquemus, Loewe, and Coperni. Your sole task is to generate a single, highly detailed image description prompt in English for an AI image generator (Flux).
+
+STRICT OUTPUT RULES:
+1. Return ONLY the raw prompt text in English. No introductions, no explanations, no quotation marks.
+2. The prompt must focus on one architectural luxury object.
+3. Environment: Mediterranean backdrops, brutalist concrete ledges, sun-bleached stone, textured cream plaster walls, blinding summer sunlight, and razor-sharp shadows.
+4. Camera/Aesthetic: High-end Vogue editorial photography, 35mm film grain, cinematic muted or overexposed tones.
+
+Product mix guidance for this run:
+{category_prompt}
+
+Example of a valid output:
+A sculptural matte ceramic vase with impossible fluid asymmetrical curves, resting on a brutalist raw concrete pedestal, blinding midday sunlight, razor sharp shadows, grainy 35mm texture.`;
+const CAPTION_PROMPT_TEMPLATE = `Act as the Copywriter for MAISON FLOU. I will provide you with an image description. You must generate a short, cold, highly sophisticated Instagram caption for it.
+
+STRICT OUTPUT RULES:
+1. Return ONLY the caption text. No emojis, no hashtags.
+2. Start the post with exactly: Objet d’étude {object_number}.
+3. Write 2 short, poetic, philosophical lines about space, form, stillness, or structure based on the image description provided.
+4. Conclude the caption with exactly these two phrases, keeping the double line breaks:
+"Allocation for Collection 01 is strictly limited. Request registry access at our digital atelier.
+
+maisonflou.com"
+
+Image Description to process:
+{image_prompt}`;
+const OBJECT_CATEGORIES = [
+  {
+    id: "leather-objects",
+    label: "Bags / clutches / leather objects",
+    weight: 25,
+    prompt: "bags, clutches, structured leather goods, folded leather objects, or small architectural leather forms",
+  },
+  {
+    id: "draped-textiles",
+    label: "Draped textiles / garment fragments",
+    weight: 25,
+    prompt: "draped luxury textiles, garment fragments, sculptural fabric forms, or folded couture textile objects",
+  },
+  {
+    id: "wearable-accessories",
+    label: "Eyewear / jewelry / hair objects / belts",
+    weight: 18,
+    prompt: "sculptural eyewear, stone jewelry forms, metal hair objects, architectural belts, or other wearable accessories",
+  },
+  {
+    id: "footwear-forms",
+    label: "Shoes / abstract footwear",
+    weight: 12,
+    prompt: "abstract footwear, sculptural shoes, sandal forms, or impossible shoe-like luxury objects",
+  },
+  {
+    id: "vessels",
+    label: "Perfume / glass / ceramic / vessel objects",
+    weight: 12,
+    prompt: "glass perfume vessels, geometric ceramic objects, impossible vases, or small craft vessels",
+  },
+  {
+    id: "experimental-objects",
+    label: "Experimental tech / impossible luxury objects",
+    weight: 8,
+    prompt: "experimental tech-luxury objects, impossible luxury instruments, conceptual closures, or non-obvious fashion objects",
+  },
+];
 const ALLOWED_ORIGINS = new Set([
   "https://maisonflou.com",
   "https://www.maisonflou.com",
@@ -133,6 +201,114 @@ function hex(buffer) {
 
 async function sha256(value) {
   return hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+}
+
+async function sha256Bytes(bytes) {
+  return hex(await crypto.subtle.digest("SHA-256", bytes));
+}
+
+function bytesToBase64(bytes) {
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < view.length; index += chunkSize) {
+    binary += String.fromCharCode(...view.subarray(index, index + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(String(value || ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function imageExtension(mimeType) {
+  const text = String(mimeType || "").toLowerCase();
+  if (text.includes("jpeg") || text.includes("jpg")) return "jpg";
+  if (text.includes("webp")) return "webp";
+  return "png";
+}
+
+function imageDimensions(bytes) {
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  if (
+    view.length >= 24
+    && view[0] === 0x89
+    && view[1] === 0x50
+    && view[2] === 0x4E
+    && view[3] === 0x47
+  ) {
+    return {
+      width: (view[16] << 24) | (view[17] << 16) | (view[18] << 8) | view[19],
+      height: (view[20] << 24) | (view[21] << 16) | (view[22] << 8) | view[23],
+    };
+  }
+
+  if (view.length > 12 && view[0] === 0xFF && view[1] === 0xD8) {
+    let index = 2;
+    while (index + 9 < view.length) {
+      if (view[index] !== 0xFF) {
+        index += 1;
+        continue;
+      }
+      const marker = view[index + 1];
+      index += 2;
+      if (marker === 0xD8 || marker === 0xD9) continue;
+      if (index + 2 > view.length) break;
+      const segmentLength = (view[index] << 8) | view[index + 1];
+      if (segmentLength < 2) break;
+      if ([0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF].includes(marker) && index + 7 < view.length) {
+        return {
+          height: (view[index + 3] << 8) | view[index + 4],
+          width: (view[index + 5] << 8) | view[index + 6],
+        };
+      }
+      index += segmentLength;
+    }
+  }
+  return { width: 0, height: 0 };
+}
+
+function stripJpegMetadata(bytes) {
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  if (view.length < 4 || view[0] !== 0xFF || view[1] !== 0xD8) return view;
+  const chunks = [view.slice(0, 2)];
+  let index = 2;
+  while (index + 4 <= view.length) {
+    if (view[index] !== 0xFF) {
+      chunks.push(view.slice(index));
+      break;
+    }
+    const marker = view[index + 1];
+    if (marker === 0xDA) {
+      chunks.push(view.slice(index));
+      break;
+    }
+    if (marker === 0xD9) {
+      chunks.push(view.slice(index, index + 2));
+      break;
+    }
+    const segmentLength = (view[index + 2] << 8) | view[index + 3];
+    if (segmentLength < 2 || index + 2 + segmentLength > view.length) {
+      chunks.push(view.slice(index));
+      break;
+    }
+    const shouldStrip = (marker >= 0xE0 && marker <= 0xEF) || marker === 0xFE;
+    if (!shouldStrip) chunks.push(view.slice(index, index + 2 + segmentLength));
+    index += 2 + segmentLength;
+  }
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return output.length >= 4 ? output : view;
 }
 
 async function readPayload(request) {
@@ -470,6 +646,369 @@ function gqlString(value) {
   return JSON.stringify(String(value || ""));
 }
 
+function cleanAiOutput(value, limit = 6000) {
+  return String(value || "")
+    .replace(/^```[a-zA-Z0-9_-]*\s*/, "")
+    .replace(/```$/, "")
+    .trim()
+    .replace(/^["“”]+|["“”]+$/g, "")
+    .trim()
+    .slice(0, limit)
+    .trim();
+}
+
+function siteBaseUrl(env, request) {
+  if (request) {
+    const url = new URL(request.url);
+    return `${url.protocol}//${url.host}`;
+  }
+  return cleanText(env.SITE_BASE_URL, 300) || "https://maisonflou.com";
+}
+
+function mediaUrl(env, id, request) {
+  return `${siteBaseUrl(env, request)}${API_PREFIX}/media/${encodeURIComponent(id)}`;
+}
+
+function categoryPublic(category) {
+  return {
+    id: category.id,
+    label: category.label,
+    weight: category.weight,
+  };
+}
+
+async function selectObjectCategory(env) {
+  const rows = await env.DB.prepare(
+    `SELECT metadata FROM content_runs
+     WHERE metadata != ''
+     ORDER BY timestamp DESC
+     LIMIT 80`
+  ).all();
+  const counts = Object.fromEntries(OBJECT_CATEGORIES.map((category) => [category.id, 0]));
+  for (const row of rows.results || []) {
+    const metadata = parseJsonObject(row.metadata);
+    const categoryId = cleanText(((metadata.category || {}).id) || metadata.category_id, 80);
+    if (Object.prototype.hasOwnProperty.call(counts, categoryId)) counts[categoryId] += 1;
+  }
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const weighted = OBJECT_CATEGORIES.map((category) => {
+    const targetShare = category.weight / OBJECT_CATEGORIES.reduce((sum, item) => sum + item.weight, 0);
+    const actualShare = total ? counts[category.id] / total : 0;
+    const deficit = Math.max(0.05, targetShare - actualShare + targetShare);
+    return { category, score: category.weight * deficit };
+  });
+  const scoreTotal = weighted.reduce((sum, item) => sum + item.score, 0);
+  let draw = Math.random() * scoreTotal;
+  for (const item of weighted) {
+    draw -= item.score;
+    if (draw <= 0) return item.category;
+  }
+  return weighted[0].category;
+}
+
+async function nextObjectNumber(env) {
+  const configured = Number(await getContentSetting(env, "object_sequence", "0")) || 0;
+  const rows = await env.DB.prepare(
+    "SELECT object_number FROM content_runs WHERE object_number != ''"
+  ).all();
+  const maxSeen = (rows.results || []).reduce((max, row) => {
+    const value = Number.parseInt(cleanText(row.object_number, 20), 10);
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 12);
+  const next = Math.max(configured, maxSeen, 12) + 1;
+  return String(next).padStart(3, "0");
+}
+
+function buildImagePromptWithCategory(category) {
+  return IMAGE_PROMPT_TEMPLATE.replace("{category_prompt}", category.prompt);
+}
+
+function buildCaptionPrompt(imagePrompt, objectNumber) {
+  return CAPTION_PROMPT_TEMPLATE
+    .replaceAll("{image_prompt}", imagePrompt)
+    .replaceAll("{object_number}", objectNumber);
+}
+
+function enforceCaptionContract(value, objectNumber) {
+  const start = `Objet d’étude ${objectNumber}.`;
+  const close = "Allocation for Collection 01 is strictly limited. Request registry access at our digital atelier.\n\nmaisonflou.com";
+  let text = cleanAiOutput(value, 5000);
+  if (!text.startsWith(start)) text = `${start}\n\n${text}`.trim();
+  if (!text.includes(close)) text = `${text.replace(/\s+$/, "")}\n\n${close}`.trim();
+  return text;
+}
+
+function geminiImagePrompt(imagePrompt) {
+  return `${imagePrompt}\n\nCreate one square 1:1 Instagram editorial product image. No text, no logo, no watermark, no frame, no collage.`;
+}
+
+async function runGeminiText(env, prompt, model = "") {
+  const key = cleanText(env.GEMINI_API_KEY, 500);
+  if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+  const selectedModel = cleanText(model || env.MAISON_FLOU_GEMINI_MODEL || env.GEMINI_TLDR_MODEL, 100) || DEFAULT_TEXT_MODEL;
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${encodeURIComponent(key)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "User-Agent": "maison-flou-worker/0.1 (+https://maisonflou.com)",
+    },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(`Gemini text HTTP ${response.status}: ${JSON.stringify(payload).slice(0, 500)}`);
+  const parts = (((payload.candidates || [])[0] || {}).content || {}).parts || [];
+  const text = parts.map((part) => part.text || "").join("\n").trim();
+  return cleanAiOutput(text);
+}
+
+async function runGeminiImage(env, imagePrompt) {
+  const key = cleanText(env.GEMINI_API_KEY, 500);
+  if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+  const selectedModel = cleanText(env.MAISON_FLOU_IMAGE_MODEL, 100) || DEFAULT_IMAGE_MODEL;
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "x-goog-api-key": key,
+      "User-Agent": "maison-flou-worker/0.1 (+https://maisonflou.com)",
+    },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: geminiImagePrompt(imagePrompt) }] }],
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(`Gemini image HTTP ${response.status}: ${JSON.stringify(payload).slice(0, 500)}`);
+  const parts = (((payload.candidates || [])[0] || {}).content || {}).parts || [];
+  for (const part of parts) {
+    const inlineData = part.inlineData || part.inline_data;
+    if (!inlineData || !inlineData.data) continue;
+    const mimeType = cleanText(inlineData.mimeType || inlineData.mime_type || "image/png", 80);
+    const bytes = base64ToBytes(inlineData.data);
+    const dimensions = imageDimensions(bytes);
+    return {
+      bytes,
+      bytes_base64: inlineData.data,
+      mime_type: mimeType,
+      width: dimensions.width,
+      height: dimensions.height,
+      model: selectedModel,
+      digest: (await sha256Bytes(bytes)).slice(0, 12),
+    };
+  }
+  throw new Error("Gemini image API did not return image bytes.");
+}
+
+async function storeContentImage(env, data) {
+  const id = data.id || crypto.randomUUID();
+  await env.DB.prepare(
+    `INSERT INTO content_images (
+      id, timestamp, object_number, kind, mime_type, bytes_base64, width, height, metadata
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      timestamp = excluded.timestamp,
+      object_number = excluded.object_number,
+      kind = excluded.kind,
+      mime_type = excluded.mime_type,
+      bytes_base64 = excluded.bytes_base64,
+      width = excluded.width,
+      height = excluded.height,
+      metadata = excluded.metadata`
+  ).bind(
+    id,
+    utcTimestamp(),
+    cleanText(data.object_number, 20),
+    cleanText(data.kind, 40) || "image",
+    cleanText(data.mime_type, 80) || "application/octet-stream",
+    data.bytes_base64,
+    Number(data.width) || 0,
+    Number(data.height) || 0,
+    JSON.stringify(data.metadata || {})
+  ).run();
+  return { ...data, id };
+}
+
+async function readContentImage(env, id) {
+  return env.DB.prepare(
+    "SELECT id, timestamp, object_number, kind, mime_type, bytes_base64, width, height, metadata FROM content_images WHERE id = ? LIMIT 1"
+  ).bind(cleanText(id, 120)).first();
+}
+
+async function transformImageAtEdge(env, request, imageInfo) {
+  const raw = await storeContentImage(env, {
+    object_number: imageInfo.object_number,
+    kind: "raw",
+    mime_type: imageInfo.mime_type,
+    bytes_base64: imageInfo.bytes_base64,
+    width: imageInfo.width,
+    height: imageInfo.height,
+    metadata: imageInfo.metadata,
+  });
+  const rawUrl = mediaUrl(env, raw.id, request);
+  try {
+    const response = await fetch(rawUrl, {
+      headers: {
+        "Accept": "image/avif,image/webp,image/jpeg,image/png,image/*,*/*;q=0.8",
+        "User-Agent": "maison-flou-worker/0.1 (+https://maisonflou.com)",
+      },
+      cf: {
+        image: {
+          width: DEFAULT_IMAGE_SIZE,
+          height: DEFAULT_IMAGE_SIZE,
+          fit: "cover",
+          format: "jpeg",
+          quality: DEFAULT_IMAGE_QUALITY,
+        },
+      },
+    });
+    if (!response.ok) throw new Error(`image_transform_http_${response.status}`);
+    const contentType = cleanText(response.headers.get("Content-Type"), 80) || "image/jpeg";
+    if (!contentType.toLowerCase().startsWith("image/")) {
+      throw new Error(`image_transform_non_image_${contentType}`);
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length < 64) throw new Error("image_transform_empty_body");
+    const dimensions = imageDimensions(bytes);
+    const digest = (await sha256Bytes(bytes)).slice(0, 12);
+    const processed = await storeContentImage(env, {
+      object_number: imageInfo.object_number,
+      kind: "square",
+      mime_type: contentType.includes("jpeg") ? "image/jpeg" : contentType,
+      bytes_base64: bytesToBase64(bytes),
+      width: dimensions.width || DEFAULT_IMAGE_SIZE,
+      height: dimensions.height || DEFAULT_IMAGE_SIZE,
+      metadata: {
+        ...imageInfo.metadata,
+        raw_id: raw.id,
+        method: "cloudflare_image_transform_cover_reencode",
+        digest,
+      },
+    });
+    return {
+      id: processed.id,
+      url: mediaUrl(env, processed.id, request),
+      raw_id: raw.id,
+      raw_url: rawUrl,
+      mime_type: processed.mime_type,
+      width: processed.width,
+      height: processed.height,
+      method: "cloudflare_image_transform_cover_reencode",
+      digest,
+    };
+  } catch (error) {
+    if (String(raw.mime_type || "").toLowerCase().includes("jpeg")) {
+      const strippedBytes = stripJpegMetadata(base64ToBytes(raw.bytes_base64));
+      const dimensions = imageDimensions(strippedBytes);
+      const digest = (await sha256Bytes(strippedBytes)).slice(0, 12);
+      const stripped = await storeContentImage(env, {
+        object_number: imageInfo.object_number,
+        kind: "metadata-stripped",
+        mime_type: "image/jpeg",
+        bytes_base64: bytesToBase64(strippedBytes),
+        width: dimensions.width || raw.width,
+        height: dimensions.height || raw.height,
+        metadata: {
+          ...imageInfo.metadata,
+          raw_id: raw.id,
+          method: "jpeg_metadata_strip_fallback",
+          transform_error: String(error).slice(0, 300),
+          digest,
+        },
+      });
+      return {
+        id: stripped.id,
+        url: mediaUrl(env, stripped.id, request),
+        raw_id: raw.id,
+        raw_url: rawUrl,
+        mime_type: stripped.mime_type,
+        width: stripped.width,
+        height: stripped.height,
+        method: "jpeg_metadata_strip_fallback",
+        transform_error: String(error).slice(0, 300),
+        digest,
+      };
+    }
+    return {
+      id: raw.id,
+      url: rawUrl,
+      raw_id: raw.id,
+      raw_url: rawUrl,
+      mime_type: raw.mime_type,
+      width: raw.width,
+      height: raw.height,
+      method: "edge_raw_fallback",
+      transform_error: String(error).slice(0, 300),
+    };
+  }
+}
+
+async function generateCloudflareContent(env, { request, imagePrompt = "", objectNumber = "", trigger = "cloudflare-lab" } = {}) {
+  const category = await selectObjectCategory(env);
+  const object_number = cleanText(objectNumber, 20) || await nextObjectNumber(env);
+  const prompt = cleanAiOutput(imagePrompt)
+    || await runGeminiText(env, buildImagePromptWithCategory(category));
+  if (!prompt) throw new Error("Image prompt generation returned empty output.");
+  const caption = enforceCaptionContract(
+    await runGeminiText(env, buildCaptionPrompt(prompt, object_number)),
+    object_number
+  );
+  const generatedImage = await runGeminiImage(env, prompt);
+  const processed = await transformImageAtEdge(env, request, {
+    ...generatedImage,
+    object_number,
+    metadata: {
+      category: categoryPublic(category),
+      trigger,
+      image_prompt: prompt,
+      model: generatedImage.model,
+      digest: generatedImage.digest,
+    },
+  });
+  await appendOfficeEvent(
+    env,
+    "content.generated",
+    `Objet ${object_number}`,
+    "Cloudflare generated and processed a Maison Flou image.",
+    "ok",
+    {
+      object_number,
+      category: categoryPublic(category),
+      image_url: processed.url,
+      image_source: "gemini_cloudflare",
+      processing_method: processed.method,
+      runtime: "cloudflare_worker",
+    }
+  );
+  return {
+    business_id: DEFAULT_BUSINESS_ID,
+    object_number,
+    object_category: categoryPublic(category),
+    image_prompt: prompt,
+    caption,
+    image_url: processed.url,
+    image_source: processed.method === "cloudflare_image_transform_cover_reencode"
+      ? "gemini_cloudflare_square"
+      : processed.method === "jpeg_metadata_strip_fallback"
+        ? "gemini_cloudflare_metadata_stripped"
+        : "gemini_cloudflare_raw",
+    image_width: processed.width || DEFAULT_IMAGE_SIZE,
+    image_height: processed.height || DEFAULT_IMAGE_SIZE,
+    image_model: generatedImage.model,
+    image_file: {
+      id: processed.id,
+      raw_id: processed.raw_id,
+      mime_type: processed.mime_type,
+      width: processed.width,
+      height: processed.height,
+      method: processed.method,
+      transform_error: processed.transform_error || "",
+    },
+  };
+}
+
 async function bufferGraphql(env, query) {
   const apiKey = cleanText(env.BUFFER_API_KEY, 500);
   if (!apiKey) throw new Error("BUFFER_API_KEY is not configured.");
@@ -522,43 +1061,13 @@ async function createBufferPost(env, data) {
   return result || {};
 }
 
-async function requestGeneratedContent(env, trigger, mode) {
-  const publishUrl = cleanText(env.POCKET_CONTENT_PUBLISH_URL, 800);
-  const token = cleanText(env.POCKET_ACCESS_TOKEN, 500);
-  if (!publishUrl || !token) {
-    throw new Error("POCKET_CONTENT_PUBLISH_URL or POCKET_ACCESS_TOKEN is not configured.");
-  }
-  const response = await fetch(publishUrl, {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "X-Pocket-Token": token,
-      "User-Agent": "maison-flou-worker/0.1 (+https://maisonflou.com)",
-    },
-    body: JSON.stringify({
-      publish_buffer: false,
-      draft_buffer: false,
-      source: trigger,
-      record_activity: true,
-      mode,
-    }),
+async function runContentPublish(env, { request, trigger = "cloudflare-lab", mode = "shareNow", saveToDraft = false, imagePrompt = "", objectNumber = "" } = {}) {
+  const generated = await generateCloudflareContent(env, {
+    request,
+    trigger,
+    imagePrompt,
+    objectNumber,
   });
-  const text = await response.text();
-  let payload;
-  try {
-    payload = text ? JSON.parse(text) : {};
-  } catch {
-    payload = { raw: text.slice(0, 1000) };
-  }
-  if (!response.ok) {
-    throw new Error(`Content origin HTTP ${response.status}: ${JSON.stringify(payload).slice(0, 500)}`);
-  }
-  return payload;
-}
-
-async function runContentPublish(env, { trigger = "cloudflare-lab", mode = "shareNow", saveToDraft = false } = {}) {
-  const generated = await requestGeneratedContent(env, trigger, mode);
   const buffer = await createBufferPost(env, {
     caption: generated.caption,
     image_url: generated.image_url,
@@ -575,11 +1084,12 @@ async function runContentPublish(env, { trigger = "cloudflare-lab", mode = "shar
     buffer_post_id: bufferPostId,
     metadata: {
       source: generated.image_source || "",
-      category: generated.category || "",
+      category: generated.object_category || {},
       buffer,
-      origin_post_record: generated.post_record || {},
+      image_file: generated.image_file || {},
     },
   });
+  await setContentSetting(env, "object_sequence", String(Number.parseInt(generated.object_number, 10) || 0));
   await appendOfficeEvent(
     env,
     saveToDraft ? "content.drafted" : "content.published",
@@ -596,6 +1106,7 @@ async function runContentPublish(env, { trigger = "cloudflare-lab", mode = "shar
     image_url: generated.image_url || "",
     caption: generated.caption || "",
     image_source: generated.image_source || "",
+    image_file: generated.image_file || {},
     buffer,
   };
 }
@@ -618,12 +1129,12 @@ async function handleScheduled(controller, env) {
     return;
   }
 
-  if (!cleanText(env.POCKET_CONTENT_PUBLISH_URL, 800) || !cleanText(env.POCKET_ACCESS_TOKEN, 500)) {
+  if (!cleanText(env.GEMINI_API_KEY, 500) || !cleanText(env.BUFFER_API_KEY, 500) || !cleanText(env.BUFFER_CHANNEL_ID, 160)) {
     await appendOfficeEvent(
       env,
       "content.scheduler.needs_review",
-      "Content scheduler missing origin",
-      "Autonomous publishing is enabled, but Termux publish URL or token is not configured.",
+      "Content scheduler missing secrets",
+      "Autonomous publishing is enabled, but Gemini or Buffer configuration is missing.",
       "needs_review",
       { cron: controller.cron || "", runtime: "cloudflare_worker" }
     );
@@ -1156,6 +1667,24 @@ async function handlePosts(request, env) {
   });
 }
 
+async function handleMedia(request, env, id) {
+  const image = await readContentImage(env, id);
+  if (!image || !image.bytes_base64) {
+    return new Response("not found", {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+  const bytes = base64ToBytes(image.bytes_base64);
+  return new Response(bytes, {
+    headers: {
+      "Content-Type": cleanText(image.mime_type, 80) || "application/octet-stream",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}
+
 async function handleSettings(request, env) {
   if (!labAccessAllowed(request, env)) return unauthorizedResponse(request);
   if (request.method === "GET") {
@@ -1191,9 +1720,12 @@ async function handleContentPublish(request, env) {
   const payload = await readPayload(request).catch(() => ({}));
   try {
     const result = await runContentPublish(env, {
+      request,
       trigger: "cloudflare-lab",
       mode: cleanText(payload.mode, 40) || "shareNow",
       saveToDraft: boolSetting(payload.save_to_draft),
+      imagePrompt: payload.image_prompt || "",
+      objectNumber: payload.object_number || "",
     });
     return jsonResponse(request, result);
   } catch (error) {
@@ -1223,6 +1755,9 @@ async function handleRequest(request, env) {
   if (url.pathname === `${API_PREFIX}/office/tldr`) return handleOfficeTldr(request, env);
   if (url.pathname === `${API_PREFIX}/waitlist/leads`) return handleLeads(request, env);
   if (url.pathname === `${API_PREFIX}/posts`) return handlePosts(request, env);
+  if (url.pathname.startsWith(`${API_PREFIX}/media/`)) {
+    return handleMedia(request, env, decodeURIComponent(url.pathname.slice(`${API_PREFIX}/media/`.length)));
+  }
   if (url.pathname === `${API_PREFIX}/settings`) return handleSettings(request, env);
   if (url.pathname === `${API_PREFIX}/content/publish`) return handleContentPublish(request, env);
   return jsonResponse(request, { ok: false, error: "not_found" }, 404);

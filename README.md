@@ -100,9 +100,11 @@ maisonflou.com waitlist form
 
 maisonflou.com/lab
   -> Cloudflare Worker
-  -> D1 office_events + content_runs + content_settings + office_tldr_cache
+  -> D1 office_events + content_runs + content_images + content_settings + office_tldr_cache
+  -> Gemini text/image API for prompts, captions, and images
+  -> Cloudflare image transform/re-encode endpoint for square JPEG post assets
+     with Worker-side JPEG metadata stripping as the fallback
   -> Buffer API for publishing
-  -> Termux only when image/caption processing is needed
 ```
 
 The private Cloudflare lab dashboard is:
@@ -112,17 +114,18 @@ https://maisonflou.com/lab
 ```
 
 It is token-gated by the Worker now and should also be protected with
-Cloudflare Access. Generated social content still uses Termux as the processing
-origin while image re-encode/crop relies on local tooling, but Buffer publishing
-and the content ledger are now Cloudflare-owned. The legacy Termux processing
-endpoint is:
+Cloudflare Access. Generated social content now runs through Cloudflare:
+prompt generation, caption generation, Gemini image generation, D1 image
+storage, edge square re-encoding or JPEG metadata stripping, Buffer publishing,
+and D1 ledger writes.
+The legacy Termux processing endpoint remains available as an operator fallback:
 
 ```text
 POST /api/maison-flou/content/publish
 ```
 
-Cloudflare calls it with Buffer disabled, receives image/caption payloads, then
-publishes through the Worker and records the run in D1.
+Cloudflare no longer depends on that Termux endpoint for the normal Maison Flou
+publishing path.
 
 Deploy the Worker/D1 schema/cron with:
 

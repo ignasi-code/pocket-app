@@ -4,6 +4,7 @@ import path from "node:path";
 
 const ROOT_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const API_BASE = "https://api.cloudflare.com/client/v4";
+const MAISON_FLOU_ENV_PATH = path.join(ROOT_DIR, "office", "businesses", "maison-flou", ".env");
 
 function cleanValue(value) {
   let text = String(value || "").trim();
@@ -29,7 +30,11 @@ function readEnvFile(filePath) {
 }
 
 function loadConfig() {
-  const env = { ...readEnvFile(path.join(ROOT_DIR, ".env")), ...process.env };
+  const env = {
+    ...readEnvFile(path.join(ROOT_DIR, ".env")),
+    ...readEnvFile(MAISON_FLOU_ENV_PATH),
+    ...process.env,
+  };
   const routePattern = cleanValue(env.CLOUDFLARE_WORKER_ROUTE) || "maisonflou.com/api/maison-flou/waitlist*";
   const workerRoutes = [
     routePattern,
@@ -51,6 +56,8 @@ function loadConfig() {
     bufferApiKey: cleanValue(env.BUFFER_API_KEY),
     bufferChannelId: cleanValue(env.BUFFER_MAISON_FLOU_CHANNEL_ID) || cleanValue(env.BUFFER_CHANNEL_ID),
     geminiApiKey: cleanValue(env.GEMINI_API_KEY),
+    maisonFlouGeminiModel: cleanValue(env.MAISON_FLOU_GEMINI_MODEL),
+    maisonFlouImageModel: cleanValue(env.MAISON_FLOU_IMAGE_MODEL),
     labAccessToken: cleanValue(env.LAB_ACCESS_TOKEN),
     labAllowedEmails: cleanValue(env.LAB_ALLOWED_EMAILS),
     labTrustCfAccess: cleanValue(env.LAB_TRUST_CF_ACCESS),
@@ -192,8 +199,21 @@ async function migrateD1(config, databaseId) {
       generated_at TEXT NOT NULL DEFAULT '',
       updated_at TEXT NOT NULL DEFAULT ''
     )`,
+    `CREATE TABLE IF NOT EXISTS content_images (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT NOT NULL,
+      object_number TEXT NOT NULL DEFAULT '',
+      kind TEXT NOT NULL DEFAULT '',
+      mime_type TEXT NOT NULL DEFAULT '',
+      bytes_base64 TEXT NOT NULL,
+      width INTEGER NOT NULL DEFAULT 0,
+      height INTEGER NOT NULL DEFAULT 0,
+      metadata TEXT NOT NULL DEFAULT '{}'
+    )`,
+    "CREATE INDEX IF NOT EXISTS idx_content_images_object_timestamp ON content_images(object_number, timestamp)",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_enabled', 'false', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_mode', 'publish', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('object_sequence', '12', datetime('now'))",
   ];
   for (const statement of statements) {
     if (statement.startsWith("ALTER TABLE")) {
@@ -310,6 +330,8 @@ async function main() {
   await putOptionalWorkerSecret(config, "BUFFER_API_KEY", config.bufferApiKey);
   await putOptionalWorkerSecret(config, "BUFFER_CHANNEL_ID", config.bufferChannelId);
   await putOptionalWorkerSecret(config, "GEMINI_API_KEY", config.geminiApiKey);
+  await putOptionalWorkerSecret(config, "MAISON_FLOU_GEMINI_MODEL", config.maisonFlouGeminiModel);
+  await putOptionalWorkerSecret(config, "MAISON_FLOU_IMAGE_MODEL", config.maisonFlouImageModel);
   await putOptionalWorkerSecret(config, "LAB_ACCESS_TOKEN", config.labAccessToken);
   await putOptionalWorkerSecret(config, "LAB_ALLOWED_EMAILS", config.labAllowedEmails);
   await putOptionalWorkerSecret(config, "LAB_TRUST_CF_ACCESS", config.labTrustCfAccess);
