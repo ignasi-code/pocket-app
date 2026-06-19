@@ -917,6 +917,13 @@ async function buildRecapContext(env, previousSummary, currentSummary) {
       prior_day: previousSummary.day,
       current_day_so_far: currentSummary.day,
     },
+    final_state: {
+      office_auth: "Worker-owned Google login on office.maisonflou.com. Cloudflare Access was tried earlier but is not the active office gate.",
+      cloudflare_access_enabled: false,
+      instagram_pacing: Number((currentSummary.stats || {}).instagram_posts_today || 0) > Number((currentSummary.stats || {}).instagram_posts_target || 0)
+        ? "above_target"
+        : "at_or_below_target",
+    },
     technology_changes_newest_first: technologyChanges,
     prior_day_office: {
       day: previousSummary.day,
@@ -938,6 +945,8 @@ async function buildRecapContext(env, previousSummary, currentSummary) {
     interpretation_notes: [
       "Technology work should be summarized as implemented backend/frontend/infrastructure capabilities, not as a raw commit list.",
       "Current state beats history: if older changes were superseded by newer changes, summarize the final state.",
+      "Do not say Cloudflare Access is the current office protection. The current office auth is Worker-owned Google login.",
+      "If instagram_posts_today is greater than instagram_posts_target, say publishing is above target, not aligned with target.",
       "Events and changes are newest-first. Prefer newer events when deciding current state.",
       "Social work should cover generated/published objects, Buffer/Instagram posting, categories, and failures or anomalies.",
       "Business work should cover waitlist leads, email confirmations, domain/email infrastructure, and next commercial actions.",
@@ -2460,6 +2469,17 @@ async function handleReportSend(request, env) {
   const clock = officeClock(new Date(), timezone);
   const currentSummary = await buildOfficeStatus(env, clock.date);
   const previousSummary = await buildOfficeStatus(env, previousIsoDate(clock.date));
+  if (boolSetting(payload.dry_run)) {
+    const context = await buildRecapContext(env, previousSummary, currentSummary);
+    const text = await generateRecapText(env, previousSummary, currentSummary, context);
+    return jsonResponse(request, {
+      ok: true,
+      dry_run: true,
+      recipient,
+      subject: `MAISON FLOU office recap — ${previousSummary.day}`,
+      preview: cleanText(text, 1200),
+    });
+  }
   try {
     const result = await sendDailyRecap(env, recipient, previousSummary, currentSummary);
     await appendOfficeEvent(
