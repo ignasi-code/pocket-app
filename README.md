@@ -82,9 +82,10 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_OPS_HMAC_MAX_AGE_SECONDS`: Maximum accepted signed `/ops` timestamp age. Default: `300`.
 - `CLOUDFLARE_D1_DATABASE`: Maison Flou D1 database name. Default: `maison_flou`.
 - `CLOUDFLARE_WORKER_CRON`: Worker cron trigger. Default: `0 9 * * *` UTC.
-- `CLOUDFLARE_WORKER_ROUTES`: Comma-separated Worker routes. Default includes `maisonflou.com/api/maison-flou/*` and `maisonflou.com/lab*`.
+- `CLOUDFLARE_WORKER_ROUTES`: Comma-separated Worker routes. Default includes `maisonflou.com/api/maison-flou/*`, `maisonflou.com/lab*`, and `office.maisonflou.com/*`.
 - `LAB_ACCESS_TOKEN`: Optional dedicated `/lab` token. If unset, `POCKET_ACCESS_TOKEN` is used.
-- `LAB_TRUST_CF_ACCESS`: Set to `1` only after Cloudflare Access protects `/lab`.
+- `LAB_TRUST_CF_ACCESS`: Defaults to `1` for the Cloudflare Access-protected office hostname.
+- `ACCESS_ALLOWED_EMAILS`: Comma-separated emails allowed into `office.maisonflou.com`. Defaults to `LAB_ALLOWED_EMAILS` or `RESEND_TEST_EMAIL`.
 - `BUFFER_MAISON_FLOU_CHANNEL_ID`: Maison Flou Buffer channel override for the Cloudflare Worker.
 - `RESEND_API_KEY`: Resend send-only API key used by the Worker and local tests.
 
@@ -98,6 +99,10 @@ maisonflou.com waitlist form
   -> D1 waitlist_leads + office_events
   -> Resend confirmation + atelier notification
 
+office.maisonflou.com
+  -> Cloudflare Access Google login
+  -> Cloudflare Worker lab dashboard
+
 maisonflou.com/lab
   -> Cloudflare Worker
   -> D1 office_events + content_runs + content_images + content_settings + office_tldr_cache
@@ -110,11 +115,12 @@ maisonflou.com/lab
 The private Cloudflare lab dashboard is:
 
 ```text
+https://office.maisonflou.com
 https://maisonflou.com/lab
 ```
 
-It is token-gated by the Worker now and should also be protected with
-Cloudflare Access. Generated social content now runs through Cloudflare:
+The office hostname is protected with Cloudflare Access Google login. The `/lab`
+path remains token-gated by the Worker. Generated social content now runs through Cloudflare:
 prompt generation, caption generation, Gemini image generation, D1 image
 storage, edge square re-encoding or JPEG metadata stripping, Buffer publishing,
 and D1 ledger writes.

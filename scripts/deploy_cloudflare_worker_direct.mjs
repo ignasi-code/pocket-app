@@ -5,6 +5,8 @@ import path from "node:path";
 const ROOT_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const API_BASE = "https://api.cloudflare.com/client/v4";
 const MAISON_FLOU_ENV_PATH = path.join(ROOT_DIR, "office", "businesses", "maison-flou", ".env");
+const OFFICE_HOST = "office.maisonflou.com";
+const GOOGLE_IDP_NAME = "Google";
 
 function cleanValue(value) {
   let text = String(value || "").trim();
@@ -40,8 +42,17 @@ function loadConfig() {
     routePattern,
     "maisonflou.com/api/maison-flou/*",
     "maisonflou.com/lab*",
+    `${OFFICE_HOST}/*`,
     ...cleanValue(env.CLOUDFLARE_WORKER_ROUTES).split(","),
   ].map(cleanValue).filter(Boolean);
+  const accessAllowedEmails = (
+    cleanValue(env.ACCESS_ALLOWED_EMAILS)
+    || cleanValue(env.LAB_ALLOWED_EMAILS)
+    || cleanValue(env.RESEND_TEST_EMAIL)
+  )
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
   return {
     apiToken: cleanValue(env.CLOUDFLARE_API_TOKEN),
     accountId: cleanValue(env.CLOUDFLARE_ACCOUNT_ID),
@@ -59,8 +70,14 @@ function loadConfig() {
     maisonFlouGeminiModel: cleanValue(env.MAISON_FLOU_GEMINI_MODEL),
     maisonFlouImageModel: cleanValue(env.MAISON_FLOU_IMAGE_MODEL),
     labAccessToken: cleanValue(env.LAB_ACCESS_TOKEN),
-    labAllowedEmails: cleanValue(env.LAB_ALLOWED_EMAILS),
-    labTrustCfAccess: cleanValue(env.LAB_TRUST_CF_ACCESS),
+    labAllowedEmails: cleanValue(env.LAB_ALLOWED_EMAILS) || accessAllowedEmails.join(","),
+    labTrustCfAccess: cleanValue(env.LAB_TRUST_CF_ACCESS) || "1",
+    publicMediaBaseUrl: cleanValue(env.PUBLIC_MEDIA_BASE_URL) || "https://maisonflou.com",
+    officeHost: cleanValue(env.OFFICE_HOST) || OFFICE_HOST,
+    accessAppName: cleanValue(env.ACCESS_APP_NAME) || "Maison Flou Office",
+    accessAllowedEmails,
+    accessGoogleIdpName: cleanValue(env.ACCESS_GOOGLE_IDP_NAME) || GOOGLE_IDP_NAME,
+    accessSessionDuration: cleanValue(env.ACCESS_SESSION_DURATION) || "24h",
     pocketAccessToken: cleanValue(env.POCKET_ACCESS_TOKEN),
     pocketContentPublishUrl: cleanValue(env.POCKET_CONTENT_PUBLISH_URL)
       || (cleanValue(env.POCKET_PUBLIC_BASE_URL)
@@ -308,6 +325,121 @@ async function upsertRoutes(config) {
   return results;
 }
 
+async function upsertOfficeDns(config) {
+  const records = await apiRequest(`/zones/${config.zoneId}/dns_records?name=${encodeURIComponent(config.officeHost)}`, {
+    token: config.apiToken,
+  });
+  const existing = records.find((record) => record.name === config.officeHost);
+  const payload = JSON.stringify({
+    type: "CNAME",
+    name: config.officeHost,
+    content: "maisonflou.com",
+    ttl: 1,
+    proxied: true,
+    comment: "Maison Flou private office routed to Cloudflare Worker",
+  });
+  if (existing) {
+    return apiRequest(`/zones/${config.zoneId}/dns_records/${existing.id}`, {
+      token: config.apiToken,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    });
+  }
+  return apiRequest(`/zones/${config.zoneId}/dns_records`, {
+    token: config.apiToken,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+  });
+}
+
+async function getAccessIdentityProviders(config) {
+  return apiRequest(`/accounts/${config.accountId}/access/identity_providers`, {
+    token: config.apiToken,
+  });
+}
+
+async function findAccessGoogleIdp(config) {
+  const providers = await getAccessIdentityProviders(config);
+  return providers.find((provider) => (
+    provider.type === "google"
+    && (!config.accessGoogleIdpName || provider.name === config.accessGoogleIdpName)
+  )) || providers.find((provider) => provider.type === "google");
+}
+
+async function upsertAccessOrganizationBranding(config) {
+  try {
+    const organization = await apiRequest(`/accounts/${config.accountId}/access/organizations`, {
+      token: config.apiToken,
+    });
+    return await apiRequest(`/accounts/${config.accountId}/access/organizations`, {
+      token: config.apiToken,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: organization.name,
+        auth_domain: organization.auth_domain,
+        login_design: {
+          background_color: "#f5f1e8",
+          text_color: "#15130f",
+          header_text: "Private atelier access",
+          footer_text: "MAISON FLOU OFFICE",
+        },
+      }),
+    });
+  } catch (error) {
+    return { skipped: true, error: String(error.message || error).slice(0, 500) };
+  }
+}
+
+async function upsertAccessOfficeApp(config) {
+  if (!config.accessAllowedEmails.length) {
+    throw new Error("ACCESS_ALLOWED_EMAILS, LAB_ALLOWED_EMAILS, or RESEND_TEST_EMAIL is required for the office Access policy.");
+  }
+  const googleIdp = await findAccessGoogleIdp(config);
+  if (!googleIdp) {
+    throw new Error("No Google Access identity provider found. Create it in Cloudflare One first.");
+  }
+  const apps = await apiRequest(`/accounts/${config.accountId}/access/apps`, {
+    token: config.apiToken,
+  });
+  const existing = apps.find((app) => app.domain === config.officeHost || app.name === config.accessAppName);
+  const payload = {
+    name: config.accessAppName,
+    type: "self_hosted",
+    domain: config.officeHost,
+    allowed_idps: [googleIdp.id || googleIdp.uid],
+    auto_redirect_to_identity: true,
+    session_duration: config.accessSessionDuration,
+    policies: [
+      {
+        name: "Allow Maison Flou operators",
+        decision: "allow",
+        precedence: 1,
+        session_duration: config.accessSessionDuration,
+        include: config.accessAllowedEmails.map((email) => ({ email: { email } })),
+        exclude: [],
+        require: [],
+      },
+    ],
+  };
+  if (existing) {
+    return apiRequest(`/accounts/${config.accountId}/access/apps/${existing.id}`, {
+      token: config.apiToken,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
+  return apiRequest(`/accounts/${config.accountId}/access/apps`, {
+    token: config.apiToken,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 async function main() {
   const config = loadConfig();
   for (const [name, value] of Object.entries({
@@ -335,16 +467,37 @@ async function main() {
   await putOptionalWorkerSecret(config, "LAB_ACCESS_TOKEN", config.labAccessToken);
   await putOptionalWorkerSecret(config, "LAB_ALLOWED_EMAILS", config.labAllowedEmails);
   await putOptionalWorkerSecret(config, "LAB_TRUST_CF_ACCESS", config.labTrustCfAccess);
+  await putOptionalWorkerSecret(config, "PUBLIC_MEDIA_BASE_URL", config.publicMediaBaseUrl);
+  const officeDns = await upsertOfficeDns(config);
   const routes = await upsertRoutes(config);
   const schedules = await upsertSchedules(config);
+  const accessBranding = await upsertAccessOrganizationBranding(config);
+  const accessOfficeApp = await upsertAccessOfficeApp(config);
   console.log(JSON.stringify({
     script: config.scriptName,
     route_patterns: config.workerRoutes,
+    office_host: config.officeHost,
     cron: config.workerCron,
     d1_database: {
       name: config.d1DatabaseName,
       id: databaseId,
       created: Boolean(database.created),
+    },
+    office_dns: {
+      id: officeDns.id,
+      type: officeDns.type,
+      name: officeDns.name,
+      content: officeDns.content,
+      proxied: officeDns.proxied,
+    },
+    access: {
+      app_id: accessOfficeApp.id,
+      app_name: accessOfficeApp.name,
+      domain: accessOfficeApp.domain,
+      allowed_idps: accessOfficeApp.allowed_idps,
+      policy_count: (accessOfficeApp.policies || []).length,
+      branding_skipped: Boolean(accessBranding.skipped),
+      branding_error: accessBranding.error || "",
     },
     routes,
     schedules,

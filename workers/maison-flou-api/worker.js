@@ -80,6 +80,7 @@ const OBJECT_CATEGORIES = [
 const ALLOWED_ORIGINS = new Set([
   "https://maisonflou.com",
   "https://www.maisonflou.com",
+  "https://office.maisonflou.com",
   "https://maison-flou.pages.dev",
 ]);
 
@@ -167,7 +168,8 @@ function labAccessAllowed(request, env) {
   const expectedToken = cleanText(env.LAB_ACCESS_TOKEN || env.POCKET_ACCESS_TOKEN, 500);
   if (expectedToken && token === expectedToken) return true;
 
-  if (boolSetting(env.LAB_TRUST_CF_ACCESS)) {
+  const host = new URL(request.url).hostname.toLowerCase();
+  if (boolSetting(env.LAB_TRUST_CF_ACCESS) && host === "office.maisonflou.com") {
     const email = labAccessEmail(request);
     const allowedEmails = String(env.LAB_ALLOWED_EMAILS || "")
       .split(",")
@@ -666,7 +668,8 @@ function siteBaseUrl(env, request) {
 }
 
 function mediaUrl(env, id, request) {
-  return `${siteBaseUrl(env, request)}${API_PREFIX}/media/${encodeURIComponent(id)}`;
+  const base = cleanText(env.PUBLIC_MEDIA_BASE_URL || env.SITE_BASE_URL, 300) || "https://maisonflou.com";
+  return `${base.replace(/\/+$/, "")}${API_PREFIX}/media/${encodeURIComponent(id)}`;
 }
 
 function categoryPublic(category) {
@@ -1743,11 +1746,17 @@ async function handleContentPublish(request, env) {
 
 async function handleRequest(request, env) {
   const url = new URL(request.url);
+  const isOfficeHost = url.hostname.toLowerCase() === "office.maisonflou.com";
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders(request) });
   }
   if (url.pathname === WAITLIST_PATH) return handleWaitlist(request, env);
-  if (url.pathname === LAB_PATH_PREFIX || url.pathname === `${LAB_PATH_PREFIX}/` || url.pathname === `${LAB_PATH_PREFIX}/maison-flou`) {
+  if (
+    url.pathname === LAB_PATH_PREFIX
+    || url.pathname === `${LAB_PATH_PREFIX}/`
+    || url.pathname === `${LAB_PATH_PREFIX}/maison-flou`
+    || (isOfficeHost && ["/", "/office", "/office/", "/office/maison-flou"].includes(url.pathname))
+  ) {
     if (!labAccessAllowed(request, env)) return htmlResponse(renderLabDashboard(), 401);
     return htmlResponse(renderLabDashboard());
   }
