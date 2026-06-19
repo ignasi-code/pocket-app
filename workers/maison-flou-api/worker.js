@@ -1,6 +1,9 @@
 const WAITLIST_PATH = "/api/maison-flou/waitlist";
 const API_PREFIX = "/api/maison-flou";
 const LAB_PATH_PREFIX = "/lab";
+const OFFICE_HOST = "office.maisonflou.com";
+const OFFICE_SESSION_COOKIE = "mf_office_session";
+const OFFICE_SESSION_SECONDS = 60 * 60 * 24;
 const MAX_BODY_BYTES = 16 * 1024;
 const FROM_EMAIL = "Maison Flou <atelier@maisonflou.com>";
 const REPLY_TO_EMAIL = "atelier@maisonflou.com";
@@ -100,11 +103,12 @@ function corsHeaders(request) {
   };
 }
 
-function jsonResponse(request, payload, status = 200) {
+function jsonResponse(request, payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       ...corsHeaders(request),
+      ...extraHeaders,
       "Content-Type": "application/json; charset=utf-8",
     },
   });
@@ -163,22 +167,99 @@ function labAccessEmail(request) {
   return cleanText(request.headers.get("Cf-Access-Authenticated-User-Email"), 254).toLowerCase();
 }
 
-function labAccessAllowed(request, env) {
+function allowedOperatorEmails(env) {
+  return String(env.OFFICE_ALLOWED_EMAILS || env.LAB_ALLOWED_EMAILS || "")
+    .split(",")
+    .map((item) => normalizeEmail(item))
+    .filter(Boolean);
+}
+
+function tokenAccessAllowed(request, env) {
   const token = requestToken(request);
   const expectedToken = cleanText(env.LAB_ACCESS_TOKEN || env.POCKET_ACCESS_TOKEN, 500);
   if (expectedToken && token === expectedToken) return true;
 
   const host = new URL(request.url).hostname.toLowerCase();
-  if (boolSetting(env.LAB_TRUST_CF_ACCESS) && host === "office.maisonflou.com") {
+  if (boolSetting(env.LAB_TRUST_CF_ACCESS) && host === OFFICE_HOST) {
     const email = labAccessEmail(request);
-    const allowedEmails = String(env.LAB_ALLOWED_EMAILS || "")
-      .split(",")
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean);
+    const allowedEmails = allowedOperatorEmails(env);
     if (email && (!allowedEmails.length || allowedEmails.includes(email))) return true;
   }
 
   return false;
+}
+
+function cookieValue(request, name) {
+  const cookie = request.headers.get("Cookie") || "";
+  for (const part of cookie.split(";")) {
+    const [rawKey, ...rest] = part.trim().split("=");
+    if (rawKey === name) return rest.join("=");
+  }
+  return "";
+}
+
+function base64UrlEncodeBytes(value) {
+  return bytesToBase64(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlEncodeText(value) {
+  return base64UrlEncodeBytes(new TextEncoder().encode(String(value || "")));
+}
+
+function base64UrlDecodeText(value) {
+  const text = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = text.padEnd(Math.ceil(text.length / 4) * 4, "=");
+  return new TextDecoder().decode(base64ToBytes(padded));
+}
+
+function sessionSecret(env) {
+  return cleanText(env.OFFICE_SESSION_SECRET || env.LAB_ACCESS_TOKEN || env.POCKET_ACCESS_TOKEN, 500);
+}
+
+async function hmacSignature(env, value) {
+  const secret = sessionSecret(env);
+  if (!secret) return "";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  return base64UrlEncodeBytes(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value)));
+}
+
+async function signedSessionCookie(env, email) {
+  if (!sessionSecret(env)) throw new Error("session_secret_missing");
+  const now = Math.floor(Date.now() / 1000);
+  const payload = base64UrlEncodeText(JSON.stringify({
+    email,
+    iat: now,
+    exp: now + OFFICE_SESSION_SECONDS,
+  }));
+  const signature = await hmacSignature(env, payload);
+  return `${OFFICE_SESSION_COOKIE}=${payload}.${signature}; Path=/; Max-Age=${OFFICE_SESSION_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
+}
+
+async function officeSessionEmail(request, env) {
+  const value = cookieValue(request, OFFICE_SESSION_COOKIE);
+  const [payload, signature] = value.split(".");
+  if (!payload || !signature || !sessionSecret(env)) return "";
+  const expected = await hmacSignature(env, payload);
+  if (signature !== expected) return "";
+  try {
+    const data = JSON.parse(base64UrlDecodeText(payload));
+    if (!data || Number(data.exp) < Math.floor(Date.now() / 1000)) return "";
+    const email = normalizeEmail(data.email);
+    return allowedOperatorEmails(env).includes(email) ? email : "";
+  } catch {
+    return "";
+  }
+}
+
+async function labAccessAllowed(request, env) {
+  if (tokenAccessAllowed(request, env)) return true;
+  return Boolean(await officeSessionEmail(request, env));
 }
 
 function maskEmail(email) {
@@ -1438,6 +1519,145 @@ async function handleWaitlist(request, env) {
   return jsonResponse(request, { ok: true, status: "registered" });
 }
 
+function redirectResponse(location, headers = {}) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: location,
+      "Cache-Control": "no-store",
+      ...headers,
+    },
+  });
+}
+
+function renderOfficeLogin(env, message = "") {
+  const clientId = cleanText(env.GOOGLE_OAUTH_CLIENT_ID, 180);
+  const setupMessage = clientId ? "" : "Google sign-in is not configured yet.";
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Maison Flou Office</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root { color-scheme: light; --bg:#f5f1e8; --ink:#15130f; --muted:#6f675b; --line:#d8cec0; --card:#fffaf0; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; padding:22px; background:var(--bg); color:var(--ink); }
+    main { width:min(100%, 420px); }
+    h1 { margin:0 0 10px; font-family:Georgia, "Times New Roman", serif; font-weight:400; font-size:42px; line-height:.92; }
+    p { margin:0; color:var(--muted); line-height:1.5; }
+    .panel { margin-top:22px; border:1px solid var(--line); border-radius:8px; background:var(--card); padding:18px; }
+    .label { margin:0 0 12px; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+    .message { margin-top:12px; min-height:20px; font-size:14px; color:var(--muted); }
+    .footer { margin-top:18px; font-size:12px; letter-spacing:.12em; text-transform:uppercase; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Maison Flou<br>Office</h1>
+    <p>Private atelier access.</p>
+    <div class="panel">
+      <p class="label">Operator login</p>
+      ${clientId ? `<div id="g_id_onload" data-client_id="${escapeHtml(clientId)}" data-callback="handleCredential" data-auto_prompt="false"></div>
+      <div class="g_id_signin" data-type="standard" data-theme="outline" data-size="large" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left"></div>` : ""}
+      <p class="message" id="message">${escapeHtml(message || setupMessage)}</p>
+    </div>
+    <p class="footer">MAISON FLOU OFFICE</p>
+  </main>
+  <script>
+    async function handleCredential(response) {
+      const message = document.getElementById("message");
+      message.textContent = "Authorizing...";
+      try {
+        const result = await fetch("/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credential: response.credential })
+        });
+        const data = await result.json();
+        if (!result.ok || !data.ok) throw new Error(data.error || "Access denied");
+        location.href = "/";
+      } catch (error) {
+        message.textContent = error.message || "Access denied";
+      }
+    }
+  </script>
+</body>
+</html>`;
+}
+
+async function verifyGoogleCredential(env, credential) {
+  const clientId = cleanText(env.GOOGLE_OAUTH_CLIENT_ID, 180);
+  if (!clientId) throw new Error("google_client_missing");
+  const token = String(credential || "").trim();
+  if (!token || token.length > 4096) throw new Error("credential_missing");
+
+  const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`, {
+    headers: { Accept: "application/json" },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error("google_token_invalid");
+  if (payload.aud !== clientId) throw new Error("google_audience_invalid");
+  if (!["accounts.google.com", "https://accounts.google.com"].includes(payload.iss)) {
+    throw new Error("google_issuer_invalid");
+  }
+  if (Number(payload.exp || 0) < Math.floor(Date.now() / 1000)) throw new Error("google_token_expired");
+  if (!(payload.email_verified === true || payload.email_verified === "true")) {
+    throw new Error("google_email_unverified");
+  }
+
+  const email = normalizeEmail(payload.email);
+  const allowedEmails = allowedOperatorEmails(env);
+  if (!email || !allowedEmails.includes(email)) throw new Error("email_not_allowed");
+  return {
+    email,
+    name: cleanText(payload.name, 120),
+    picture: cleanText(payload.picture, 500),
+  };
+}
+
+async function handleOfficeGoogleAuth(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse(request, { ok: false, error: "method_not_allowed" }, 405);
+  }
+  const payload = await readPayload(request).catch(() => ({}));
+  try {
+    const operator = await verifyGoogleCredential(env, payload.credential);
+    try {
+      await appendOfficeEvent(
+        env,
+        "office.login",
+        "Office login",
+        "A Maison Flou operator signed in to the office.",
+        "ok",
+        { email_hash: (await sha256(operator.email)).slice(0, 16), runtime: "cloudflare_worker" }
+      );
+    } catch {}
+    return jsonResponse(request, { ok: true, email: operator.email }, 200, {
+      "Set-Cookie": await signedSessionCookie(env, operator.email),
+    });
+  } catch (error) {
+    try {
+      await appendOfficeEvent(
+        env,
+        "office.login.denied",
+        "Office login denied",
+        "A Maison Flou office login attempt was rejected.",
+        "needs_review",
+        { error: String(error.message || error).slice(0, 120), runtime: "cloudflare_worker" }
+      );
+    } catch {}
+    return jsonResponse(request, { ok: false, error: String(error.message || error).slice(0, 120) }, 401);
+  }
+}
+
+function handleOfficeLogout() {
+  return redirectResponse("/login", {
+    "Set-Cookie": `${OFFICE_SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
+  });
+}
+
 function renderLabDashboard() {
   return `<!doctype html>
 <html lang="en">
@@ -1635,13 +1855,13 @@ function renderLabDashboard() {
 }
 
 async function handleOfficeStatus(request, env) {
-  if (!labAccessAllowed(request, env)) return unauthorizedResponse(request);
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
   const url = new URL(request.url);
   return jsonResponse(request, await buildOfficeStatus(env, url.searchParams.get("day") || ""));
 }
 
 async function handleOfficeTldr(request, env) {
-  if (!labAccessAllowed(request, env)) return unauthorizedResponse(request);
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
   const url = new URL(request.url);
   const payload = request.method === "POST" ? await readPayload(request).catch(() => ({})) : {};
   const refresh = boolSetting(url.searchParams.get("refresh") || payload.refresh);
@@ -1650,7 +1870,7 @@ async function handleOfficeTldr(request, env) {
 }
 
 async function handleLeads(request, env) {
-  if (!labAccessAllowed(request, env)) return unauthorizedResponse(request);
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
   const url = new URL(request.url);
   const reveal = url.searchParams.get("reveal") === "1";
   const limit = Number(url.searchParams.get("limit") || "50");
@@ -1662,7 +1882,7 @@ async function handleLeads(request, env) {
 }
 
 async function handlePosts(request, env) {
-  if (!labAccessAllowed(request, env)) return unauthorizedResponse(request);
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
   const url = new URL(request.url);
   return jsonResponse(request, {
     business_id: DEFAULT_BUSINESS_ID,
@@ -1689,7 +1909,7 @@ async function handleMedia(request, env, id) {
 }
 
 async function handleSettings(request, env) {
-  if (!labAccessAllowed(request, env)) return unauthorizedResponse(request);
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
   if (request.method === "GET") {
     return jsonResponse(request, { business_id: DEFAULT_BUSINESS_ID, settings: await readContentSettings(env) });
   }
@@ -1716,7 +1936,7 @@ async function handleSettings(request, env) {
 }
 
 async function handleContentPublish(request, env) {
-  if (!labAccessAllowed(request, env)) return unauthorizedResponse(request);
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
   if (request.method !== "POST") {
     return jsonResponse(request, { ok: false, error: "method_not_allowed" }, 405);
   }
@@ -1746,10 +1966,16 @@ async function handleContentPublish(request, env) {
 
 async function handleRequest(request, env) {
   const url = new URL(request.url);
-  const isOfficeHost = url.hostname.toLowerCase() === "office.maisonflou.com";
+  const isOfficeHost = url.hostname.toLowerCase() === OFFICE_HOST;
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders(request) });
   }
+  if (isOfficeHost && url.pathname === "/login") {
+    if (await labAccessAllowed(request, env)) return redirectResponse("/");
+    return htmlResponse(renderOfficeLogin(env));
+  }
+  if (isOfficeHost && url.pathname === "/auth/google") return handleOfficeGoogleAuth(request, env);
+  if (isOfficeHost && url.pathname === "/logout") return handleOfficeLogout();
   if (url.pathname === WAITLIST_PATH) return handleWaitlist(request, env);
   if (
     url.pathname === LAB_PATH_PREFIX
@@ -1757,7 +1983,9 @@ async function handleRequest(request, env) {
     || url.pathname === `${LAB_PATH_PREFIX}/maison-flou`
     || (isOfficeHost && ["/", "/office", "/office/", "/office/maison-flou"].includes(url.pathname))
   ) {
-    if (!labAccessAllowed(request, env)) return htmlResponse(renderLabDashboard(), 401);
+    if (!(await labAccessAllowed(request, env))) {
+      return isOfficeHost ? htmlResponse(renderOfficeLogin(env)) : htmlResponse(renderLabDashboard(), 401);
+    }
     return htmlResponse(renderLabDashboard());
   }
   if (url.pathname === `${API_PREFIX}/office/status`) return handleOfficeStatus(request, env);

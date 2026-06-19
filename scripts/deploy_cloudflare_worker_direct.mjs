@@ -78,6 +78,9 @@ function loadConfig() {
     labAccessToken: cleanValue(env.LAB_ACCESS_TOKEN),
     labAllowedEmails: cleanValue(env.LAB_ALLOWED_EMAILS) || accessAllowedEmails.join(","),
     labTrustCfAccess: cleanValue(env.LAB_TRUST_CF_ACCESS) || "1",
+    googleOauthClientId: cleanValue(env.GOOGLE_OAUTH_CLIENT_ID) || cleanValue(env.ACCESS_GOOGLE_CLIENT_ID),
+    officeAllowedEmails: cleanValue(env.OFFICE_ALLOWED_EMAILS) || cleanValue(env.LAB_ALLOWED_EMAILS) || accessAllowedEmails.join(","),
+    officeSessionSecret: cleanValue(env.OFFICE_SESSION_SECRET),
     publicMediaBaseUrl: cleanValue(env.PUBLIC_MEDIA_BASE_URL) || "https://maisonflou.com",
     officeHost: cleanValue(env.OFFICE_HOST) || OFFICE_HOST,
     accessAppName: cleanValue(env.ACCESS_APP_NAME) || "Maison Flou Office",
@@ -85,6 +88,7 @@ function loadConfig() {
     accessGoogleIdpName: cleanValue(env.ACCESS_GOOGLE_IDP_NAME) || GOOGLE_IDP_NAME,
     accessSessionDuration: cleanValue(env.ACCESS_SESSION_DURATION) || "24h",
     accessAutoRedirectToIdentity: parseBoolean(env.ACCESS_AUTO_REDIRECT_TO_IDENTITY, false),
+    accessOfficeEnabled: parseBoolean(env.ACCESS_OFFICE_ENABLED, false),
     pocketAccessToken: cleanValue(env.POCKET_ACCESS_TOKEN),
     pocketContentPublishUrl: cleanValue(env.POCKET_CONTENT_PUBLISH_URL)
       || (cleanValue(env.POCKET_PUBLIC_BASE_URL)
@@ -375,6 +379,12 @@ async function findAccessGoogleIdp(config) {
   )) || providers.find((provider) => provider.type === "google");
 }
 
+async function resolveGoogleOauthClientId(config) {
+  if (config.googleOauthClientId) return config.googleOauthClientId;
+  const googleIdp = await findAccessGoogleIdp(config).catch(() => null);
+  return cleanValue(googleIdp && googleIdp.config && googleIdp.config.client_id);
+}
+
 async function upsertAccessOrganizationBranding(config) {
   try {
     const organization = await apiRequest(`/accounts/${config.accountId}/access/organizations`, {
@@ -447,6 +457,25 @@ async function upsertAccessOfficeApp(config) {
   });
 }
 
+async function deleteAccessOfficeApp(config) {
+  const apps = await apiRequest(`/accounts/${config.accountId}/access/apps`, {
+    token: config.apiToken,
+  });
+  const existing = apps.find((app) => app.domain === config.officeHost || app.name === config.accessAppName);
+  if (!existing) return { enabled: false, deleted: false };
+  await apiRequest(`/accounts/${config.accountId}/access/apps/${existing.id}`, {
+    token: config.apiToken,
+    method: "DELETE",
+  });
+  return {
+    enabled: false,
+    deleted: true,
+    app_id: existing.id,
+    app_name: existing.name,
+    domain: existing.domain,
+  };
+}
+
 async function main() {
   const config = loadConfig();
   for (const [name, value] of Object.entries({
@@ -463,6 +492,7 @@ async function main() {
   if (!databaseId) throw new Error("Cloudflare did not return a D1 database id.");
   await migrateD1(config, databaseId);
   await putWorkerScript(config, databaseId);
+  const googleOauthClientId = await resolveGoogleOauthClientId(config);
   await putWorkerSecret(config, "RESEND_API_KEY", config.resendApiKey);
   await putOptionalWorkerSecret(config, "POCKET_ACCESS_TOKEN", config.pocketAccessToken);
   await putOptionalWorkerSecret(config, "POCKET_CONTENT_PUBLISH_URL", config.pocketContentPublishUrl);
@@ -471,6 +501,9 @@ async function main() {
   await putOptionalWorkerSecret(config, "GEMINI_API_KEY", config.geminiApiKey);
   await putOptionalWorkerSecret(config, "MAISON_FLOU_GEMINI_MODEL", config.maisonFlouGeminiModel);
   await putOptionalWorkerSecret(config, "MAISON_FLOU_IMAGE_MODEL", config.maisonFlouImageModel);
+  await putOptionalWorkerSecret(config, "GOOGLE_OAUTH_CLIENT_ID", googleOauthClientId);
+  await putOptionalWorkerSecret(config, "OFFICE_ALLOWED_EMAILS", config.officeAllowedEmails);
+  await putOptionalWorkerSecret(config, "OFFICE_SESSION_SECRET", config.officeSessionSecret);
   await putOptionalWorkerSecret(config, "LAB_ACCESS_TOKEN", config.labAccessToken);
   await putOptionalWorkerSecret(config, "LAB_ALLOWED_EMAILS", config.labAllowedEmails);
   await putOptionalWorkerSecret(config, "LAB_TRUST_CF_ACCESS", config.labTrustCfAccess);
@@ -478,8 +511,12 @@ async function main() {
   const officeDns = await upsertOfficeDns(config);
   const routes = await upsertRoutes(config);
   const schedules = await upsertSchedules(config);
-  const accessBranding = await upsertAccessOrganizationBranding(config);
-  const accessOfficeApp = await upsertAccessOfficeApp(config);
+  const accessBranding = config.accessOfficeEnabled
+    ? await upsertAccessOrganizationBranding(config)
+    : { skipped: true, error: "" };
+  const accessOfficeApp = config.accessOfficeEnabled
+    ? await upsertAccessOfficeApp(config)
+    : await deleteAccessOfficeApp(config);
   console.log(JSON.stringify({
     script: config.scriptName,
     route_patterns: config.workerRoutes,
@@ -498,14 +535,17 @@ async function main() {
       proxied: officeDns.proxied,
     },
     access: {
-      app_id: accessOfficeApp.id,
-      app_name: accessOfficeApp.name,
-      domain: accessOfficeApp.domain,
-      allowed_idps: accessOfficeApp.allowed_idps,
+      enabled: config.accessOfficeEnabled,
+      app_id: accessOfficeApp.id || accessOfficeApp.app_id || "",
+      app_name: accessOfficeApp.name || accessOfficeApp.app_name || "",
+      domain: accessOfficeApp.domain || "",
+      allowed_idps: accessOfficeApp.allowed_idps || [],
+      deleted: Boolean(accessOfficeApp.deleted),
       policy_count: (accessOfficeApp.policies || []).length,
       branding_skipped: Boolean(accessBranding.skipped),
       branding_error: accessBranding.error || "",
     },
+    google_oauth_client_configured: Boolean(googleOauthClientId),
     routes,
     schedules,
   }, null, 2));

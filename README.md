@@ -84,9 +84,11 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `CLOUDFLARE_WORKER_CRON`: Worker cron trigger. Default: `0 9 * * *` UTC.
 - `CLOUDFLARE_WORKER_ROUTES`: Comma-separated Worker routes. Default includes `maisonflou.com/api/maison-flou/*`, `maisonflou.com/lab*`, and `office.maisonflou.com/*`.
 - `LAB_ACCESS_TOKEN`: Optional dedicated `/lab` token. If unset, `POCKET_ACCESS_TOKEN` is used.
-- `LAB_TRUST_CF_ACCESS`: Defaults to `1` for the Cloudflare Access-protected office hostname.
-- `ACCESS_ALLOWED_EMAILS`: Comma-separated emails allowed into `office.maisonflou.com`. Defaults to `LAB_ALLOWED_EMAILS` or `RESEND_TEST_EMAIL`.
-- `ACCESS_AUTO_REDIRECT_TO_IDENTITY`: Set to `1` to skip the Cloudflare Access login screen and redirect straight to Google. Default: `0`.
+- `GOOGLE_OAUTH_CLIENT_ID`: Google OAuth web client ID used by the branded Worker login. If unset, deploy falls back to the existing Cloudflare Access Google IdP client ID.
+- `OFFICE_ALLOWED_EMAILS`: Comma-separated Google emails allowed into `office.maisonflou.com`. Defaults to `LAB_ALLOWED_EMAILS`, `ACCESS_ALLOWED_EMAILS`, or `RESEND_TEST_EMAIL`.
+- `OFFICE_SESSION_SECRET`: Optional dedicated HMAC secret for office login cookies. If unset, the Worker falls back to `LAB_ACCESS_TOKEN` or `POCKET_ACCESS_TOKEN`.
+- `ACCESS_OFFICE_ENABLED`: Set to `1` to put Cloudflare Access back in front of `office.maisonflou.com`. Default: `0`.
+- `LAB_TRUST_CF_ACCESS`: Legacy fallback for Cloudflare Access headers. Default: `1`.
 - `BUFFER_MAISON_FLOU_CHANNEL_ID`: Maison Flou Buffer channel override for the Cloudflare Worker.
 - `RESEND_API_KEY`: Resend send-only API key used by the Worker and local tests.
 
@@ -101,7 +103,7 @@ maisonflou.com waitlist form
   -> Resend confirmation + atelier notification
 
 office.maisonflou.com
-  -> Cloudflare Access Google login
+  -> Maison Flou Worker Google login
   -> Cloudflare Worker lab dashboard
 
 maisonflou.com/lab
@@ -120,8 +122,16 @@ https://office.maisonflou.com
 https://maisonflou.com/lab
 ```
 
-The office hostname is protected with Cloudflare Access Google login. The `/lab`
-path remains token-gated by the Worker. Generated social content now runs through Cloudflare:
+The office hostname is protected by a branded Worker login using Google Identity
+Services and a signed secure session cookie. In Google Cloud, the OAuth web
+client must allow this JavaScript origin:
+
+```text
+https://office.maisonflou.com
+```
+
+The `/lab` path remains token-gated by the Worker when accessed directly from
+the public domain. Generated social content now runs through Cloudflare:
 prompt generation, caption generation, Gemini image generation, D1 image
 storage, edge square re-encoding or JPEG metadata stripping, Buffer publishing,
 and D1 ledger writes.
