@@ -15,6 +15,7 @@ const DEFAULT_PUBLISH_TIMES = "09:00";
 const DEFAULT_OFFICE_TIMEZONE = "Europe/Madrid";
 const DEFAULT_RECAP_ENABLED = "true";
 const DEFAULT_RECAP_TIME = "18:00";
+const DEFAULT_META_GRAPH_VERSION = "v25.0";
 const DEFAULT_BUSINESS_ID = "maison-flou";
 const DEFAULT_TLDR_MODEL = "gemini-2.5-flash-lite";
 const DEFAULT_TEXT_MODEL = "gemini-2.5-flash-lite";
@@ -491,6 +492,75 @@ function safeTimeZone(value) {
   }
 }
 
+function normalizeMetaAdAccountId(value) {
+  const text = cleanText(value, 80).replace(/^act_+/i, "");
+  return text ? `act_${text.replace(/[^0-9]/g, "")}` : "";
+}
+
+function normalizeMetaId(value) {
+  return cleanText(value, 80).replace(/[^0-9]/g, "");
+}
+
+async function readMetaSettings(env) {
+  const settings = await readContentSettings(env);
+  return {
+    ad_account_id: normalizeMetaAdAccountId(settings.meta_ad_account_id?.value),
+    campaign_id: normalizeMetaId(settings.meta_campaign_id?.value),
+    adset_id: normalizeMetaId(settings.meta_adset_id?.value),
+    page_id: normalizeMetaId(settings.meta_page_id?.value),
+    instagram_user_id: normalizeMetaId(settings.meta_instagram_user_id?.value),
+    token_configured: Boolean(cleanText(env.META_ACCESS_TOKEN, 2000)),
+    graph_version: cleanText(env.META_GRAPH_VERSION, 20) || DEFAULT_META_GRAPH_VERSION,
+  };
+}
+
+function missingMetaConfig(config) {
+  const missing = [];
+  if (!config.token_configured) missing.push("META_ACCESS_TOKEN");
+  if (!config.ad_account_id) missing.push("meta_ad_account_id");
+  if (!config.campaign_id) missing.push("meta_campaign_id");
+  if (!config.adset_id) missing.push("meta_adset_id");
+  if (!config.page_id) missing.push("meta_page_id");
+  if (!config.instagram_user_id) missing.push("meta_instagram_user_id");
+  return missing;
+}
+
+function metaGraphUrl(env, path, params = {}) {
+  const version = cleanText(env.META_GRAPH_VERSION, 20) || DEFAULT_META_GRAPH_VERSION;
+  const url = new URL(`https://graph.facebook.com/${version}/${path.replace(/^\/+/, "")}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, String(value));
+  }
+  return url;
+}
+
+async function metaGraphRequest(env, path, { method = "GET", params = {}, body = {} } = {}) {
+  const token = cleanText(env.META_ACCESS_TOKEN, 3000);
+  if (!token) throw new Error("META_ACCESS_TOKEN is not configured.");
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/json",
+    "User-Agent": "maison-flou-worker/0.1 (+https://maisonflou.com)",
+  };
+  const options = { method, headers };
+  const url = metaGraphUrl(env, path, params);
+  if (method !== "GET") {
+    headers["Content-Type"] = "application/x-www-form-urlencoded";
+    const form = new URLSearchParams();
+    for (const [key, value] of Object.entries(body)) {
+      if (value !== undefined && value !== null && value !== "") form.set(key, String(value));
+    }
+    options.body = form;
+  }
+  const response = await fetch(url, options);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.error) {
+    const error = payload.error || payload;
+    throw new Error(`Meta ${method} ${path} HTTP ${response.status}: ${JSON.stringify(error).slice(0, 700)}`);
+  }
+  return payload;
+}
+
 function officeClock(date = new Date(), timeZone = DEFAULT_OFFICE_TIMEZONE) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: safeTimeZone(timeZone),
@@ -626,6 +696,73 @@ async function readTechnologyChanges(env, limit = 50) {
   }
 }
 
+async function readMetaAdSyncRows(env, limit = 50) {
+  try {
+    const rows = await env.DB.prepare(
+      `SELECT id, timestamp, business_id, content_run_id, object_number,
+              instagram_media_id, instagram_permalink, ad_account_id, campaign_id,
+              adset_id, creative_id, ad_id, status, metadata
+       FROM meta_ad_sync
+       WHERE business_id = ?
+       ORDER BY timestamp DESC
+       LIMIT ?`
+    ).bind(DEFAULT_BUSINESS_ID, Math.max(1, Math.min(Number(limit) || 50, 250))).all();
+    return (rows.results || []).map((row) => ({
+      ...row,
+      metadata: parseJsonObject(row.metadata),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+async function readMetaAdSyncIndex(env) {
+  const rows = await readMetaAdSyncRows(env, 250);
+  return {
+    byRunId: new Map(rows.map((row) => [row.content_run_id, row])),
+    byMediaId: new Map(rows.filter((row) => row.instagram_media_id).map((row) => [row.instagram_media_id, row])),
+  };
+}
+
+async function writeMetaAdSync(env, data) {
+  const id = cleanText(data.id, 80) || crypto.randomUUID();
+  await env.DB.prepare(
+    `INSERT INTO meta_ad_sync (
+      id, timestamp, business_id, content_run_id, object_number, instagram_media_id,
+      instagram_permalink, ad_account_id, campaign_id, adset_id, creative_id, ad_id,
+      status, metadata
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(content_run_id) DO UPDATE SET
+      timestamp = excluded.timestamp,
+      object_number = excluded.object_number,
+      instagram_media_id = excluded.instagram_media_id,
+      instagram_permalink = excluded.instagram_permalink,
+      ad_account_id = excluded.ad_account_id,
+      campaign_id = excluded.campaign_id,
+      adset_id = excluded.adset_id,
+      creative_id = excluded.creative_id,
+      ad_id = excluded.ad_id,
+      status = excluded.status,
+      metadata = excluded.metadata`
+  ).bind(
+    id,
+    utcTimestamp(),
+    DEFAULT_BUSINESS_ID,
+    cleanText(data.content_run_id, 120),
+    cleanText(data.object_number, 20),
+    cleanText(data.instagram_media_id, 120),
+    cleanText(data.instagram_permalink, 500),
+    cleanText(data.ad_account_id, 80),
+    cleanText(data.campaign_id, 80),
+    cleanText(data.adset_id, 80),
+    cleanText(data.creative_id, 80),
+    cleanText(data.ad_id, 80),
+    cleanText(data.status, 40),
+    JSON.stringify(data.metadata || {})
+  ).run();
+  return id;
+}
+
 async function readContentSettings(env) {
   const rows = await env.DB.prepare(
     "SELECT key, value, updated_at FROM content_settings ORDER BY key"
@@ -685,8 +822,10 @@ async function buildOfficeStatus(env, day = "") {
   const timezone = safeTimeZone(settings.office_timezone?.value || DEFAULT_OFFICE_TIMEZONE);
   const runs = await readContentRuns(env, 250);
   const dayPublishedRuns = runs.filter((run) => eventDay(run) === selectedDay && cleanText(run.status, 40) === "published");
+  const metaSyncRows = await readMetaAdSyncRows(env, 250);
   counts.leads = waitlistLeadCount;
   counts.instagram_posts = dayPublishedRuns.length;
+  counts.meta_ads = metaSyncRows.filter((row) => cleanText(row.status, 40) === "created_paused").length;
   const status = counts.failed
     ? "Attention needed"
     : counts.needs_review
@@ -712,6 +851,8 @@ async function buildOfficeStatus(env, day = "") {
       recap_enabled: (settings.recap_enabled?.value || DEFAULT_RECAP_ENABLED) === "true",
       recap_email: settings.recap_email?.value || ATELIER_EMAIL,
       recap_time: settings.recap_time?.value || DEFAULT_RECAP_TIME,
+      meta_ads_synced: counts.meta_ads,
+      meta_token_configured: Boolean(cleanText(env.META_ACCESS_TOKEN, 2000)),
     },
     latest_events: latestEvents,
   };
@@ -1515,6 +1656,172 @@ async function runContentPublish(env, { request, trigger = "cloudflare-lab", mod
   };
 }
 
+function objectNumberFromText(value) {
+  const match = String(value || "").match(/Objet\s+d[’'](?:e|é)tude\s+(\d{1,4})/i);
+  return match ? match[1].padStart(3, "0") : "";
+}
+
+function instagramMediaObjectNumber(media) {
+  return objectNumberFromText(media.caption || "");
+}
+
+function matchInstagramMediaForRun(run, mediaItems) {
+  const objectNumber = cleanText(run.object_number, 12) || objectNumberFromText(run.caption);
+  if (!objectNumber) return null;
+  return mediaItems.find((media) => instagramMediaObjectNumber(media) === objectNumber) || null;
+}
+
+async function fetchInstagramMedia(env, config, limit = 50) {
+  const payload = await metaGraphRequest(env, `${config.instagram_user_id}/media`, {
+    params: {
+      fields: "id,caption,permalink,timestamp,media_type",
+      limit: Math.max(1, Math.min(Number(limit) || 50, 100)),
+    },
+  });
+  return payload.data || [];
+}
+
+async function createMetaAdFromInstagramMedia(env, config, run, media) {
+  const objectNumber = cleanText(run.object_number, 12) || instagramMediaObjectNumber(media);
+  const name = `Maison Flou Objet ${objectNumber || media.id}`;
+  const creative = await metaGraphRequest(env, `${config.ad_account_id}/adcreatives`, {
+    method: "POST",
+    body: {
+      name,
+      object_id: config.page_id,
+      instagram_user_id: config.instagram_user_id,
+      source_instagram_media_id: media.id,
+    },
+  });
+  const ad = await metaGraphRequest(env, `${config.ad_account_id}/ads`, {
+    method: "POST",
+    body: {
+      name,
+      adset_id: config.adset_id,
+      creative: JSON.stringify({ creative_id: creative.id }),
+      status: "PAUSED",
+    },
+  });
+  return {
+    creative_id: cleanText(creative.id, 80),
+    ad_id: cleanText(ad.id, 80),
+  };
+}
+
+async function validateMetaAccess(env, config) {
+  const missing = missingMetaConfig(config);
+  if (missing.length) return { ok: false, missing, checks: {} };
+  const checks = {};
+  try {
+    checks.me = await metaGraphRequest(env, "me", { params: { fields: "id,name" } });
+    checks.ad_account = await metaGraphRequest(env, config.ad_account_id, { params: { fields: "id,name,account_status" } });
+    checks.campaign = await metaGraphRequest(env, config.campaign_id, { params: { fields: "id,name,status,objective" } });
+    checks.adset = await metaGraphRequest(env, config.adset_id, { params: { fields: "id,name,status,campaign_id" } });
+    checks.page = await metaGraphRequest(env, config.page_id, { params: { fields: "id,name" } });
+    checks.instagram = await metaGraphRequest(env, config.instagram_user_id, { params: { fields: "id,username" } });
+    return { ok: true, missing: [], checks };
+  } catch (error) {
+    return { ok: false, missing: [], checks, error: String(error).slice(0, 700) };
+  }
+}
+
+async function syncMetaAds(env, { dryRun = false, limit = 25 } = {}) {
+  const config = await readMetaSettings(env);
+  const missing = missingMetaConfig(config);
+  if (missing.length) {
+    return { ok: false, error: "missing_meta_config", missing, config };
+  }
+  const mediaItems = await fetchInstagramMedia(env, config, 50);
+  const syncIndex = await readMetaAdSyncIndex(env);
+  const runs = (await readContentRuns(env, 100))
+    .filter((run) => cleanText(run.status, 40) === "published")
+    .filter((run) => cleanText(run.object_number, 12))
+    .slice(0, Math.max(1, Math.min(Number(limit) || 25, 50)));
+  const results = [];
+
+  for (const run of runs) {
+    const existing = syncIndex.byRunId.get(run.id);
+    if (existing && existing.ad_id) {
+      results.push({ object_number: run.object_number, status: "already_synced", ad_id: existing.ad_id });
+      continue;
+    }
+    const media = matchInstagramMediaForRun(run, mediaItems);
+    if (!media) {
+      results.push({ object_number: run.object_number, status: "no_instagram_match" });
+      continue;
+    }
+    const existingMedia = syncIndex.byMediaId.get(media.id);
+    if (existingMedia && existingMedia.ad_id) {
+      results.push({ object_number: run.object_number, status: "already_synced", ad_id: existingMedia.ad_id });
+      continue;
+    }
+    if (dryRun) {
+      results.push({
+        object_number: run.object_number,
+        status: "would_create",
+        instagram_media_id: media.id,
+        instagram_permalink: media.permalink || "",
+      });
+      continue;
+    }
+    try {
+      const created = await createMetaAdFromInstagramMedia(env, config, run, media);
+      await writeMetaAdSync(env, {
+        content_run_id: run.id,
+        object_number: run.object_number,
+        instagram_media_id: media.id,
+        instagram_permalink: media.permalink || "",
+        ad_account_id: config.ad_account_id,
+        campaign_id: config.campaign_id,
+        adset_id: config.adset_id,
+        creative_id: created.creative_id,
+        ad_id: created.ad_id,
+        status: "created_paused",
+        metadata: {
+          media_timestamp: media.timestamp || "",
+          media_type: media.media_type || "",
+          content_trigger: run.trigger || "",
+        },
+      });
+      await appendOfficeEvent(
+        env,
+        "meta.ad.created",
+        `Meta ad Objet ${run.object_number}`,
+        "Created a paused Meta ad from an existing Instagram post.",
+        "ok",
+        { object_number: run.object_number, ad_id: created.ad_id, creative_id: created.creative_id, instagram_media_id: media.id, runtime: "cloudflare_worker" }
+      );
+      results.push({ object_number: run.object_number, status: "created_paused", ad_id: created.ad_id, creative_id: created.creative_id });
+    } catch (error) {
+      await writeMetaAdSync(env, {
+        content_run_id: run.id,
+        object_number: run.object_number,
+        instagram_media_id: media.id,
+        instagram_permalink: media.permalink || "",
+        ad_account_id: config.ad_account_id,
+        campaign_id: config.campaign_id,
+        adset_id: config.adset_id,
+        status: "failed",
+        metadata: { error: String(error).slice(0, 700) },
+      });
+      results.push({ object_number: run.object_number, status: "failed", error: String(error).slice(0, 500) });
+    }
+  }
+
+  const created = results.filter((item) => item.status === "created_paused").length;
+  const matched = results.filter((item) => ["created_paused", "would_create", "already_synced"].includes(item.status)).length;
+  return {
+    ok: true,
+    dry_run: dryRun,
+    config: { ...config, token_configured: Boolean(config.token_configured) },
+    media_seen: mediaItems.length,
+    content_runs_seen: runs.length,
+    matched,
+    created,
+    results,
+  };
+}
+
 async function maybeRunContentSchedule(controller, env, clock) {
   const enabled = await getSettingBoolean(env, "content_scheduler_enabled", DEFAULT_SCHEDULER_ENABLED);
   if (!enabled) {
@@ -2060,6 +2367,7 @@ async function handleHealth(request, env) {
     resend_configured: Boolean(cleanText(env.RESEND_API_KEY, 500)),
     gemini_configured: Boolean(cleanText(env.GEMINI_API_KEY, 500)),
     buffer_configured: Boolean(cleanText(env.BUFFER_API_KEY, 500) && cleanText(env.BUFFER_CHANNEL_ID, 160)),
+    meta_token_configured: Boolean(cleanText(env.META_ACCESS_TOKEN, 2000)),
   };
   try {
     if (env.DB) {
@@ -2194,6 +2502,28 @@ function renderLabDashboard() {
     </section>
 
     <section>
+      <p class="label">Meta Ads</p>
+      <div class="card">
+        <label class="label" for="meta-ad-account-id">Ad account ID</label>
+        <input id="meta-ad-account-id" type="text" placeholder="act_123456789">
+        <label class="label" for="meta-campaign-id" style="margin-top:10px">Campaign ID</label>
+        <input id="meta-campaign-id" type="text" inputmode="numeric" placeholder="123456789">
+        <label class="label" for="meta-adset-id" style="margin-top:10px">Ad set ID</label>
+        <input id="meta-adset-id" type="text" inputmode="numeric" placeholder="123456789">
+        <label class="label" for="meta-page-id" style="margin-top:10px">Facebook Page ID</label>
+        <input id="meta-page-id" type="text" inputmode="numeric" placeholder="123456789">
+        <label class="label" for="meta-instagram-user-id" style="margin-top:10px">Instagram user ID</label>
+        <input id="meta-instagram-user-id" type="text" inputmode="numeric" placeholder="17841400000000000">
+        <div class="toolbar">
+          <button id="save-meta-settings">Save ads</button>
+          <button class="secondary" id="check-meta-access">Check access</button>
+          <button id="sync-meta-ads">Sync IG ads</button>
+        </div>
+        <div class="subtle" id="meta-result"></div>
+      </div>
+    </section>
+
+    <section>
       <p class="label">Waitlist</p>
       <div class="list" id="waitlist"></div>
       <div class="toolbar"><button class="secondary" id="reveal-leads">Reveal emails</button></div>
@@ -2227,7 +2557,7 @@ function renderLabDashboard() {
       return data;
     }
     function renderMetrics(counts) {
-      const rows = [["IG Today", counts.instagram_posts], ["Generated", counts.generated], ["Published", counts.published], ["Review", counts.needs_review], ["Leads", counts.leads], ["Emails", counts.emails], ["Replies", counts.replies], ["Failed", counts.failed]];
+      const rows = [["IG Today", counts.instagram_posts], ["Meta Ads", counts.meta_ads], ["Generated", counts.generated], ["Published", counts.published], ["Review", counts.needs_review], ["Leads", counts.leads], ["Emails", counts.emails], ["Failed", counts.failed]];
       document.getElementById("metrics").innerHTML = rows.map(([label, value]) => \`<div class="card metric"><strong>\${Number(value || 0)}</strong><span>\${label}</span></div>\`).join("");
     }
     function renderRows(id, rows, empty, map) {
@@ -2262,6 +2592,11 @@ function renderLabDashboard() {
       document.getElementById("recap-enabled").value = (settings.recap_enabled || {}).value === "true" ? "true" : "false";
       document.getElementById("recap-email").value = (settings.recap_email || {}).value || "atelier@maisonflou.com";
       document.getElementById("recap-time").value = (settings.recap_time || {}).value || "18:00";
+      document.getElementById("meta-ad-account-id").value = (settings.meta_ad_account_id || {}).value || "";
+      document.getElementById("meta-campaign-id").value = (settings.meta_campaign_id || {}).value || "";
+      document.getElementById("meta-adset-id").value = (settings.meta_adset_id || {}).value || "";
+      document.getElementById("meta-page-id").value = (settings.meta_page_id || {}).value || "";
+      document.getElementById("meta-instagram-user-id").value = (settings.meta_instagram_user_id || {}).value || "";
     }
     async function loadSession() {
       try {
@@ -2329,6 +2664,49 @@ function renderLabDashboard() {
           office_timezone: document.getElementById("office-timezone").value
         }) });
         result.textContent = \`Report sent to \${data.recipient || "recipient"}.\`;
+        await Promise.all([loadStatus(), loadTldr(true)]);
+      } catch (error) {
+        result.textContent = error.message;
+      } finally {
+        event.target.disabled = false;
+      }
+    });
+    document.getElementById("save-meta-settings").addEventListener("click", async () => {
+      const result = document.getElementById("meta-result");
+      result.textContent = "Saving...";
+      await api("/api/maison-flou/settings", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
+        meta_ad_account_id: document.getElementById("meta-ad-account-id").value,
+        meta_campaign_id: document.getElementById("meta-campaign-id").value,
+        meta_adset_id: document.getElementById("meta-adset-id").value,
+        meta_page_id: document.getElementById("meta-page-id").value,
+        meta_instagram_user_id: document.getElementById("meta-instagram-user-id").value
+      }) });
+      result.textContent = "Meta ad settings saved.";
+      await Promise.all([loadSettings(), loadStatus()]);
+    });
+    document.getElementById("check-meta-access").addEventListener("click", async event => {
+      const result = document.getElementById("meta-result");
+      event.target.disabled = true;
+      result.textContent = "Checking Meta access...";
+      try {
+        const data = await api("/api/maison-flou/meta/status?check=1");
+        const validation = data.validation || {};
+        result.textContent = validation.ok
+          ? "Meta access ok."
+          : \`Meta needs review: \${(validation.missing || data.missing || []).join(", ") || validation.error || "check failed"}\`;
+      } catch (error) {
+        result.textContent = error.message;
+      } finally {
+        event.target.disabled = false;
+      }
+    });
+    document.getElementById("sync-meta-ads").addEventListener("click", async event => {
+      const result = document.getElementById("meta-result");
+      event.target.disabled = true;
+      result.textContent = "Syncing Instagram ads...";
+      try {
+        const data = await api("/api/maison-flou/meta/sync-ads", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ limit:25 }) });
+        result.textContent = \`Meta sync complete: \${data.created || 0} created, \${data.matched || 0} matched.\`;
         await Promise.all([loadStatus(), loadTldr(true)]);
       } catch (error) {
         result.textContent = error.message;
@@ -2438,6 +2816,21 @@ async function handleSettings(request, env) {
   if (Object.prototype.hasOwnProperty.call(payload, "recap_time")) {
     allowed.recap_time = normalizeTime(payload.recap_time) || DEFAULT_RECAP_TIME;
   }
+  if (Object.prototype.hasOwnProperty.call(payload, "meta_ad_account_id")) {
+    allowed.meta_ad_account_id = normalizeMetaAdAccountId(payload.meta_ad_account_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "meta_campaign_id")) {
+    allowed.meta_campaign_id = normalizeMetaId(payload.meta_campaign_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "meta_adset_id")) {
+    allowed.meta_adset_id = normalizeMetaId(payload.meta_adset_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "meta_page_id")) {
+    allowed.meta_page_id = normalizeMetaId(payload.meta_page_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "meta_instagram_user_id")) {
+    allowed.meta_instagram_user_id = normalizeMetaId(payload.meta_instagram_user_id);
+  }
   if (!Object.keys(allowed).length) {
     return jsonResponse(request, { ok: true, settings: await readContentSettings(env), updated: [] });
   }
@@ -2510,6 +2903,58 @@ async function handleReportSend(request, env) {
   }
 }
 
+async function handleMetaStatus(request, env) {
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
+  const config = await readMetaSettings(env);
+  const syncRows = await readMetaAdSyncRows(env, 50);
+  const url = new URL(request.url);
+  const check = url.searchParams.get("check") === "1";
+  const validation = check ? await validateMetaAccess(env, config) : null;
+  return jsonResponse(request, {
+    ok: true,
+    config,
+    missing: missingMetaConfig(config),
+    sync_count: syncRows.filter((row) => cleanText(row.status, 40) === "created_paused").length,
+    recent_syncs: syncRows.slice(0, 12),
+    ...(validation ? { validation } : {}),
+  });
+}
+
+async function handleMetaSyncAds(request, env) {
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
+  if (request.method !== "POST") {
+    return jsonResponse(request, { ok: false, error: "method_not_allowed" }, 405);
+  }
+  const payload = await readPayload(request).catch(() => ({}));
+  try {
+    const result = await syncMetaAds(env, {
+      dryRun: boolSetting(payload.dry_run),
+      limit: clampNumber(payload.limit, 1, 50, 25),
+    });
+    await appendOfficeEvent(
+      env,
+      "meta.sync.completed",
+      "Meta ads sync completed",
+      result.ok
+        ? `Meta sync checked ${result.content_runs_seen || 0} content run(s) and created ${result.created || 0} paused ad(s).`
+        : "Meta sync could not run because configuration is incomplete.",
+      result.ok ? "ok" : "needs_review",
+      { created: result.created || 0, matched: result.matched || 0, missing: result.missing || [], dry_run: Boolean(result.dry_run), runtime: "cloudflare_worker" }
+    );
+    return jsonResponse(request, result, result.ok ? 200 : 400);
+  } catch (error) {
+    await appendOfficeEvent(
+      env,
+      "meta.sync.failed",
+      "Meta ads sync failed",
+      "The Meta ads sync could not complete.",
+      "failed",
+      { error: String(error).slice(0, 700), runtime: "cloudflare_worker" }
+    );
+    return jsonResponse(request, { ok: false, error: String(error).slice(0, 700) }, 502);
+  }
+}
+
 async function handleContentPublish(request, env) {
   if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
   if (request.method !== "POST") {
@@ -2574,6 +3019,8 @@ async function handleRequest(request, env) {
   }
   if (url.pathname === `${API_PREFIX}/settings`) return handleSettings(request, env);
   if (url.pathname === `${API_PREFIX}/report/send`) return handleReportSend(request, env);
+  if (url.pathname === `${API_PREFIX}/meta/status`) return handleMetaStatus(request, env);
+  if (url.pathname === `${API_PREFIX}/meta/sync-ads`) return handleMetaSyncAds(request, env);
   if (url.pathname === `${API_PREFIX}/content/publish`) return handleContentPublish(request, env);
   return jsonResponse(request, { ok: false, error: "not_found" }, 404);
 }

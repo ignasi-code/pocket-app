@@ -160,6 +160,13 @@ history from `technology_changes`, so it can summarize technology,
 social/content, and business/email activity without exposing raw commit logs.
 The Office dashboard includes a manual `Send now` report button for testing.
 
+Meta Ads integration follows the setup/office split:
+
+- `META_ACCESS_TOKEN` and `META_GRAPH_VERSION` are Worker secrets managed during setup.
+- Ad account, campaign, ad set, Facebook Page, and Instagram user IDs are Office settings.
+- The Office Meta Ads card can validate access and manually sync published Instagram posts into paused ads.
+- Sync state is persisted in D1 `meta_ad_sync` so repeated syncs skip already-created ads.
+
 Monitor-ready health endpoints:
 
 ```text

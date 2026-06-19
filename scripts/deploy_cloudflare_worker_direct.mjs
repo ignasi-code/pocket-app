@@ -76,6 +76,8 @@ function loadConfig() {
     geminiApiKey: cleanValue(env.GEMINI_API_KEY),
     maisonFlouGeminiModel: cleanValue(env.MAISON_FLOU_GEMINI_MODEL),
     maisonFlouImageModel: cleanValue(env.MAISON_FLOU_IMAGE_MODEL),
+    metaAccessToken: cleanValue(env.META_ACCESS_TOKEN),
+    metaGraphVersion: cleanValue(env.META_GRAPH_VERSION) || "v25.0",
     labAccessToken: cleanValue(env.LAB_ACCESS_TOKEN),
     labAllowedEmails: cleanValue(env.LAB_ALLOWED_EMAILS) || accessAllowedEmails.join(","),
     labTrustCfAccess: cleanValue(env.LAB_TRUST_CF_ACCESS) || "1",
@@ -249,6 +251,24 @@ async function migrateD1(config, databaseId) {
       metadata TEXT NOT NULL DEFAULT '{}'
     )`,
     "CREATE INDEX IF NOT EXISTS idx_technology_changes_timestamp ON technology_changes(timestamp)",
+    `CREATE TABLE IF NOT EXISTS meta_ad_sync (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT NOT NULL,
+      business_id TEXT NOT NULL DEFAULT 'maison-flou',
+      content_run_id TEXT NOT NULL UNIQUE,
+      object_number TEXT NOT NULL DEFAULT '',
+      instagram_media_id TEXT NOT NULL DEFAULT '',
+      instagram_permalink TEXT NOT NULL DEFAULT '',
+      ad_account_id TEXT NOT NULL DEFAULT '',
+      campaign_id TEXT NOT NULL DEFAULT '',
+      adset_id TEXT NOT NULL DEFAULT '',
+      creative_id TEXT NOT NULL DEFAULT '',
+      ad_id TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT '',
+      metadata TEXT NOT NULL DEFAULT '{}'
+    )`,
+    "CREATE INDEX IF NOT EXISTS idx_meta_ad_sync_timestamp ON meta_ad_sync(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_meta_ad_sync_instagram_media ON meta_ad_sync(instagram_media_id)",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_enabled', 'false', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_mode', 'publish', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_posts_per_day', '1', datetime('now'))",
@@ -257,6 +277,11 @@ async function migrateD1(config, databaseId) {
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('recap_enabled', 'true', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('recap_email', 'atelier@maisonflou.com', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('recap_time', '18:00', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('meta_ad_account_id', '', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('meta_campaign_id', '', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('meta_adset_id', '', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('meta_page_id', '', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('meta_instagram_user_id', '', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('object_sequence', '12', datetime('now'))",
   ];
   for (const statement of statements) {
@@ -566,6 +591,8 @@ async function main() {
   await putOptionalWorkerSecret(config, "GEMINI_API_KEY", config.geminiApiKey);
   await putOptionalWorkerSecret(config, "MAISON_FLOU_GEMINI_MODEL", config.maisonFlouGeminiModel);
   await putOptionalWorkerSecret(config, "MAISON_FLOU_IMAGE_MODEL", config.maisonFlouImageModel);
+  await putOptionalWorkerSecret(config, "META_ACCESS_TOKEN", config.metaAccessToken);
+  await putOptionalWorkerSecret(config, "META_GRAPH_VERSION", config.metaGraphVersion);
   await putOptionalWorkerSecret(config, "GOOGLE_OAUTH_CLIENT_ID", googleOauthClientId);
   await putOptionalWorkerSecret(config, "OFFICE_ALLOWED_EMAILS", config.officeAllowedEmails);
   await putOptionalWorkerSecret(config, "OFFICE_SESSION_SECRET", config.officeSessionSecret);
@@ -611,6 +638,8 @@ async function main() {
       branding_error: accessBranding.error || "",
     },
     google_oauth_client_configured: Boolean(googleOauthClientId),
+    meta_token_configured: Boolean(config.metaAccessToken),
+    meta_graph_version: config.metaGraphVersion,
     technology_changes_synced: technologyChangesSynced,
     routes,
     schedules,
