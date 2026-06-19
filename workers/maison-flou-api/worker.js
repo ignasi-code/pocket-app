@@ -16,7 +16,7 @@ const DEFAULT_OFFICE_TIMEZONE = "Europe/Madrid";
 const DEFAULT_RECAP_ENABLED = "true";
 const DEFAULT_RECAP_TIME = "18:00";
 const DEFAULT_BUSINESS_ID = "maison-flou";
-const DEFAULT_TLDR_MODEL = "gemini-1.5-flash";
+const DEFAULT_TLDR_MODEL = "gemini-2.5-flash-lite";
 const DEFAULT_TEXT_MODEL = "gemini-2.5-flash-lite";
 const DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image";
 const DEFAULT_IMAGE_SIZE = 1080;
@@ -999,7 +999,7 @@ function buildRecapPrompt(context) {
 
 async function generateRecapText(env, previousSummary, currentSummary, context) {
   try {
-    const text = cleanAiOutput(await runGeminiText(env, buildRecapPrompt(context), env.GEMINI_TLDR_MODEL || DEFAULT_TLDR_MODEL), 5000);
+    const text = cleanAiOutput(await runGeminiText(env, buildRecapPrompt(context), env.GEMINI_TLDR_MODEL || env.MAISON_FLOU_GEMINI_MODEL || DEFAULT_TEXT_MODEL), 5000);
     return text || buildRecapFallback(previousSummary, currentSummary, context);
   } catch {
     return buildRecapFallback(previousSummary, currentSummary, context);
