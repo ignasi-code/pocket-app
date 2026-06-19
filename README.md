@@ -108,7 +108,7 @@ office.maisonflou.com
 
 maisonflou.com/lab
   -> Cloudflare Worker
-  -> D1 office_events + content_runs + content_images + content_settings + office_tldr_cache
+  -> D1 office_events + content_runs + content_images + content_settings + office_tldr_cache + technology_changes
   -> Gemini text/image API for prompts, captions, and images
   -> Cloudflare image transform/re-encode endpoint for square JPEG post assets
      with Worker-side JPEG metadata stripping as the fallback
@@ -151,9 +151,14 @@ node scripts/deploy_cloudflare_worker_direct.mjs
 ```
 
 The Worker has a `scheduled()` handler and a 15-minute cron. Office D1 settings
-control whether content publishes, how many Instagram images are posted per
-day, publish slots, and the daily recap email. `content_scheduler_enabled`
-defaults to `false`; `recap_enabled` defaults to `true`.
+now split the Instagram scheduler controls from the daily report controls.
+`content_scheduler_enabled` controls social publishing and defaults to `false`;
+`recap_enabled` controls the daily email report and defaults to `true`.
+
+The daily report combines office events, content runs, and deploy-time git
+history from `technology_changes`, so it can summarize technology,
+social/content, and business/email activity without exposing raw commit logs.
+The Office dashboard includes a manual `Send now` report button for testing.
 
 Monitor-ready health endpoints:
 

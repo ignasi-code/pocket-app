@@ -609,6 +609,23 @@ async function readContentRuns(env, limit = 50) {
   }));
 }
 
+async function readTechnologyChanges(env, limit = 50) {
+  try {
+    const rows = await env.DB.prepare(
+      `SELECT id, timestamp, source, title, details, metadata
+       FROM technology_changes
+       ORDER BY timestamp DESC
+       LIMIT ?`
+    ).bind(Math.max(1, Math.min(Number(limit) || 50, 250))).all();
+    return (rows.results || []).map((row) => ({
+      ...row,
+      metadata: parseJsonObject(row.metadata),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 async function readContentSettings(env) {
   const rows = await env.DB.prepare(
     "SELECT key, value, updated_at FROM content_settings ORDER BY key"
@@ -842,12 +859,101 @@ function previousIsoDate(dateText) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildRecapFallback(previousSummary, currentSummary) {
+function eventReportPreview(event) {
+  const metadata = event.metadata || {};
+  return {
+    time: event.timestamp,
+    type: event.event_type,
+    status: event.status,
+    subject: event.subject,
+    message: event.message,
+    object_number: metadata.object_number || "",
+    category: (metadata.category || {}).label || (metadata.object_category || {}).label || metadata.category || "",
+    runtime: metadata.runtime || "",
+    trigger: metadata.trigger || "",
+    error: metadata.error ? String(metadata.error).slice(0, 240) : "",
+  };
+}
+
+function contentRunReportPreview(run) {
+  const metadata = run.metadata || {};
+  return {
+    time: run.timestamp,
+    status: run.status,
+    trigger: run.trigger,
+    object_number: run.object_number,
+    buffer_post_id: run.buffer_post_id,
+    category: (metadata.category || {}).label || (metadata.object_category || {}).label || metadata.category || "",
+    image_method: (metadata.image_file || {}).method || "",
+    caption_first_line: String(run.caption || "").split("\n")[0],
+  };
+}
+
+function technologyChangePreview(change) {
+  const metadata = change.metadata || {};
+  return {
+    time: change.timestamp,
+    source: change.source,
+    title: change.title,
+    short_hash: metadata.short_hash || change.id.slice(0, 7),
+  };
+}
+
+async function buildRecapContext(env, previousSummary, currentSummary) {
+  const reportDays = new Set([previousSummary.day, currentSummary.day].filter(Boolean));
+  const technologyChanges = (await readTechnologyChanges(env, 80))
+    .filter((change) => !reportDays.size || reportDays.has(eventDay(change)))
+    .slice(0, 50)
+    .map(technologyChangePreview);
+  const recentPosts = (await readContentRuns(env, 50))
+    .filter((run) => !reportDays.size || reportDays.has(eventDay(run)))
+    .slice(0, 24)
+    .map(contentRunReportPreview);
+
+  return {
+    generated_at: utcTimestamp(),
+    business: "Maison Flou",
+    period: {
+      prior_day: previousSummary.day,
+      current_day_so_far: currentSummary.day,
+    },
+    technology_changes_newest_first: technologyChanges,
+    prior_day_office: {
+      day: previousSummary.day,
+      status: previousSummary.status,
+      event_count: previousSummary.event_count,
+      counts: previousSummary.counts,
+      stats: previousSummary.stats,
+      latest_events_newest_first: (previousSummary.latest_events || []).slice(0, 18).map(eventReportPreview),
+    },
+    current_day_office: {
+      day: currentSummary.day,
+      status: currentSummary.status,
+      event_count: currentSummary.event_count,
+      counts: currentSummary.counts,
+      stats: currentSummary.stats,
+      latest_events_newest_first: (currentSummary.latest_events || []).slice(0, 18).map(eventReportPreview),
+    },
+    recent_social_posts_newest_first: recentPosts,
+    interpretation_notes: [
+      "Technology work should be summarized as implemented backend/frontend/infrastructure capabilities, not as a raw commit list.",
+      "Current state beats history: if older changes were superseded by newer changes, summarize the final state.",
+      "Events and changes are newest-first. Prefer newer events when deciding current state.",
+      "Social work should cover generated/published objects, Buffer/Instagram posting, categories, and failures or anomalies.",
+      "Business work should cover waitlist leads, email confirmations, domain/email infrastructure, and next commercial actions.",
+      "Mention risks only when actionable. Do not inflate small issues.",
+    ],
+  };
+}
+
+function buildRecapFallback(previousSummary, currentSummary, context = {}) {
   const previousCounts = previousSummary.counts || {};
   const currentCounts = currentSummary.counts || {};
+  const techCount = (context.technology_changes_newest_first || []).length;
   return [
     `Maison Flou office recap for ${previousSummary.day}.`,
     "",
+    `Technology: ${techCount} implementation change${techCount === 1 ? "" : "s"} recorded for the reporting window.`,
     `Previous day: ${previousCounts.instagram_posts || previousCounts.published || 0} Instagram post(s), ${previousCounts.lead_events || 0} lead event(s), ${previousCounts.failed || 0} failed action(s).`,
     `Current day so far: ${currentCounts.instagram_posts || currentCounts.published || 0} Instagram post(s), ${currentCounts.lead_events || 0} lead event(s), ${currentCounts.failed || 0} failed action(s).`,
     "",
@@ -857,50 +963,46 @@ function buildRecapFallback(previousSummary, currentSummary) {
   ].join("\n");
 }
 
-function buildRecapPrompt(previousSummary, currentSummary) {
+function buildRecapPrompt(context) {
   return [
-    "Write a concise executive status report email for the Maison Flou autonomous office.",
-    "Tone: calm, precise, operational, luxury brand. No emojis. No markdown tables.",
-    "Include: prior day activity, current day relevant activity, blockers, and next suggested action.",
-    "Return only the email body text.",
+    "You are the Chief of Staff for MAISON FLOU, a tiny autonomous luxury-fashion office.",
+    "Write a daily office status report for the founder.",
     "",
-    JSON.stringify({
-      previous_day: {
-        day: previousSummary.day,
-        status: previousSummary.status,
-        counts: previousSummary.counts,
-        stats: previousSummary.stats,
-        latest_events: (previousSummary.latest_events || []).slice(0, 12).map((event) => ({
-          time: event.timestamp,
-          event_type: event.event_type,
-          status: event.status,
-          subject: event.subject,
-          message: event.message,
-        })),
-      },
-      current_day_so_far: {
-        day: currentSummary.day,
-        status: currentSummary.status,
-        counts: currentSummary.counts,
-        stats: currentSummary.stats,
-        latest_events: (currentSummary.latest_events || []).slice(0, 8).map((event) => ({
-          time: event.timestamp,
-          event_type: event.event_type,
-          status: event.status,
-          subject: event.subject,
-          message: event.message,
-        })),
-      },
-    }),
+    "Purpose:",
+    "- Explain what the office actually changed, built, published, or learned.",
+    "- Separate technology, social/content, and business/commercial activity.",
+    "- Make it useful for someone who wants to know what happened without reading git commits or raw logs.",
+    "",
+    "Output rules:",
+    "- Return only the report body.",
+    "- No markdown tables. No emojis. No hype.",
+    "- Be concise but specific.",
+    "- Use these sections in this order:",
+    "  1. TL;DR",
+    "  2. Technology / Infrastructure",
+    "  3. Social / Content",
+    "  4. Business / Leads / Email",
+    "  5. Issues / Risks",
+    "  6. Next Best Actions",
+    "- In Technology / Infrastructure, translate implementation history into plain operational outcomes. Do not list hashes unless a rollback reference is needed.",
+    "- Current state beats history: if older changes were superseded by newer changes, summarize the final state and mention the prior attempt only if useful.",
+    "- In Social / Content, mention object numbers, volume, automation status, and notable categories if present.",
+    "- In Business / Leads / Email, mention waitlist lead count, email/Resend readiness, domain/email status if inferable, and commercial readiness.",
+    "- In Issues / Risks, separate resolved issues from open risks.",
+    "- In Next Best Actions, give 3 to 5 practical actions.",
+    "- If evidence is missing, say what should be logged next time instead of inventing.",
+    "",
+    "DATA:",
+    JSON.stringify(context),
   ].join("\n");
 }
 
-async function generateRecapText(env, previousSummary, currentSummary) {
+async function generateRecapText(env, previousSummary, currentSummary, context) {
   try {
-    const text = cleanAiOutput(await runGeminiText(env, buildRecapPrompt(previousSummary, currentSummary), env.GEMINI_TLDR_MODEL || DEFAULT_TLDR_MODEL), 5000);
-    return text || buildRecapFallback(previousSummary, currentSummary);
+    const text = cleanAiOutput(await runGeminiText(env, buildRecapPrompt(context), env.GEMINI_TLDR_MODEL || DEFAULT_TLDR_MODEL), 5000);
+    return text || buildRecapFallback(previousSummary, currentSummary, context);
   } catch {
-    return buildRecapFallback(previousSummary, currentSummary);
+    return buildRecapFallback(previousSummary, currentSummary, context);
   }
 }
 
@@ -921,14 +1023,17 @@ function recapEmailBody(text, previousSummary, currentSummary) {
   return { html, text };
 }
 
-async function sendDailyRecap(env, recipient, previousSummary, currentSummary) {
-  const text = await generateRecapText(env, previousSummary, currentSummary);
-  return sendResendEmail(
+async function sendDailyRecap(env, recipient, previousSummary, currentSummary, context = null) {
+  const reportContext = context || await buildRecapContext(env, previousSummary, currentSummary);
+  const text = await generateRecapText(env, previousSummary, currentSummary, reportContext);
+  const subject = `MAISON FLOU office recap — ${previousSummary.day}`;
+  const result = await sendResendEmail(
     env,
     recipient,
-    `MAISON FLOU office recap — ${previousSummary.day}`,
+    subject,
     recapEmailBody(text, previousSummary, currentSummary)
   );
+  return { ...result, subject, text };
 }
 
 function gqlString(value) {
@@ -2042,7 +2147,7 @@ function renderLabDashboard() {
     </section>
 
     <section>
-      <p class="label">Controls</p>
+      <p class="label">Instagram Scheduler</p>
       <div class="card">
         <label class="label" for="scheduler-enabled">Scheduler</label>
         <select id="scheduler-enabled"><option value="false">Disabled</option><option value="true">Enabled</option></select>
@@ -2052,7 +2157,18 @@ function renderLabDashboard() {
         <input id="posts-per-day" type="number" min="1" max="6" step="1">
         <label class="label" for="publish-times" style="margin-top:10px">Publish times</label>
         <input id="publish-times" type="text" inputmode="numeric" placeholder="09:00, 18:00">
-        <label class="label" for="office-timezone" style="margin-top:10px">Timezone</label>
+        <div class="toolbar">
+          <button id="save-scheduler-settings">Save scheduler</button>
+          <button id="publish-now">Publish now</button>
+        </div>
+        <div class="subtle" id="scheduler-result"></div>
+      </div>
+    </section>
+
+    <section>
+      <p class="label">Daily Report</p>
+      <div class="card">
+        <label class="label" for="office-timezone">Office timezone</label>
         <input id="office-timezone" type="text" placeholder="Europe/Madrid">
         <label class="label" for="recap-enabled" style="margin-top:10px">Daily recap</label>
         <select id="recap-enabled"><option value="false">Disabled</option><option value="true">Enabled</option></select>
@@ -2061,10 +2177,10 @@ function renderLabDashboard() {
         <label class="label" for="recap-time" style="margin-top:10px">Recap time</label>
         <input id="recap-time" type="time">
         <div class="toolbar">
-          <button id="save-settings">Save settings</button>
-          <button id="publish-now">Publish now</button>
+          <button id="save-report-settings">Save report</button>
+          <button id="send-report-now">Send now</button>
         </div>
-        <div class="subtle" id="control-result"></div>
+        <div class="subtle" id="report-result"></div>
       </div>
     </section>
 
@@ -2156,30 +2272,55 @@ function renderLabDashboard() {
     document.getElementById("logout").addEventListener("click", () => { localStorage.removeItem(key); location.href = "/logout"; });
     document.getElementById("refresh-tldr").addEventListener("click", () => loadTldr(true));
     document.getElementById("reveal-leads").addEventListener("click", () => loadLeads(true));
-    document.getElementById("save-settings").addEventListener("click", async () => {
-      const result = document.getElementById("control-result");
+    document.getElementById("save-scheduler-settings").addEventListener("click", async () => {
+      const result = document.getElementById("scheduler-result");
       result.textContent = "Saving...";
       await api("/api/maison-flou/settings", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
         content_scheduler_enabled: document.getElementById("scheduler-enabled").value,
         content_scheduler_mode: document.getElementById("scheduler-mode").value,
         content_posts_per_day: document.getElementById("posts-per-day").value,
-        content_publish_times: document.getElementById("publish-times").value,
+        content_publish_times: document.getElementById("publish-times").value
+      }) });
+      result.textContent = "Scheduler saved.";
+      await Promise.all([loadSettings(), loadStatus()]);
+    });
+    document.getElementById("save-report-settings").addEventListener("click", async () => {
+      const result = document.getElementById("report-result");
+      result.textContent = "Saving...";
+      await api("/api/maison-flou/settings", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
         office_timezone: document.getElementById("office-timezone").value,
         recap_enabled: document.getElementById("recap-enabled").value,
         recap_email: document.getElementById("recap-email").value,
         recap_time: document.getElementById("recap-time").value
       }) });
-      result.textContent = "Settings saved.";
-      await loadSettings();
+      result.textContent = "Report settings saved.";
+      await Promise.all([loadSettings(), loadStatus(), loadTldr(true)]);
     });
     document.getElementById("publish-now").addEventListener("click", async event => {
-      const result = document.getElementById("control-result");
+      const result = document.getElementById("scheduler-result");
       event.target.disabled = true;
       result.textContent = "Publishing...";
       try {
         const data = await api("/api/maison-flou/content/publish", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ mode:"shareNow" }) });
         result.textContent = \`Published Objet \${data.object_number || ""}.\`;
         await Promise.all([loadStatus(), loadPosts(), loadTldr(true)]);
+      } catch (error) {
+        result.textContent = error.message;
+      } finally {
+        event.target.disabled = false;
+      }
+    });
+    document.getElementById("send-report-now").addEventListener("click", async event => {
+      const result = document.getElementById("report-result");
+      event.target.disabled = true;
+      result.textContent = "Sending report...";
+      try {
+        const data = await api("/api/maison-flou/report/send", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
+          recap_email: document.getElementById("recap-email").value,
+          office_timezone: document.getElementById("office-timezone").value
+        }) });
+        result.textContent = \`Report sent to \${data.recipient || "recipient"}.\`;
+        await Promise.all([loadStatus(), loadTldr(true)]);
       } catch (error) {
         result.textContent = error.message;
       } finally {
@@ -2263,16 +2404,34 @@ async function handleSettings(request, env) {
     return jsonResponse(request, { ok: false, error: "method_not_allowed" }, 405);
   }
   const payload = await readPayload(request).catch(() => ({}));
-  const allowed = {
-    content_scheduler_enabled: boolSetting(payload.content_scheduler_enabled) ? "true" : "false",
-    content_scheduler_mode: cleanText(payload.content_scheduler_mode, 20) === "draft" ? "draft" : "publish",
-    content_posts_per_day: String(clampNumber(payload.content_posts_per_day, 1, 6, 1)),
-    content_publish_times: parseTimeList(payload.content_publish_times, DEFAULT_PUBLISH_TIMES).slice(0, 6).join(","),
-    office_timezone: safeTimeZone(payload.office_timezone || DEFAULT_OFFICE_TIMEZONE),
-    recap_enabled: boolSetting(payload.recap_enabled) ? "true" : "false",
-    recap_email: normalizeEmail(payload.recap_email) || ATELIER_EMAIL,
-    recap_time: normalizeTime(payload.recap_time) || DEFAULT_RECAP_TIME,
-  };
+  const allowed = {};
+  if (Object.prototype.hasOwnProperty.call(payload, "content_scheduler_enabled")) {
+    allowed.content_scheduler_enabled = boolSetting(payload.content_scheduler_enabled) ? "true" : "false";
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "content_scheduler_mode")) {
+    allowed.content_scheduler_mode = cleanText(payload.content_scheduler_mode, 20) === "draft" ? "draft" : "publish";
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "content_posts_per_day")) {
+    allowed.content_posts_per_day = String(clampNumber(payload.content_posts_per_day, 1, 6, 1));
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "content_publish_times")) {
+    allowed.content_publish_times = parseTimeList(payload.content_publish_times, DEFAULT_PUBLISH_TIMES).slice(0, 6).join(",");
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "office_timezone")) {
+    allowed.office_timezone = safeTimeZone(payload.office_timezone || DEFAULT_OFFICE_TIMEZONE);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "recap_enabled")) {
+    allowed.recap_enabled = boolSetting(payload.recap_enabled) ? "true" : "false";
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "recap_email")) {
+    allowed.recap_email = normalizeEmail(payload.recap_email) || ATELIER_EMAIL;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "recap_time")) {
+    allowed.recap_time = normalizeTime(payload.recap_time) || DEFAULT_RECAP_TIME;
+  }
+  if (!Object.keys(allowed).length) {
+    return jsonResponse(request, { ok: true, settings: await readContentSettings(env), updated: [] });
+  }
   for (const [key, value] of Object.entries(allowed)) {
     await setContentSetting(env, key, value);
   }
@@ -2285,6 +2444,50 @@ async function handleSettings(request, env) {
     { keys: Object.keys(allowed), runtime: "cloudflare_worker" }
   );
   return jsonResponse(request, { ok: true, settings: await readContentSettings(env) });
+}
+
+async function handleReportSend(request, env) {
+  if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
+  if (request.method !== "POST") {
+    return jsonResponse(request, { ok: false, error: "method_not_allowed" }, 405);
+  }
+  const payload = await readPayload(request).catch(() => ({}));
+  const recipient = normalizeEmail(payload.recap_email) || normalizeEmail(await getContentSetting(env, "recap_email", ATELIER_EMAIL));
+  if (!recipient) {
+    return jsonResponse(request, { ok: false, error: "missing_recipient" }, 400);
+  }
+  const timezone = safeTimeZone(payload.office_timezone || await getContentSetting(env, "office_timezone", DEFAULT_OFFICE_TIMEZONE));
+  const clock = officeClock(new Date(), timezone);
+  const currentSummary = await buildOfficeStatus(env, clock.date);
+  const previousSummary = await buildOfficeStatus(env, previousIsoDate(clock.date));
+  try {
+    const result = await sendDailyRecap(env, recipient, previousSummary, currentSummary);
+    await appendOfficeEvent(
+      env,
+      "recap.sent.manual",
+      "Daily report sent manually",
+      "The Maison Flou daily office report was sent on demand.",
+      "ok",
+      { recipient_hash: (await sha256(recipient)).slice(0, 16), resend_id: result.id || "", runtime: "cloudflare_worker" }
+    );
+    return jsonResponse(request, {
+      ok: true,
+      recipient,
+      resend_id: result.id || "",
+      subject: result.subject || "",
+      preview: cleanText(result.text, 600),
+    });
+  } catch (error) {
+    await appendOfficeEvent(
+      env,
+      "recap.failed",
+      "Daily report failed",
+      "The Maison Flou daily office report could not be sent on demand.",
+      "failed",
+      { error: String(error).slice(0, 500), runtime: "cloudflare_worker" }
+    );
+    return jsonResponse(request, { ok: false, error: String(error).slice(0, 500) }, 502);
+  }
 }
 
 async function handleContentPublish(request, env) {
@@ -2350,6 +2553,7 @@ async function handleRequest(request, env) {
     return handleMedia(request, env, decodeURIComponent(url.pathname.slice(`${API_PREFIX}/media/`.length)));
   }
   if (url.pathname === `${API_PREFIX}/settings`) return handleSettings(request, env);
+  if (url.pathname === `${API_PREFIX}/report/send`) return handleReportSend(request, env);
   if (url.pathname === `${API_PREFIX}/content/publish`) return handleContentPublish(request, env);
   return jsonResponse(request, { ok: false, error: "not_found" }, 404);
 }

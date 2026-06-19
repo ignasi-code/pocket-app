@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 const ROOT_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const API_BASE = "https://api.cloudflare.com/client/v4";
@@ -239,6 +240,15 @@ async function migrateD1(config, databaseId) {
       metadata TEXT NOT NULL DEFAULT '{}'
     )`,
     "CREATE INDEX IF NOT EXISTS idx_content_images_object_timestamp ON content_images(object_number, timestamp)",
+    `CREATE TABLE IF NOT EXISTS technology_changes (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT NOT NULL,
+      source TEXT NOT NULL DEFAULT 'git',
+      title TEXT NOT NULL DEFAULT '',
+      details TEXT NOT NULL DEFAULT '',
+      metadata TEXT NOT NULL DEFAULT '{}'
+    )`,
+    "CREATE INDEX IF NOT EXISTS idx_technology_changes_timestamp ON technology_changes(timestamp)",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_enabled', 'false', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_mode', 'publish', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_posts_per_day', '1', datetime('now'))",
@@ -256,6 +266,54 @@ async function migrateD1(config, databaseId) {
       await queryD1(config, databaseId, statement);
     }
   }
+}
+
+function readGitTechnologyChanges() {
+  try {
+    const output = execFileSync(
+      "git",
+      ["log", "--since=7 days ago", "--pretty=format:%H%x1f%h%x1f%cI%x1f%s"],
+      { cwd: ROOT_DIR, encoding: "utf8" }
+    );
+    return output.split("\n").filter(Boolean).slice(0, 80).map((line) => {
+      const [hash, shortHash, timestamp, ...titleParts] = line.split("\x1f");
+      return {
+        id: cleanValue(hash),
+        timestamp: cleanValue(timestamp),
+        source: "git",
+        title: cleanValue(titleParts.join(" ")),
+        details: "",
+        metadata: {
+          short_hash: cleanValue(shortHash),
+          deployed_at: new Date().toISOString(),
+        },
+      };
+    }).filter((change) => change.id && change.timestamp && change.title);
+  } catch {
+    return [];
+  }
+}
+
+async function syncTechnologyChanges(config, databaseId) {
+  const changes = readGitTechnologyChanges();
+  for (const change of changes) {
+    await queryD1(
+      config,
+      databaseId,
+      `INSERT OR IGNORE INTO technology_changes (
+        id, timestamp, source, title, details, metadata
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        change.id,
+        change.timestamp,
+        change.source,
+        change.title,
+        change.details,
+        JSON.stringify(change.metadata),
+      ]
+    );
+  }
+  return changes.length;
 }
 
 async function putWorkerScript(config, databaseId) {
@@ -497,6 +555,7 @@ async function main() {
   const databaseId = database.uuid || database.id;
   if (!databaseId) throw new Error("Cloudflare did not return a D1 database id.");
   await migrateD1(config, databaseId);
+  const technologyChangesSynced = await syncTechnologyChanges(config, databaseId);
   await putWorkerScript(config, databaseId);
   const googleOauthClientId = await resolveGoogleOauthClientId(config);
   await putWorkerSecret(config, "RESEND_API_KEY", config.resendApiKey);
@@ -552,6 +611,7 @@ async function main() {
       branding_error: accessBranding.error || "",
     },
     google_oauth_client_configured: Boolean(googleOauthClientId),
+    technology_changes_synced: technologyChangesSynced,
     routes,
     schedules,
   }, null, 2));
