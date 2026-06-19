@@ -81,7 +81,7 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `POCKET_OPS_HMAC_SECRET`: Optional dedicated secret for signed `/ops` automation requests. If unset, `/ops` uses `POCKET_ACCESS_TOKEN` for HMAC signing.
 - `POCKET_OPS_HMAC_MAX_AGE_SECONDS`: Maximum accepted signed `/ops` timestamp age. Default: `300`.
 - `CLOUDFLARE_D1_DATABASE`: Maison Flou D1 database name. Default: `maison_flou`.
-- `CLOUDFLARE_WORKER_CRON`: Worker cron trigger. Default: `0 9 * * *` UTC.
+- `CLOUDFLARE_WORKER_CRON`: Worker cron trigger. Default: `*/15 * * * *`.
 - `CLOUDFLARE_WORKER_ROUTES`: Comma-separated Worker routes. Default includes `maisonflou.com/api/maison-flou/*`, `maisonflou.com/lab*`, and `office.maisonflou.com/*`.
 - `LAB_ACCESS_TOKEN`: Optional dedicated `/lab` token. If unset, `POCKET_ACCESS_TOKEN` is used.
 - `GOOGLE_OAUTH_CLIENT_ID`: Google OAuth web client ID used by the branded Worker login. If unset, deploy falls back to the existing Cloudflare Access Google IdP client ID.
@@ -150,9 +150,17 @@ Deploy the Worker/D1 schema/cron with:
 node scripts/deploy_cloudflare_worker_direct.mjs
 ```
 
-The Worker has a `scheduled()` handler and a daily cron. Its D1 setting
-`content_scheduler_enabled` defaults to `false`, so cron ticks are logged but do
-not publish until explicitly enabled.
+The Worker has a `scheduled()` handler and a 15-minute cron. Office D1 settings
+control whether content publishes, how many Instagram images are posted per
+day, publish slots, and the daily recap email. `content_scheduler_enabled`
+defaults to `false`; `recap_enabled` defaults to `true`.
+
+Monitor-ready health endpoints:
+
+```text
+https://maisonflou.com/api/maison-flou/health
+https://office.maisonflou.com/health
+```
 
 For Cloudflare Worker Git builds, use `workers/maison-flou-api/wrangler.toml`
 as the deploy root/config and set the same secrets in the Cloudflare dashboard.

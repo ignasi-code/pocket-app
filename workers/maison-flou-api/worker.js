@@ -10,6 +10,11 @@ const REPLY_TO_EMAIL = "atelier@maisonflou.com";
 const ATELIER_EMAIL = "atelier@maisonflou.com";
 const DEFAULT_SCHEDULER_ENABLED = "false";
 const DEFAULT_SCHEDULER_MODE = "publish";
+const DEFAULT_POSTS_PER_DAY = "1";
+const DEFAULT_PUBLISH_TIMES = "09:00";
+const DEFAULT_OFFICE_TIMEZONE = "Europe/Madrid";
+const DEFAULT_RECAP_ENABLED = "true";
+const DEFAULT_RECAP_TIME = "18:00";
 const DEFAULT_BUSINESS_ID = "maison-flou";
 const DEFAULT_TLDR_MODEL = "gemini-1.5-flash";
 const DEFAULT_TEXT_MODEL = "gemini-2.5-flash-lite";
@@ -448,6 +453,95 @@ function schedulerEnabled(value) {
   return ["1", "true", "yes", "on", "enabled"].includes(String(value || "").trim().toLowerCase());
 }
 
+function clampNumber(value, min, max, fallback) {
+  const number = Number.parseInt(String(value || ""), 10);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, number));
+}
+
+function normalizeTime(value) {
+  const match = String(value || "").trim().match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return "";
+  return `${match[1].padStart(2, "0")}:${match[2]}`;
+}
+
+function parseTimeList(value, fallback = DEFAULT_PUBLISH_TIMES) {
+  const times = String(value || "")
+    .split(/[,\n]+/)
+    .map(normalizeTime)
+    .filter(Boolean);
+  const unique = [...new Set(times)].sort();
+  return unique.length ? unique : parseTimeList(fallback, "09:00");
+}
+
+function timeMinutes(value) {
+  const time = normalizeTime(value);
+  if (!time) return -1;
+  const [hour, minute] = time.split(":").map(Number);
+  return hour * 60 + minute;
+}
+
+function safeTimeZone(value) {
+  const timeZone = cleanText(value, 80) || DEFAULT_OFFICE_TIMEZONE;
+  try {
+    new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
+    return timeZone;
+  } catch {
+    return DEFAULT_OFFICE_TIMEZONE;
+  }
+}
+
+function officeClock(date = new Date(), timeZone = DEFAULT_OFFICE_TIMEZONE) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: safeTimeZone(timeZone),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]));
+  const hour = parts.hour === "24" ? "00" : parts.hour;
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${hour}:${parts.minute}`,
+    minutes: Number(hour) * 60 + Number(parts.minute),
+    timeZone: safeTimeZone(timeZone),
+  };
+}
+
+function isDueNow(clock, slot, windowMinutes = 20) {
+  const slotMinutes = timeMinutes(slot);
+  if (slotMinutes < 0) return false;
+  const delta = clock.minutes - slotMinutes;
+  return delta >= 0 && delta < windowMinutes;
+}
+
+function schedulerKey(kind, date, slot = "") {
+  return `scheduler_${kind}_${date}${slot ? `_${slot.replace(":", "")}` : ""}`;
+}
+
+async function getSettingBoolean(env, key, fallback = "false") {
+  return schedulerEnabled(await getContentSetting(env, key, fallback));
+}
+
+async function markSchedulerDone(env, kind, date, slot, value = "done") {
+  await setContentSetting(env, schedulerKey(kind, date, slot), value);
+}
+
+async function schedulerAlreadyDone(env, kind, date, slot = "") {
+  return Boolean(await getContentSetting(env, schedulerKey(kind, date, slot), ""));
+}
+
+async function appendOfficeEventOncePerDay(env, date, eventType, subject, message, status = "info", metadata = {}) {
+  const key = schedulerKey(eventType.replace(/[^a-z0-9]+/gi, "_").toLowerCase(), date);
+  if (await getContentSetting(env, key, "")) return false;
+  await appendOfficeEvent(env, eventType, subject, message, status, metadata);
+  await setContentSetting(env, key, utcTimestamp());
+  return true;
+}
+
 async function logContentRun(env, data) {
   const id = crypto.randomUUID();
   await env.DB.prepare(
@@ -568,7 +662,14 @@ async function buildOfficeStatus(env, day = "") {
   const latestEvents = dayEvents.slice(0, 12);
   const counts = officeEventCounts(dayEvents);
   const waitlistLeadCount = await countWaitlistLeads(env);
+  const settings = await readContentSettings(env);
+  const postsPerDay = clampNumber(settings.content_posts_per_day?.value || DEFAULT_POSTS_PER_DAY, 1, 6, 1);
+  const publishTimes = parseTimeList(settings.content_publish_times?.value || DEFAULT_PUBLISH_TIMES).slice(0, postsPerDay);
+  const timezone = safeTimeZone(settings.office_timezone?.value || DEFAULT_OFFICE_TIMEZONE);
+  const runs = await readContentRuns(env, 250);
+  const dayPublishedRuns = runs.filter((run) => eventDay(run) === selectedDay && cleanText(run.status, 40) === "published");
   counts.leads = waitlistLeadCount;
+  counts.instagram_posts = dayPublishedRuns.length;
   const status = counts.failed
     ? "Attention needed"
     : counts.needs_review
@@ -585,7 +686,16 @@ async function buildOfficeStatus(env, day = "") {
     last_action: lastEvent ? lastEvent.timestamp : "",
     last_action_label: lastEvent ? (lastEvent.subject || lastEvent.event_type || "") : "",
     counts,
-    stats: { waitlist_leads: waitlistLeadCount },
+    stats: {
+      waitlist_leads: waitlistLeadCount,
+      instagram_posts_today: dayPublishedRuns.length,
+      instagram_posts_target: postsPerDay,
+      publish_times: publishTimes,
+      office_timezone: timezone,
+      recap_enabled: (settings.recap_enabled?.value || DEFAULT_RECAP_ENABLED) === "true",
+      recap_email: settings.recap_email?.value || ATELIER_EMAIL,
+      recap_time: settings.recap_time?.value || DEFAULT_RECAP_TIME,
+    },
     latest_events: latestEvents,
   };
 }
@@ -723,6 +833,102 @@ async function generateOfficeTldr(env, summary, refresh = false) {
   };
   await writeTldrCache(env, result);
   return result;
+}
+
+function previousIsoDate(dateText) {
+  const date = new Date(`${cleanText(dateText, 20)}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return utcTimestamp().slice(0, 10);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function buildRecapFallback(previousSummary, currentSummary) {
+  const previousCounts = previousSummary.counts || {};
+  const currentCounts = currentSummary.counts || {};
+  return [
+    `Maison Flou office recap for ${previousSummary.day}.`,
+    "",
+    `Previous day: ${previousCounts.instagram_posts || previousCounts.published || 0} Instagram post(s), ${previousCounts.lead_events || 0} lead event(s), ${previousCounts.failed || 0} failed action(s).`,
+    `Current day so far: ${currentCounts.instagram_posts || currentCounts.published || 0} Instagram post(s), ${currentCounts.lead_events || 0} lead event(s), ${currentCounts.failed || 0} failed action(s).`,
+    "",
+    currentCounts.failed || previousCounts.failed
+      ? "Action required: review failed events in the office dashboard."
+      : "No urgent action is currently required.",
+  ].join("\n");
+}
+
+function buildRecapPrompt(previousSummary, currentSummary) {
+  return [
+    "Write a concise executive status report email for the Maison Flou autonomous office.",
+    "Tone: calm, precise, operational, luxury brand. No emojis. No markdown tables.",
+    "Include: prior day activity, current day relevant activity, blockers, and next suggested action.",
+    "Return only the email body text.",
+    "",
+    JSON.stringify({
+      previous_day: {
+        day: previousSummary.day,
+        status: previousSummary.status,
+        counts: previousSummary.counts,
+        stats: previousSummary.stats,
+        latest_events: (previousSummary.latest_events || []).slice(0, 12).map((event) => ({
+          time: event.timestamp,
+          event_type: event.event_type,
+          status: event.status,
+          subject: event.subject,
+          message: event.message,
+        })),
+      },
+      current_day_so_far: {
+        day: currentSummary.day,
+        status: currentSummary.status,
+        counts: currentSummary.counts,
+        stats: currentSummary.stats,
+        latest_events: (currentSummary.latest_events || []).slice(0, 8).map((event) => ({
+          time: event.timestamp,
+          event_type: event.event_type,
+          status: event.status,
+          subject: event.subject,
+          message: event.message,
+        })),
+      },
+    }),
+  ].join("\n");
+}
+
+async function generateRecapText(env, previousSummary, currentSummary) {
+  try {
+    const text = cleanAiOutput(await runGeminiText(env, buildRecapPrompt(previousSummary, currentSummary), env.GEMINI_TLDR_MODEL || DEFAULT_TLDR_MODEL), 5000);
+    return text || buildRecapFallback(previousSummary, currentSummary);
+  } catch {
+    return buildRecapFallback(previousSummary, currentSummary);
+  }
+}
+
+function recapEmailBody(text, previousSummary, currentSummary) {
+  const escaped = escapeHtml(text).replace(/\n/g, "<br>");
+  const html = `
+<!doctype html>
+<html>
+  <body style="margin:0;background:#f4f1ea;color:#161513;font-family:Georgia,'Times New Roman',serif;">
+    <div style="max-width:620px;margin:0 auto;padding:40px 24px;">
+      <div style="font-size:13px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:34px;">MAISON FLOU OFFICE</div>
+      <h1 style="font-size:30px;line-height:1.05;font-weight:400;margin:0 0 20px;">Daily status report.</h1>
+      <p style="font:15px/1.7 Arial,sans-serif;color:#5f594f;margin:0 0 28px;">${escaped}</p>
+      <p style="font:12px/1.7 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;margin:0;color:#5f594f;">Previous day ${escapeHtml(previousSummary.day)} · Current day ${escapeHtml(currentSummary.day)}</p>
+    </div>
+  </body>
+</html>`.trim();
+  return { html, text };
+}
+
+async function sendDailyRecap(env, recipient, previousSummary, currentSummary) {
+  const text = await generateRecapText(env, previousSummary, currentSummary);
+  return sendResendEmail(
+    env,
+    recipient,
+    `MAISON FLOU office recap — ${previousSummary.day}`,
+    recapEmailBody(text, previousSummary, currentSummary)
+  );
 }
 
 function gqlString(value) {
@@ -1195,59 +1401,127 @@ async function runContentPublish(env, { request, trigger = "cloudflare-lab", mod
   };
 }
 
-async function handleScheduled(controller, env) {
-  if (!env.DB) return;
-  await setContentSetting(env, "scheduler_last_seen_at", utcTimestamp());
-  await setContentSetting(env, "scheduler_last_cron", controller.cron || "");
-
-  const enabled = schedulerEnabled(await getContentSetting(env, "content_scheduler_enabled", DEFAULT_SCHEDULER_ENABLED));
+async function maybeRunContentSchedule(controller, env, clock) {
+  const enabled = await getSettingBoolean(env, "content_scheduler_enabled", DEFAULT_SCHEDULER_ENABLED);
   if (!enabled) {
-    await appendOfficeEvent(
+    await appendOfficeEventOncePerDay(
       env,
+      clock.date,
       "content.scheduler.idle",
       "Content scheduler idle",
-      "Cron fired, but autonomous publishing is disabled in D1 settings.",
+      "Cron is active, but autonomous publishing is disabled.",
       "info",
       { cron: controller.cron || "", runtime: "cloudflare_worker" }
     );
-    return;
+    return { published: 0, skipped: "disabled" };
   }
 
   if (!cleanText(env.GEMINI_API_KEY, 500) || !cleanText(env.BUFFER_API_KEY, 500) || !cleanText(env.BUFFER_CHANNEL_ID, 160)) {
-    await appendOfficeEvent(
+    await appendOfficeEventOncePerDay(
       env,
+      clock.date,
       "content.scheduler.needs_review",
       "Content scheduler missing secrets",
       "Autonomous publishing is enabled, but Gemini or Buffer configuration is missing.",
       "needs_review",
       { cron: controller.cron || "", runtime: "cloudflare_worker" }
     );
-    return;
+    return { published: 0, skipped: "missing_secrets" };
   }
 
+  const postsPerDay = clampNumber(await getContentSetting(env, "content_posts_per_day", DEFAULT_POSTS_PER_DAY), 1, 6, 1);
+  const publishTimes = parseTimeList(await getContentSetting(env, "content_publish_times", DEFAULT_PUBLISH_TIMES)).slice(0, postsPerDay);
   const mode = await getContentSetting(env, "content_scheduler_mode", DEFAULT_SCHEDULER_MODE);
+  let published = 0;
+
+  for (const slot of publishTimes) {
+    if (!isDueNow(clock, slot)) continue;
+    if (await schedulerAlreadyDone(env, "content", clock.date, slot)) continue;
+    try {
+      const result = await runContentPublish(env, {
+        trigger: "cloudflare-cron",
+        mode: mode === "draft" ? "addToQueue" : "shareNow",
+        saveToDraft: mode === "draft",
+      });
+      await markSchedulerDone(env, "content", clock.date, slot, result.object_number || "done");
+      published += 1;
+    } catch (error) {
+      await logContentRun(env, {
+        status: "failed",
+        trigger: "cloudflare-cron",
+        metadata: { cron: controller.cron || "", slot, error: String(error).slice(0, 500) },
+      });
+      await appendOfficeEvent(
+        env,
+        "content.scheduler.failed",
+        "Content scheduler failed",
+        "The scheduled publishing request failed.",
+        "failed",
+        { cron: controller.cron || "", slot, error: String(error).slice(0, 500), runtime: "cloudflare_worker" }
+      );
+    }
+  }
+
+  return { published, publish_times: publishTimes };
+}
+
+async function maybeSendRecapSchedule(controller, env, clock) {
+  const enabled = await getSettingBoolean(env, "recap_enabled", DEFAULT_RECAP_ENABLED);
+  if (!enabled) return { sent: false, skipped: "disabled" };
+  const recipient = normalizeEmail(await getContentSetting(env, "recap_email", ATELIER_EMAIL));
+  if (!recipient) {
+    await appendOfficeEventOncePerDay(
+      env,
+      clock.date,
+      "recap.scheduler.needs_review",
+      "Recap recipient missing",
+      "Daily recap is enabled, but no valid recipient email is configured.",
+      "needs_review",
+      { cron: controller.cron || "", runtime: "cloudflare_worker" }
+    );
+    return { sent: false, skipped: "missing_recipient" };
+  }
+  const recapTime = normalizeTime(await getContentSetting(env, "recap_time", DEFAULT_RECAP_TIME)) || DEFAULT_RECAP_TIME;
+  if (!isDueNow(clock, recapTime)) return { sent: false, skipped: "not_due" };
+  if (await schedulerAlreadyDone(env, "recap", clock.date, recapTime)) return { sent: false, skipped: "already_sent" };
+
+  const currentSummary = await buildOfficeStatus(env, clock.date);
+  const previousSummary = await buildOfficeStatus(env, previousIsoDate(clock.date));
   try {
-    await runContentPublish(env, {
-      trigger: "cloudflare-cron",
-      mode: mode === "draft" ? "addToQueue" : "shareNow",
-      saveToDraft: mode === "draft",
-    });
-  } catch (error) {
-    await logContentRun(env, {
-      status: "failed",
-      trigger: "cloudflare-cron",
-      metadata: { cron: controller.cron || "", error: String(error).slice(0, 500) },
-    });
+    const result = await sendDailyRecap(env, recipient, previousSummary, currentSummary);
+    await markSchedulerDone(env, "recap", clock.date, recapTime, result.id || "sent");
     await appendOfficeEvent(
       env,
-      "content.scheduler.failed",
-      "Content scheduler failed",
-      "The scheduled publishing request failed.",
-      "failed",
-      { cron: controller.cron || "", error: String(error).slice(0, 500), runtime: "cloudflare_worker" }
+      "recap.sent",
+      "Daily recap sent",
+      "The Maison Flou daily office recap was sent.",
+      "ok",
+      { recipient_hash: (await sha256(recipient)).slice(0, 16), resend_id: result.id || "", cron: controller.cron || "", runtime: "cloudflare_worker" }
     );
-    throw error;
+    return { sent: true, resend_id: result.id || "" };
+  } catch (error) {
+    await appendOfficeEvent(
+      env,
+      "recap.failed",
+      "Daily recap failed",
+      "The Maison Flou daily office recap could not be sent.",
+      "failed",
+      { error: String(error).slice(0, 500), cron: controller.cron || "", runtime: "cloudflare_worker" }
+    );
+    return { sent: false, error: String(error).slice(0, 500) };
   }
+}
+
+async function handleScheduled(controller, env) {
+  if (!env.DB) return;
+  await setContentSetting(env, "scheduler_last_seen_at", utcTimestamp());
+  await setContentSetting(env, "scheduler_last_cron", controller.cron || "");
+  const timezone = await getContentSetting(env, "office_timezone", DEFAULT_OFFICE_TIMEZONE);
+  const clock = officeClock(new Date(), timezone);
+  await setContentSetting(env, "scheduler_last_local_date", clock.date);
+  await setContentSetting(env, "scheduler_last_local_time", clock.time);
+  await maybeSendRecapSchedule(controller, env, clock);
+  await maybeRunContentSchedule(controller, env, clock);
 }
 
 function confirmationEmail() {
@@ -1658,6 +1932,35 @@ function handleOfficeLogout() {
   });
 }
 
+async function handleOfficeSession(request, env) {
+  const email = await officeSessionEmail(request, env);
+  if (email) return jsonResponse(request, { ok: true, email, auth: "google" });
+  if (tokenAccessAllowed(request, env)) return jsonResponse(request, { ok: true, email: "", auth: "token" });
+  return unauthorizedResponse(request);
+}
+
+async function handleHealth(request, env) {
+  const checks = {
+    worker: true,
+    database: false,
+    resend_configured: Boolean(cleanText(env.RESEND_API_KEY, 500)),
+    gemini_configured: Boolean(cleanText(env.GEMINI_API_KEY, 500)),
+    buffer_configured: Boolean(cleanText(env.BUFFER_API_KEY, 500) && cleanText(env.BUFFER_CHANNEL_ID, 160)),
+  };
+  try {
+    if (env.DB) {
+      await env.DB.prepare("SELECT 1 AS ok").first();
+      checks.database = true;
+    }
+  } catch {}
+  return jsonResponse(request, {
+    ok: checks.worker && checks.database,
+    business_id: DEFAULT_BUSINESS_ID,
+    timestamp: utcTimestamp(),
+    checks,
+  }, checks.worker && checks.database ? 200 : 503);
+}
+
 function renderLabDashboard() {
   return `<!doctype html>
 <html lang="en">
@@ -1671,6 +1974,7 @@ function renderLabDashboard() {
     body { margin:0; background:var(--bg); color:var(--ink); }
     main { width:min(100%, 980px); margin:0 auto; padding:18px 14px 46px; }
     header { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:16px; }
+    .header-actions { display:grid; gap:8px; justify-items:end; }
     h1 { margin:0; font-family: Georgia, "Times New Roman", serif; font-size:30px; line-height:.95; font-weight:400; }
     .subtle, .label, span { color:var(--muted); }
     .label { margin:0 0 8px; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
@@ -1685,6 +1989,7 @@ function renderLabDashboard() {
     .dot.bad { background:var(--bad); }
     .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
     input, select, button { min-height:42px; border:1px solid var(--ink); border-radius:6px; background:transparent; color:var(--ink); padding:0 11px; font:inherit; }
+    input { width:100%; }
     button { background:var(--ink); color:var(--card); cursor:pointer; }
     button.secondary { background:transparent; color:var(--ink); }
     button:disabled { opacity:.55; cursor:wait; }
@@ -1706,8 +2011,12 @@ function renderLabDashboard() {
       <div>
         <h1>Maison Flou<br>Lab</h1>
         <div class="subtle" id="day">Cloudflare office</div>
+        <div class="subtle" id="operator"></div>
       </div>
-      <div class="card" id="event-count">0 events</div>
+      <div class="header-actions">
+        <div class="card" id="event-count">0 events</div>
+        <button class="secondary" id="logout">Logout</button>
+      </div>
     </header>
 
     <section class="auth" id="auth">
@@ -1739,6 +2048,18 @@ function renderLabDashboard() {
         <select id="scheduler-enabled"><option value="false">Disabled</option><option value="true">Enabled</option></select>
         <label class="label" for="scheduler-mode" style="margin-top:10px">Mode</label>
         <select id="scheduler-mode"><option value="publish">Publish now</option><option value="draft">Draft</option></select>
+        <label class="label" for="posts-per-day" style="margin-top:10px">Instagram images per day</label>
+        <input id="posts-per-day" type="number" min="1" max="6" step="1">
+        <label class="label" for="publish-times" style="margin-top:10px">Publish times</label>
+        <input id="publish-times" type="text" inputmode="numeric" placeholder="09:00, 18:00">
+        <label class="label" for="office-timezone" style="margin-top:10px">Timezone</label>
+        <input id="office-timezone" type="text" placeholder="Europe/Madrid">
+        <label class="label" for="recap-enabled" style="margin-top:10px">Daily recap</label>
+        <select id="recap-enabled"><option value="false">Disabled</option><option value="true">Enabled</option></select>
+        <label class="label" for="recap-email" style="margin-top:10px">Recap email</label>
+        <input id="recap-email" type="email" autocomplete="email" placeholder="atelier@maisonflou.com">
+        <label class="label" for="recap-time" style="margin-top:10px">Recap time</label>
+        <input id="recap-time" type="time">
         <div class="toolbar">
           <button id="save-settings">Save settings</button>
           <button id="publish-now">Publish now</button>
@@ -1781,7 +2102,7 @@ function renderLabDashboard() {
       return data;
     }
     function renderMetrics(counts) {
-      const rows = [["Generated", counts.generated], ["Published", counts.published], ["Review", counts.needs_review], ["Leads", counts.leads], ["Lead Events", counts.lead_events], ["Emails", counts.emails], ["Replies", counts.replies], ["Failed", counts.failed]];
+      const rows = [["IG Today", counts.instagram_posts], ["Generated", counts.generated], ["Published", counts.published], ["Review", counts.needs_review], ["Leads", counts.leads], ["Emails", counts.emails], ["Replies", counts.replies], ["Failed", counts.failed]];
       document.getElementById("metrics").innerHTML = rows.map(([label, value]) => \`<div class="card metric"><strong>\${Number(value || 0)}</strong><span>\${label}</span></div>\`).join("");
     }
     function renderRows(id, rows, empty, map) {
@@ -1793,7 +2114,8 @@ function renderLabDashboard() {
       document.getElementById("day").textContent = data.day || "Today";
       document.getElementById("event-count").textContent = \`\${data.event_count || 0} events\`;
       document.getElementById("status").textContent = data.status || "Unknown";
-      document.getElementById("last-action").textContent = data.last_action_label ? \`Last action: \${data.last_action_label}\` : "No logged action yet.";
+      const stats = data.stats || {};
+      document.getElementById("last-action").textContent = data.last_action_label ? \`Last action: \${data.last_action_label} · IG \${stats.instagram_posts_today || 0}/\${stats.instagram_posts_target || 0}\` : \`IG \${stats.instagram_posts_today || 0}/\${stats.instagram_posts_target || 0}\`;
       const dot = document.getElementById("status-dot");
       dot.className = "dot" + ((data.counts || {}).failed ? " bad" : ((data.counts || {}).needs_review ? " warn" : ""));
       renderMetrics(data.counts || {});
@@ -1809,6 +2131,18 @@ function renderLabDashboard() {
       const settings = data.settings || {};
       document.getElementById("scheduler-enabled").value = (settings.content_scheduler_enabled || {}).value === "true" ? "true" : "false";
       document.getElementById("scheduler-mode").value = (settings.content_scheduler_mode || {}).value || "publish";
+      document.getElementById("posts-per-day").value = (settings.content_posts_per_day || {}).value || "1";
+      document.getElementById("publish-times").value = (settings.content_publish_times || {}).value || "09:00";
+      document.getElementById("office-timezone").value = (settings.office_timezone || {}).value || "Europe/Madrid";
+      document.getElementById("recap-enabled").value = (settings.recap_enabled || {}).value === "true" ? "true" : "false";
+      document.getElementById("recap-email").value = (settings.recap_email || {}).value || "atelier@maisonflou.com";
+      document.getElementById("recap-time").value = (settings.recap_time || {}).value || "18:00";
+    }
+    async function loadSession() {
+      try {
+        const data = await api("/api/maison-flou/office/session");
+        document.getElementById("operator").textContent = data.email || data.auth || "";
+      } catch {}
     }
     async function loadLeads(reveal = false) {
       const data = await api(\`/api/maison-flou/waitlist/leads\${reveal ? "?reveal=1" : ""}\`);
@@ -1819,12 +2153,22 @@ function renderLabDashboard() {
       renderRows("posts", data.posts || [], "No posts yet", post => \`<div class="row"><div><strong>Objet \${html(post.object_number)}</strong><span>\${html(post.status)} · \${html(time(post.timestamp))} · \${html(post.trigger)}</span></div>\${post.image_url ? \`<a href="\${html(post.image_url)}" target="_blank" rel="noopener">Image</a>\` : ""}</div>\`);
     }
     document.getElementById("unlock").addEventListener("click", () => { localStorage.setItem(key, tokenInput.value); boot(); });
+    document.getElementById("logout").addEventListener("click", () => { localStorage.removeItem(key); location.href = "/logout"; });
     document.getElementById("refresh-tldr").addEventListener("click", () => loadTldr(true));
     document.getElementById("reveal-leads").addEventListener("click", () => loadLeads(true));
     document.getElementById("save-settings").addEventListener("click", async () => {
       const result = document.getElementById("control-result");
       result.textContent = "Saving...";
-      await api("/api/maison-flou/settings", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ content_scheduler_enabled: document.getElementById("scheduler-enabled").value, content_scheduler_mode: document.getElementById("scheduler-mode").value }) });
+      await api("/api/maison-flou/settings", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
+        content_scheduler_enabled: document.getElementById("scheduler-enabled").value,
+        content_scheduler_mode: document.getElementById("scheduler-mode").value,
+        content_posts_per_day: document.getElementById("posts-per-day").value,
+        content_publish_times: document.getElementById("publish-times").value,
+        office_timezone: document.getElementById("office-timezone").value,
+        recap_enabled: document.getElementById("recap-enabled").value,
+        recap_email: document.getElementById("recap-email").value,
+        recap_time: document.getElementById("recap-time").value
+      }) });
       result.textContent = "Settings saved.";
       await loadSettings();
     });
@@ -1843,7 +2187,7 @@ function renderLabDashboard() {
       }
     });
     async function boot() {
-      await Promise.all([loadStatus(), loadTldr(false), loadSettings(), loadLeads(false), loadPosts()]);
+      await Promise.all([loadSession(), loadStatus(), loadTldr(false), loadSettings(), loadLeads(false), loadPosts()]);
     }
     boot().catch(error => {
       document.getElementById("status").textContent = error.message;
@@ -1857,7 +2201,8 @@ function renderLabDashboard() {
 async function handleOfficeStatus(request, env) {
   if (!(await labAccessAllowed(request, env))) return unauthorizedResponse(request);
   const url = new URL(request.url);
-  return jsonResponse(request, await buildOfficeStatus(env, url.searchParams.get("day") || ""));
+  const day = url.searchParams.get("day") || officeClock(new Date(), await getContentSetting(env, "office_timezone", DEFAULT_OFFICE_TIMEZONE)).date;
+  return jsonResponse(request, await buildOfficeStatus(env, day));
 }
 
 async function handleOfficeTldr(request, env) {
@@ -1865,7 +2210,8 @@ async function handleOfficeTldr(request, env) {
   const url = new URL(request.url);
   const payload = request.method === "POST" ? await readPayload(request).catch(() => ({})) : {};
   const refresh = boolSetting(url.searchParams.get("refresh") || payload.refresh);
-  const summary = await buildOfficeStatus(env, url.searchParams.get("day") || payload.day || "");
+  const day = url.searchParams.get("day") || payload.day || officeClock(new Date(), await getContentSetting(env, "office_timezone", DEFAULT_OFFICE_TIMEZONE)).date;
+  const summary = await buildOfficeStatus(env, day);
   return jsonResponse(request, await generateOfficeTldr(env, summary, refresh));
 }
 
@@ -1920,6 +2266,12 @@ async function handleSettings(request, env) {
   const allowed = {
     content_scheduler_enabled: boolSetting(payload.content_scheduler_enabled) ? "true" : "false",
     content_scheduler_mode: cleanText(payload.content_scheduler_mode, 20) === "draft" ? "draft" : "publish",
+    content_posts_per_day: String(clampNumber(payload.content_posts_per_day, 1, 6, 1)),
+    content_publish_times: parseTimeList(payload.content_publish_times, DEFAULT_PUBLISH_TIMES).slice(0, 6).join(","),
+    office_timezone: safeTimeZone(payload.office_timezone || DEFAULT_OFFICE_TIMEZONE),
+    recap_enabled: boolSetting(payload.recap_enabled) ? "true" : "false",
+    recap_email: normalizeEmail(payload.recap_email) || ATELIER_EMAIL,
+    recap_time: normalizeTime(payload.recap_time) || DEFAULT_RECAP_TIME,
   };
   for (const [key, value] of Object.entries(allowed)) {
     await setContentSetting(env, key, value);
@@ -1976,6 +2328,7 @@ async function handleRequest(request, env) {
   }
   if (isOfficeHost && url.pathname === "/auth/google") return handleOfficeGoogleAuth(request, env);
   if (isOfficeHost && url.pathname === "/logout") return handleOfficeLogout();
+  if (url.pathname === "/health" || url.pathname === `${API_PREFIX}/health`) return handleHealth(request, env);
   if (url.pathname === WAITLIST_PATH) return handleWaitlist(request, env);
   if (
     url.pathname === LAB_PATH_PREFIX
@@ -1990,6 +2343,7 @@ async function handleRequest(request, env) {
   }
   if (url.pathname === `${API_PREFIX}/office/status`) return handleOfficeStatus(request, env);
   if (url.pathname === `${API_PREFIX}/office/tldr`) return handleOfficeTldr(request, env);
+  if (url.pathname === `${API_PREFIX}/office/session`) return handleOfficeSession(request, env);
   if (url.pathname === `${API_PREFIX}/waitlist/leads`) return handleLeads(request, env);
   if (url.pathname === `${API_PREFIX}/posts`) return handlePosts(request, env);
   if (url.pathname.startsWith(`${API_PREFIX}/media/`)) {

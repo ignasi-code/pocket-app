@@ -68,7 +68,7 @@ function loadConfig() {
     workerRoutes: [...new Set(workerRoutes)],
     workerPath: path.resolve(ROOT_DIR, cleanValue(env.CLOUDFLARE_WORKER_PATH) || "workers/maison-flou-api/worker.js"),
     d1DatabaseName: cleanValue(env.CLOUDFLARE_D1_DATABASE) || "maison_flou",
-    workerCron: cleanValue(env.CLOUDFLARE_WORKER_CRON) || "0 9 * * *",
+    workerCron: cleanValue(env.CLOUDFLARE_WORKER_CRON) || "*/15 * * * *",
     resendApiKey: cleanValue(env.RESEND_API_KEY),
     bufferApiKey: cleanValue(env.BUFFER_API_KEY),
     bufferChannelId: cleanValue(env.BUFFER_MAISON_FLOU_CHANNEL_ID) || cleanValue(env.BUFFER_CHANNEL_ID),
@@ -241,6 +241,12 @@ async function migrateD1(config, databaseId) {
     "CREATE INDEX IF NOT EXISTS idx_content_images_object_timestamp ON content_images(object_number, timestamp)",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_enabled', 'false', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_scheduler_mode', 'publish', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_posts_per_day', '1', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('content_publish_times', '09:00', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('office_timezone', 'Europe/Madrid', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('recap_enabled', 'true', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('recap_email', 'atelier@maisonflou.com', datetime('now'))",
+    "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('recap_time', '18:00', datetime('now'))",
     "INSERT OR IGNORE INTO content_settings (key, value, updated_at) VALUES ('object_sequence', '12', datetime('now'))",
   ];
   for (const statement of statements) {
