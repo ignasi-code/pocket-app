@@ -31,6 +31,12 @@ function readEnvFile(filePath) {
   return values;
 }
 
+function parseBoolean(value, defaultValue = false) {
+  const text = cleanValue(value).toLowerCase();
+  if (!text) return defaultValue;
+  return ["1", "true", "yes", "on"].includes(text);
+}
+
 function loadConfig() {
   const env = {
     ...readEnvFile(path.join(ROOT_DIR, ".env")),
@@ -78,6 +84,7 @@ function loadConfig() {
     accessAllowedEmails,
     accessGoogleIdpName: cleanValue(env.ACCESS_GOOGLE_IDP_NAME) || GOOGLE_IDP_NAME,
     accessSessionDuration: cleanValue(env.ACCESS_SESSION_DURATION) || "24h",
+    accessAutoRedirectToIdentity: parseBoolean(env.ACCESS_AUTO_REDIRECT_TO_IDENTITY, false),
     pocketAccessToken: cleanValue(env.POCKET_ACCESS_TOKEN),
     pocketContentPublishUrl: cleanValue(env.POCKET_CONTENT_PUBLISH_URL)
       || (cleanValue(env.POCKET_PUBLIC_BASE_URL)
@@ -410,7 +417,7 @@ async function upsertAccessOfficeApp(config) {
     type: "self_hosted",
     domain: config.officeHost,
     allowed_idps: [googleIdp.id || googleIdp.uid],
-    auto_redirect_to_identity: true,
+    auto_redirect_to_identity: config.accessAutoRedirectToIdentity,
     session_duration: config.accessSessionDuration,
     policies: [
       {

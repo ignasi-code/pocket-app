@@ -86,6 +86,7 @@ gemini -m gemini-2.5-flash-lite -p "<prompt>"
 - `LAB_ACCESS_TOKEN`: Optional dedicated `/lab` token. If unset, `POCKET_ACCESS_TOKEN` is used.
 - `LAB_TRUST_CF_ACCESS`: Defaults to `1` for the Cloudflare Access-protected office hostname.
 - `ACCESS_ALLOWED_EMAILS`: Comma-separated emails allowed into `office.maisonflou.com`. Defaults to `LAB_ALLOWED_EMAILS` or `RESEND_TEST_EMAIL`.
+- `ACCESS_AUTO_REDIRECT_TO_IDENTITY`: Set to `1` to skip the Cloudflare Access login screen and redirect straight to Google. Default: `0`.
 - `BUFFER_MAISON_FLOU_CHANNEL_ID`: Maison Flou Buffer channel override for the Cloudflare Worker.
 - `RESEND_API_KEY`: Resend send-only API key used by the Worker and local tests.
 
