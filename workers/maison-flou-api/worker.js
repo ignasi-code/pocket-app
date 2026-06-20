@@ -679,6 +679,16 @@ async function readContentRuns(env, limit = 50) {
   }));
 }
 
+async function countContentRunsForDay(env, day, status) {
+  const row = await env.DB.prepare(
+    `SELECT COUNT(*) AS count
+     FROM content_runs
+     WHERE substr(timestamp, 1, 10) = ?
+       AND status = ?`
+  ).bind(cleanText(day, 20), cleanText(status, 40)).first();
+  return Number(row && row.count) || 0;
+}
+
 async function readTechnologyChanges(env, limit = 50) {
   try {
     const rows = await env.DB.prepare(
@@ -1851,39 +1861,53 @@ async function maybeRunContentSchedule(controller, env, clock) {
   }
 
   const postsPerDay = clampNumber(await getContentSetting(env, "content_posts_per_day", DEFAULT_POSTS_PER_DAY), 1, 6, 1);
-  const publishTimes = parseTimeList(await getContentSetting(env, "content_publish_times", DEFAULT_PUBLISH_TIMES)).slice(0, postsPerDay);
+  const publishTimes = parseTimeList(await getContentSetting(env, "content_publish_times", DEFAULT_PUBLISH_TIMES));
   const mode = await getContentSetting(env, "content_scheduler_mode", DEFAULT_SCHEDULER_MODE);
+  const targetStatus = mode === "draft" ? "drafted" : "published";
   let published = 0;
 
   for (const slot of publishTimes) {
     if (!isDueNow(clock, slot)) continue;
     if (await schedulerAlreadyDone(env, "content", clock.date, slot)) continue;
-    try {
-      const result = await runContentPublish(env, {
-        trigger: "cloudflare-cron",
-        mode: mode === "draft" ? "addToQueue" : "shareNow",
-        saveToDraft: mode === "draft",
-      });
-      await markSchedulerDone(env, "content", clock.date, slot, result.object_number || "done");
-      published += 1;
-    } catch (error) {
-      await logContentRun(env, {
-        status: "failed",
-        trigger: "cloudflare-cron",
-        metadata: { cron: controller.cron || "", slot, error: String(error).slice(0, 500) },
-      });
-      await appendOfficeEvent(
-        env,
-        "content.scheduler.failed",
-        "Content scheduler failed",
-        "The scheduled publishing request failed.",
-        "failed",
-        { cron: controller.cron || "", slot, error: String(error).slice(0, 500), runtime: "cloudflare_worker" }
-      );
+    const alreadyDoneToday = await countContentRunsForDay(env, clock.date, targetStatus);
+    const remaining = Math.max(0, postsPerDay - alreadyDoneToday);
+    if (!remaining) {
+      await markSchedulerDone(env, "content", clock.date, slot, "target_met");
+      continue;
     }
+    const objectNumbers = [];
+    let failed = false;
+    for (let index = 0; index < remaining; index += 1) {
+      try {
+        const result = await runContentPublish(env, {
+          trigger: "cloudflare-cron",
+          mode: mode === "draft" ? "addToQueue" : "shareNow",
+          saveToDraft: mode === "draft",
+        });
+        objectNumbers.push(result.object_number || "done");
+        published += 1;
+      } catch (error) {
+        failed = true;
+        await logContentRun(env, {
+          status: "failed",
+          trigger: "cloudflare-cron",
+          metadata: { cron: controller.cron || "", slot, batch_index: index + 1, error: String(error).slice(0, 500) },
+        });
+        await appendOfficeEvent(
+          env,
+          "content.scheduler.failed",
+          "Content scheduler failed",
+          "The scheduled publishing request failed.",
+          "failed",
+          { cron: controller.cron || "", slot, batch_index: index + 1, error: String(error).slice(0, 500), runtime: "cloudflare_worker" }
+        );
+        break;
+      }
+    }
+    if (!failed) await markSchedulerDone(env, "content", clock.date, slot, objectNumbers.join(",") || "done");
   }
 
-  return { published, publish_times: publishTimes };
+  return { published, publish_times: publishTimes, posts_per_day: postsPerDay };
 }
 
 async function maybeSendRecapSchedule(controller, env, clock) {

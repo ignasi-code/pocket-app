@@ -13,4 +13,4 @@ database_name = "maison_flou"
 database_id = "d5318291-9b8f-411f-8dda-83c0e946f2d0"
 
 [triggers]
-crons = ["0 9 * * *"]
+crons = ["*/15 * * * *"]
